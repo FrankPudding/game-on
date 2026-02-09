@@ -104,6 +104,21 @@ class AppTheme {
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        labelStyle: const TextStyle(color: Colors.white70),
+        floatingLabelStyle: WidgetStateTextStyle.resolveWith((states) {
+          if (states.contains(WidgetState.focused)) {
+            return const TextStyle(
+                color: mikadoYellow, fontWeight: FontWeight.bold);
+          }
+          return const TextStyle(color: Colors.white70);
+        }),
+        hintStyle: const TextStyle(color: Colors.white38),
+        prefixIconColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.focused)) {
+            return mikadoYellow;
+          }
+          return Colors.white70;
+        }),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: backgroundBlack,
