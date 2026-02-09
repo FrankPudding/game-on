@@ -105,6 +105,29 @@ class AppTheme {
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: backgroundBlack,
+        indicatorColor: mikadoYellow,
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(color: Colors.black);
+          }
+          return const IconThemeData(color: Colors.white70);
+        }),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return GoogleFonts.outfit(
+              color: mikadoYellow,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            );
+          }
+          return GoogleFonts.outfit(
+            color: Colors.white70,
+            fontSize: 12,
+          );
+        }),
+      ),
     );
   }
 }

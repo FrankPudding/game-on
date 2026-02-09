@@ -43,17 +43,17 @@ class _MainNavigationState extends State<MainNavigation> {
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard, color: AppTheme.mikadoYellow),
+            selectedIcon: Icon(Icons.dashboard),
             label: 'Leagues',
           ),
           NavigationDestination(
             icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history, color: AppTheme.mikadoYellow),
+            selectedIcon: Icon(Icons.history),
             label: 'History',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings, color: AppTheme.mikadoYellow),
+            selectedIcon: Icon(Icons.settings),
             label: 'Settings',
           ),
         ],
