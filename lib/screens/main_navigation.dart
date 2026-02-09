@@ -67,8 +67,8 @@ class _MainNavigationState extends State<MainNavigation> {
                       builder: (context) => const CreateLeagueScreen()),
                 );
               },
-              backgroundColor: AppTheme.mikadoYellow,
-              child: const Icon(Icons.add, color: Colors.black),
+              backgroundColor: AppTheme.accentRed,
+              child: const Icon(Icons.add, color: Colors.white),
             )
           : null,
     );

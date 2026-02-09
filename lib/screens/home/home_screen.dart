@@ -25,12 +25,14 @@ class HomeScreen extends ConsumerWidget {
                 Icon(
                   Icons.emoji_events_outlined,
                   size: 80,
-                  color: Colors.white.withOpacity(0.2),
+                  color: AppTheme.textTertiary.withOpacity(0.2),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'No leagues yet',
-                  style: Theme.of(context).textTheme.bodyLarge,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
                 ),
                 const SizedBox(height: 8),
                 ElevatedButton(
@@ -96,11 +98,11 @@ class _LeagueCard extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: AppTheme.racingGreen,
+                      color: AppTheme.accentRed.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(Icons.sports_esports,
-                        color: AppTheme.mikadoYellow),
+                        color: AppTheme.accentRed),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -112,7 +114,7 @@ class _LeagueCard extends StatelessWidget {
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                                    color: AppTheme.textPrimary,
                                   ),
                         ),
                         Text(
@@ -122,7 +124,7 @@ class _LeagueCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right, color: Colors.white54),
+                  const Icon(Icons.chevron_right, color: AppTheme.textTertiary),
                 ],
               ),
             ],

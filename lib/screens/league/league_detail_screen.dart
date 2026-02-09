@@ -92,9 +92,6 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
         title: Text(widget.league.name),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppTheme.mikadoYellow,
-          labelColor: AppTheme.mikadoYellow,
-          unselectedLabelColor: Colors.white60,
           tabs: const [
             Tab(text: 'Standings'),
             Tab(text: 'Matches'),
@@ -204,8 +201,8 @@ class _StandingsTab extends StatelessWidget {
         return Card(
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: AppTheme.mikadoYellow,
-              foregroundColor: Colors.black,
+              backgroundColor: AppTheme.accentRed,
+              foregroundColor: Colors.white,
               child: Text(
                   player.name.isNotEmpty ? player.name[0].toUpperCase() : '?'),
             ),
@@ -216,7 +213,7 @@ class _StandingsTab extends StatelessWidget {
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: AppTheme.mikadoYellow,
+                color: AppTheme.accentRed,
               ),
             ),
           ),

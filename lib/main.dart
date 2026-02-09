@@ -44,7 +44,7 @@ class GameOnApp extends StatelessWidget {
     return MaterialApp(
       title: 'Game On',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
       home: const MainNavigation(),
     );
   }

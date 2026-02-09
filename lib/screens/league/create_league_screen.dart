@@ -213,7 +213,7 @@ class _CreateLeagueScreenState extends ConsumerState<CreateLeagueScreen> {
     return Text(
       title,
       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: AppTheme.mikadoYellow,
+            color: AppTheme.accentRed,
           ),
     );
   }
@@ -278,7 +278,7 @@ class _CreateLeagueScreenState extends ConsumerState<CreateLeagueScreen> {
           subtitle: const Text('e.g. Golf, Cross Country'),
           value: _lowerScoreWins,
           onChanged: (val) => setState(() => _lowerScoreWins = val),
-          activeColor: AppTheme.mikadoYellow,
+          activeColor: AppTheme.accentRed,
         ),
       ],
     );

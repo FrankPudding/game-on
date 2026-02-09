@@ -81,8 +81,7 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
               onPressed: _submit,
               child: const Text('SAVE',
                   style: TextStyle(
-                      color: AppTheme.mikadoYellow,
-                      fontWeight: FontWeight.bold)),
+                      color: Colors.white, fontWeight: FontWeight.bold)),
             ),
         ],
       ),
@@ -114,7 +113,7 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
                         excludeId: _loserId,
                         onSelected: (id) => setState(() => _winnerId = id),
                         color: _isDraw
-                            ? AppTheme.mikadoYellow
+                            ? AppTheme.accentRed
                             : AppTheme.successGreen,
                       ),
                     ),
@@ -123,7 +122,7 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
                           EdgeInsets.symmetric(horizontal: 16, vertical: 40),
                       child: Text('VS',
                           style: TextStyle(
-                            color: Colors.white24,
+                            color: Colors.black12,
                             fontWeight: FontWeight.w900,
                             fontSize: 24,
                           )),
@@ -135,8 +134,7 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
                         players: state.players,
                         excludeId: _winnerId,
                         onSelected: (id) => setState(() => _loserId = id),
-                        color:
-                            _isDraw ? AppTheme.mikadoYellow : AppTheme.errorRed,
+                        color: _isDraw ? AppTheme.accentRed : AppTheme.errorRed,
                       ),
                     ),
                   ],
@@ -144,15 +142,15 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
                 const SizedBox(height: 48),
                 if (_isLoading)
                   const Center(
-                      child: CircularProgressIndicator(
-                          color: AppTheme.mikadoYellow))
+                      child:
+                          CircularProgressIndicator(color: AppTheme.accentRed))
                 else
                   ElevatedButton(
                     onPressed: _submit,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: AppTheme.mikadoYellow,
-                      foregroundColor: Colors.black,
+                      backgroundColor: AppTheme.accentRed,
+                      foregroundColor: Colors.white,
                     ),
                     child: const Text('Confirm Match Result',
                         style: TextStyle(
@@ -170,7 +168,7 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.black.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -210,7 +208,7 @@ class _ToggleItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.mikadoYellow : Colors.transparent,
+          color: isSelected ? AppTheme.accentRed : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Center(
@@ -218,7 +216,7 @@ class _ToggleItem extends StatelessWidget {
             label,
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: isSelected ? Colors.black : Colors.white54,
+              color: isSelected ? Colors.white : AppTheme.textSecondary,
             ),
           ),
         ),
@@ -266,16 +264,17 @@ class _PlayerSelector extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppTheme.surfaceDark,
+              color: AppTheme.surfaceOffWhite,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: selectedId != null ? color : Colors.white10,
+                color:
+                    selectedId != null ? color : Colors.black.withOpacity(0.05),
                 width: 2,
               ),
               boxShadow: selectedId != null
                   ? [
                       BoxShadow(
-                          color: color.withOpacity(0.2),
+                          color: color.withOpacity(0.1),
                           blurRadius: 10,
                           spreadRadius: 1)
                     ]
@@ -289,12 +288,13 @@ class _PlayerSelector extends StatelessWidget {
                       ? Color(int.parse(selectedPlayer.avatarColorHex,
                               radix: 16))
                           .withOpacity(1.0)
-                      : Colors.white10,
+                      : Colors.black.withOpacity(0.05),
                   child: selectedPlayer != null
                       ? Text(selectedPlayer.name[0],
                           style: const TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 24))
-                      : const Icon(Icons.person_add, color: Colors.white24),
+                      : const Icon(Icons.person_add,
+                          color: AppTheme.textTertiary),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -302,8 +302,9 @@ class _PlayerSelector extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color:
-                        selectedPlayer != null ? Colors.white : Colors.white24,
+                    color: selectedPlayer != null
+                        ? AppTheme.textPrimary
+                        : AppTheme.textTertiary,
                   ),
                 ),
               ],
@@ -317,7 +318,7 @@ class _PlayerSelector extends StatelessWidget {
   void _showPicker(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.surfaceDark,
+      backgroundColor: AppTheme.surfaceWhite,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -346,8 +347,9 @@ class _PlayerSelector extends StatelessWidget {
                       ),
                       title: Text(p.name,
                           style: TextStyle(
-                              color:
-                                  isExcluded ? Colors.white24 : Colors.white)),
+                              color: isExcluded
+                                  ? AppTheme.textTertiary
+                                  : AppTheme.textPrimary)),
                       onTap: isExcluded
                           ? null
                           : () {
@@ -355,8 +357,7 @@ class _PlayerSelector extends StatelessWidget {
                               Navigator.pop(context);
                             },
                       trailing: p.id == selectedId
-                          ? const Icon(Icons.check,
-                              color: AppTheme.mikadoYellow)
+                          ? const Icon(Icons.check, color: AppTheme.accentRed)
                           : null,
                     );
                   },

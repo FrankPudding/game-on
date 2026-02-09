@@ -2,81 +2,84 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // British Racing Green
-  static const Color racingGreen = Color(0xFF004225);
-  static const Color racingGreenDark = Color(0xFF002B19);
-  static const Color racingGreenLight = Color(0xFF1A5C3D);
-
-  // Mikado Yellow
-  static const Color mikadoYellow = Color(0xFFFFC40C);
-  static const Color mikadoYellowDim = Color(0xFFCC9D0A);
+  // Primary Red Accent
+  static const Color accentRed = Color(0xFFAE0C00);
+  static const Color accentRedDark = Color(0xFF8B0000);
+  static const Color accentRedLight = Color(0xFFD32F2F);
 
   // Backgrounds
-  static const Color backgroundBlack = Color(0xFF121212);
-  static const Color surfaceDark = Color(0xFF1E1E1E);
-  static const Color surfaceLight = Color(0xFF2C2C2C);
+  static const Color backgroundLight = Color(0xFFF8F9FA);
+  static const Color surfaceWhite = Color(0xFFFFFFFF);
+  static const Color surfaceOffWhite = Color(0xFFF1F3F4);
+
+  // Text
+  static const Color textPrimary = Color(0xFF1A1A1A);
+  static const Color textSecondary = Color(0xFF4A4A4A);
+  static const Color textTertiary = Color(0xFF757575);
 
   // Functional
-  static const Color errorRed = Color(0xFFCF6679);
-  static const Color successGreen = Color(0xFF03DAC6);
+  static const Color errorRed = Color(0xFFB00020);
+  static const Color successGreen = Color(0xFF2E7D32);
+  static const Color warningOrange = Color(0xFFF57C00);
 
-  static ThemeData get darkTheme {
+  static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: backgroundBlack,
-      primaryColor: racingGreen,
-      colorScheme: const ColorScheme.dark(
-        primary: racingGreen,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: backgroundLight,
+      primaryColor: accentRed,
+      colorScheme: const ColorScheme.light(
+        primary: accentRed,
         onPrimary: Colors.white,
-        secondary: mikadoYellow,
-        onSecondary: Colors.black,
-        surface: surfaceDark,
-        onSurface: Colors.white,
+        secondary: accentRed,
+        onSecondary: Colors.white,
+        surface: surfaceWhite,
+        onSurface: textPrimary,
         error: errorRed,
-        onError: Colors.black,
+        onError: Colors.white,
       ),
       textTheme: GoogleFonts.outfitTextTheme(
-        ThemeData.dark().textTheme,
+        ThemeData.light().textTheme,
       ).copyWith(
         displayLarge: GoogleFonts.outfit(
           fontSize: 32,
           fontWeight: FontWeight.bold,
-          color: Colors.white,
+          color: textPrimary,
         ),
         displayMedium: GoogleFonts.outfit(
           fontSize: 24,
           fontWeight: FontWeight.bold,
-          color: Colors.white,
+          color: textPrimary,
         ),
         bodyLarge: GoogleFonts.inter(
           fontSize: 16,
-          color: Colors.white70,
+          color: textPrimary,
         ),
         bodyMedium: GoogleFonts.inter(
           fontSize: 14,
-          color: Colors.white60,
+          color: textSecondary,
         ),
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: racingGreen,
+        backgroundColor: accentRed,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
       ),
       cardTheme: CardThemeData(
-        color: surfaceDark,
+        color: surfaceWhite,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.black.withOpacity(0.05), width: 1),
         ),
-        elevation: 4,
+        elevation: 2,
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: mikadoYellow,
-          foregroundColor: Colors.black,
-          elevation: 4,
+          backgroundColor: accentRed,
+          foregroundColor: Colors.white,
+          elevation: 2,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -88,64 +91,69 @@ class AppTheme {
         ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: mikadoYellow,
-        foregroundColor: Colors.black,
+        backgroundColor: accentRed,
+        foregroundColor: Colors.white,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: surfaceLight,
+        fillColor: surfaceOffWhite,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide:
+              BorderSide(color: Colors.black.withOpacity(0.1), width: 1),
+        ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: mikadoYellow, width: 2),
+          borderSide: const BorderSide(color: accentRed, width: 2),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        labelStyle: const TextStyle(color: Colors.white70),
+        labelStyle: const TextStyle(color: textSecondary),
         floatingLabelStyle: WidgetStateTextStyle.resolveWith((states) {
           if (states.contains(WidgetState.focused)) {
             return const TextStyle(
-                color: mikadoYellow, fontWeight: FontWeight.bold);
+                color: accentRed, fontWeight: FontWeight.bold);
           }
-          return const TextStyle(color: Colors.white70);
+          return const TextStyle(color: textSecondary);
         }),
-        hintStyle: const TextStyle(color: Colors.white38),
+        hintStyle: const TextStyle(color: textTertiary),
         prefixIconColor: WidgetStateColor.resolveWith((states) {
           if (states.contains(WidgetState.focused)) {
-            return mikadoYellow;
+            return accentRed;
           }
-          return Colors.white70;
+          return textSecondary;
         }),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: backgroundBlack,
-        indicatorColor: mikadoYellow,
+        backgroundColor: surfaceWhite,
+        indicatorColor: accentRed.withOpacity(0.1),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: Colors.black);
+            return const IconThemeData(color: accentRed, size: 28);
           }
-          return const IconThemeData(color: Colors.white70);
+          return const IconThemeData(color: textSecondary);
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return GoogleFonts.outfit(
-              color: mikadoYellow,
+              color: accentRed,
               fontWeight: FontWeight.bold,
               fontSize: 12,
             );
           }
           return GoogleFonts.outfit(
-            color: Colors.white70,
+            color: textSecondary,
             fontSize: 12,
           );
         }),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: Colors.white70,
+          foregroundColor: accentRed,
           textStyle: GoogleFonts.outfit(
             fontWeight: FontWeight.w600,
             fontSize: 16,
@@ -154,8 +162,8 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: mikadoYellow,
-          side: const BorderSide(color: mikadoYellow, width: 1.5),
+          foregroundColor: accentRed,
+          side: const BorderSide(color: accentRed, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -164,6 +172,20 @@ class AppTheme {
             fontWeight: FontWeight.bold,
             fontSize: 16,
           ),
+        ),
+      ),
+      tabBarTheme: TabBarThemeData(
+        indicatorColor: Colors.white,
+        labelColor: Colors.white,
+        unselectedLabelColor: Colors.white.withOpacity(0.7),
+        indicatorSize: TabBarIndicatorSize.tab,
+        labelStyle: GoogleFonts.outfit(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
+        unselectedLabelStyle: GoogleFonts.outfit(
+          fontWeight: FontWeight.w500,
+          fontSize: 14,
         ),
       ),
     );
