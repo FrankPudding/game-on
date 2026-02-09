@@ -52,22 +52,39 @@ class HiveLeagueRepository implements LeagueRepository {
   Future<void> addPlayer({
     required String leagueId,
     required String name,
+    String? userId,
+    String? icon,
   }) async {
-    final userId = _uuid.v4();
-    final userModel = UserHiveModel(
-      id: userId,
-      name: name,
-      avatarColorHex: 'AE0C00', // Brand Red
-    );
-    await _userBox.put(userId, userModel);
+    String finalUserId;
+    String finalName = name;
+    String? finalIcon = icon;
+
+    if (userId != null) {
+      finalUserId = userId;
+      final user = _userBox.get(userId);
+      if (user != null) {
+        if (finalName.isEmpty) finalName = user.name;
+        finalIcon ??= user.icon;
+      }
+    } else {
+      finalUserId = _uuid.v4();
+      final userModel = UserHiveModel(
+        id: finalUserId,
+        name: name,
+        avatarColorHex: 'AE0C00', // Brand Red
+        icon: icon,
+      );
+      await _userBox.put(finalUserId, userModel);
+    }
 
     final leaguePlayerId = _uuid.v4();
     final leaguePlayerModel = LeaguePlayerHiveModel(
       id: leaguePlayerId,
-      playerId: userId,
+      playerId: finalUserId,
       leagueId: leagueId,
-      name: name,
+      name: finalName,
       avatarColorHex: 'AE0C00',
+      icon: finalIcon,
     );
     await _playerBox.put(leaguePlayerId, leaguePlayerModel);
   }

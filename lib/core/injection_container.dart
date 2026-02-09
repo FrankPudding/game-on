@@ -7,8 +7,10 @@ import '../data/models/hive/match_participant_hive_model.dart';
 import '../data/models/hive/simple_match_hive_model.dart';
 import '../data/repositories/hive/hive_league_repository.dart';
 import '../data/repositories/hive/hive_simple_match_repository.dart';
+import '../data/repositories/hive/hive_user_repository.dart';
 import '../domain/repositories/league_repository.dart';
 import '../domain/repositories/simple_match_repository.dart';
+import '../domain/repositories/user_repository.dart';
 import 'config.dart';
 
 final sl = GetIt.instance;
@@ -61,6 +63,10 @@ Future<void> _initHive() async {
           userBox,
           leaguePlayerBox,
         ));
+  }
+
+  if (!sl.isRegistered<UserRepository>()) {
+    sl.registerLazySingleton<UserRepository>(() => HiveUserRepository(userBox));
   }
 
   if (!sl.isRegistered<SimpleMatchRepository>()) {

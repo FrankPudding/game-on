@@ -8,6 +8,8 @@ abstract class LeagueRepository extends Repository<League, String> {
   Future<void> addPlayer({
     required String leagueId,
     required String name,
+    String? userId,
+    String? icon,
   });
 
   List<LeaguePlayer> getLeaguePlayers(String leagueId);

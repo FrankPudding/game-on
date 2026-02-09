@@ -22,13 +22,14 @@ class LeaguePlayerHiveModelAdapter extends TypeAdapter<LeaguePlayerHiveModel> {
       leagueId: fields[2] as String,
       name: fields[3] as String,
       avatarColorHex: fields[4] as String,
+      icon: fields[5] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, LeaguePlayerHiveModel obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -38,7 +39,9 @@ class LeaguePlayerHiveModelAdapter extends TypeAdapter<LeaguePlayerHiveModel> {
       ..writeByte(3)
       ..write(obj.name)
       ..writeByte(4)
-      ..write(obj.avatarColorHex);
+      ..write(obj.avatarColorHex)
+      ..writeByte(5)
+      ..write(obj.icon);
   }
 
   @override

@@ -14,10 +14,14 @@ class UserHiveModel extends HiveObject {
   @HiveField(2)
   final String avatarColorHex;
 
+  @HiveField(3)
+  final String? icon;
+
   UserHiveModel({
     required this.id,
     required this.name,
     required this.avatarColorHex,
+    this.icon,
   });
 
   factory UserHiveModel.fromDomain(User user) {
@@ -25,6 +29,7 @@ class UserHiveModel extends HiveObject {
       id: user.id,
       name: user.name,
       avatarColorHex: user.avatarColorHex,
+      icon: user.icon,
     );
   }
 
@@ -33,6 +38,7 @@ class UserHiveModel extends HiveObject {
       id: id,
       name: name,
       avatarColorHex: avatarColorHex,
+      icon: icon,
     );
   }
 }

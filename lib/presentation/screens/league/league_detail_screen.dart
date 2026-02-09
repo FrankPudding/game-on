@@ -6,6 +6,7 @@ import '../../../domain/entities/league_player.dart';
 import '../../../domain/entities/simple_match.dart';
 import '../../../providers/league_detail_provider.dart';
 import '../../../providers/leagues_provider.dart';
+import '../../../providers/users_provider.dart';
 import '../../theme/app_theme.dart';
 import '../match/log_match_screen.dart';
 
@@ -243,15 +244,18 @@ class _StandingsTab extends StatelessWidget {
                             radius: 14,
                             backgroundColor:
                                 AppTheme.accentRed.withOpacity(0.1),
-                            child: Text(
-                              player.name.isNotEmpty
-                                  ? player.name[0].toUpperCase()
-                                  : '?',
-                              style: const TextStyle(
-                                  color: AppTheme.accentRed,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold),
-                            ),
+                            child: player.icon != null
+                                ? Text(player.icon!,
+                                    style: const TextStyle(fontSize: 14))
+                                : Text(
+                                    player.name.isNotEmpty
+                                        ? player.name[0].toUpperCase()
+                                        : '?',
+                                    style: const TextStyle(
+                                        color: AppTheme.accentRed,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold),
+                                  ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -368,7 +372,7 @@ class _MatchesTab extends StatelessWidget {
             (p) => p.id == match.winnerId,
             orElse: () => _unknownPlayer(),
           );
-          title = 'Winner: ${winner.name}';
+          title = 'Winner: ${winner.icon ?? ""} ${winner.name}';
         }
 
         return Card(
@@ -403,21 +407,47 @@ class _AddPlayerDialog extends ConsumerStatefulWidget {
 }
 
 class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
-  final _controller = TextEditingController();
+  final _nameController = TextEditingController();
+  String? _selectedUserId;
+  String? _selectedIcon = '👤';
   bool _isLoading = false;
+  bool _isNewUser = true;
+
+  final List<String> _icons = [
+    '👤',
+    '🎮',
+    '⚽',
+    '🏀',
+    '🎾',
+    '🎳',
+    '🎯',
+    '🏎️',
+    '🧙',
+    '🥷'
+  ];
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
 
   Future<void> _submit() async {
-    final name = _controller.text.trim();
-    if (name.isEmpty) return;
+    final name = _nameController.text.trim();
+    if (name.isEmpty && _selectedUserId == null) return;
 
     setState(() => _isLoading = true);
     try {
-      await ref
-          .read(leagueDetailProvider(widget.leagueId).notifier)
-          .addPlayer(name);
+      await ref.read(leagueDetailProvider(widget.leagueId).notifier).addPlayer(
+            name: name,
+            userId: _isNewUser ? null : _selectedUserId,
+            icon: _selectedIcon,
+          );
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      // Handle error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error adding player: $e')),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -425,13 +455,110 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final usersAsync = ref.watch(usersProvider);
+
     return AlertDialog(
       title: const Text('Add Player'),
-      content: TextField(
-        controller: _controller,
-        decoration: const InputDecoration(hintText: 'Player Name'),
-        textCapitalization: TextCapitalization.words,
-        autofocus: true,
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // User Selection Type
+            Row(
+              children: [
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Text('New User'),
+                    selected: _isNewUser,
+                    onSelected: (val) => setState(() => _isNewUser = true),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Text('Existing'),
+                    selected: !_isNewUser,
+                    onSelected: (val) => setState(() => _isNewUser = false),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            if (!_isNewUser)
+              usersAsync.when(
+                data: (users) => Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: DropdownButtonFormField<String>(
+                    value: _selectedUserId,
+                    decoration: const InputDecoration(
+                      labelText: 'Select User',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: users.map((user) {
+                      return DropdownMenuItem(
+                        value: user.id,
+                        child: Text('${user.icon ?? "👤"} ${user.name}'),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        _selectedUserId = val;
+                        final user = users.firstWhere((u) => u.id == val);
+                        if (user.icon != null) _selectedIcon = user.icon;
+                      });
+                    },
+                  ),
+                ),
+                loading: () => const Center(
+                    child: Padding(
+                  padding: EdgeInsets.only(bottom: 16),
+                  child: CircularProgressIndicator(),
+                )),
+                error: (e, _) => Text('Error loading users: $e'),
+              ),
+
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: _isNewUser ? 'Player Name' : 'Nickname (Optional)',
+                hintText: _isNewUser ? 'Enter name' : 'Defaults to user name',
+                border: const OutlineInputBorder(),
+              ),
+              textCapitalization: TextCapitalization.words,
+              autofocus: _isNewUser,
+            ),
+
+            const SizedBox(height: 16),
+            const Text('Choose Icon',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: _icons.map((icon) {
+                return InkWell(
+                  onTap: () => setState(() => _selectedIcon = icon),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: _selectedIcon == icon
+                          ? AppTheme.accentRed.withOpacity(0.2)
+                          : Colors.transparent,
+                      border: Border.all(
+                        color: _selectedIcon == icon
+                            ? AppTheme.accentRed
+                            : Colors.grey.withOpacity(0.3),
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(icon, style: const TextStyle(fontSize: 24)),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(
@@ -443,7 +570,7 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
           child: _isLoading
               ? const SizedBox(
                   width: 16, height: 16, child: CircularProgressIndicator())
-              : const Text('Add'),
+              : const Text('Add to League'),
         ),
       ],
     );

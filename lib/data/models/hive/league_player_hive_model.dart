@@ -20,12 +20,16 @@ class LeaguePlayerHiveModel extends HiveObject {
   @HiveField(4)
   final String avatarColorHex;
 
+  @HiveField(5)
+  final String? icon;
+
   LeaguePlayerHiveModel({
     required this.id,
     required this.playerId,
     required this.leagueId,
     required this.name,
     required this.avatarColorHex,
+    this.icon,
   });
 
   factory LeaguePlayerHiveModel.fromDomain(LeaguePlayer player) {
@@ -35,6 +39,7 @@ class LeaguePlayerHiveModel extends HiveObject {
       leagueId: player.leagueId,
       name: player.name,
       avatarColorHex: player.avatarColorHex,
+      icon: player.icon,
     );
   }
 
@@ -45,6 +50,7 @@ class LeaguePlayerHiveModel extends HiveObject {
       leagueId: leagueId,
       name: name,
       avatarColorHex: avatarColorHex,
+      icon: icon,
     );
   }
 }

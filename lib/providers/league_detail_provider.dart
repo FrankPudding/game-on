@@ -115,10 +115,19 @@ class LeagueDetailNotifier
     state = await AsyncValue.guard(() => _fetchData());
   }
 
-  Future<void> addPlayer(String name) async {
+  Future<void> addPlayer({
+    required String name,
+    String? userId,
+    String? icon,
+  }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      await _leagueRepo.addPlayer(leagueId: _leagueId, name: name);
+      await _leagueRepo.addPlayer(
+        leagueId: _leagueId,
+        name: name,
+        userId: userId,
+        icon: icon,
+      );
       return _fetchData();
     });
   }

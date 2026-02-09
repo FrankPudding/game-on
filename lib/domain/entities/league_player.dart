@@ -3,6 +3,7 @@ class LeaguePlayer {
   final String playerId;
   final String leagueId;
   final String name;
+  final String? icon;
   final String avatarColorHex;
 
   LeaguePlayer({
@@ -11,6 +12,7 @@ class LeaguePlayer {
     required this.leagueId,
     required this.name,
     required this.avatarColorHex,
+    this.icon,
   });
 
   LeaguePlayer copyWith({
@@ -18,6 +20,7 @@ class LeaguePlayer {
     String? playerId,
     String? leagueId,
     String? name,
+    String? icon,
     String? avatarColorHex,
   }) {
     return LeaguePlayer(
@@ -25,6 +28,7 @@ class LeaguePlayer {
       playerId: playerId ?? this.playerId,
       leagueId: leagueId ?? this.leagueId,
       name: name ?? this.name,
+      icon: icon ?? this.icon,
       avatarColorHex: avatarColorHex ?? this.avatarColorHex,
     );
   }
