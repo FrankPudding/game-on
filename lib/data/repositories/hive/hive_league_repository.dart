@@ -57,7 +57,7 @@ class HiveLeagueRepository implements LeagueRepository {
     final userModel = UserHiveModel(
       id: userId,
       name: name,
-      avatarColorHex: 'FFC40C', // Default yellow
+      avatarColorHex: 'AE0C00', // Brand Red
     );
     await _userBox.put(userId, userModel);
 
@@ -67,7 +67,7 @@ class HiveLeagueRepository implements LeagueRepository {
       playerId: userId,
       leagueId: leagueId,
       name: name,
-      avatarColorHex: 'FFC40C',
+      avatarColorHex: 'AE0C00',
     );
     await _playerBox.put(leaguePlayerId, leaguePlayerModel);
   }

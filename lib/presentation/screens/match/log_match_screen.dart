@@ -112,9 +112,8 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
                         players: state.players,
                         excludeId: _loserId,
                         onSelected: (id) => setState(() => _winnerId = id),
-                        color: _isDraw
-                            ? AppTheme.accentRed
-                            : AppTheme.successGreen,
+                        color:
+                            _isDraw ? AppTheme.accentRed : AppTheme.accentRed,
                       ),
                     ),
                     const Padding(
