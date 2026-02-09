@@ -9,6 +9,7 @@ import '../../models/match/timed_match.dart';
 import '../../models/match/frames_match.dart';
 import '../../models/match/tennis_match.dart';
 import '../../providers/league_detail_provider.dart';
+import '../../providers/leagues_provider.dart';
 import '../../theme/app_theme.dart';
 import '../match/log_match_screen.dart';
 import '../match/live_scoring_screen.dart';
@@ -41,6 +42,40 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
     super.dispose();
   }
 
+  Future<void> _deleteLeague() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete League?'),
+        content: const Text(
+          'This will permanently remove the league and all its match history. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorRed),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      // Use the leaguesProvider to delete so the HomeScreen updates
+      await ref.read(leaguesProvider.notifier).deleteLeague(widget.league.id);
+      if (mounted) {
+        Navigator.pop(context); // Back to HomeScreen
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('League deleted')),
+        );
+      }
+    }
+  }
+
   void _showAddPlayerDialog() {
     showDialog(
       context: context,
@@ -69,6 +104,24 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
           IconButton(
             icon: const Icon(Icons.person_add),
             onPressed: _showAddPlayerDialog,
+          ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'delete') _deleteLeague();
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, color: AppTheme.errorRed),
+                    SizedBox(width: 8),
+                    Text('Delete League',
+                        style: TextStyle(color: AppTheme.errorRed)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

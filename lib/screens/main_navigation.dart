@@ -13,6 +13,12 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
+  final List<String> _titles = [
+    'My Leagues',
+    'Match History',
+    'Settings',
+  ];
+
   final List<Widget> _screens = [
     const HomeScreen(),
     const Center(child: Text('History')),
@@ -22,6 +28,10 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text(_titles[_currentIndex]),
+        centerTitle: false,
+      ),
       body: _screens[_currentIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,

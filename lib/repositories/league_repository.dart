@@ -146,30 +146,65 @@ class LeagueRepository {
     final league = await DatabaseService.leagues.get(id);
     if (league == null) return;
 
-    await DatabaseService.leagues.delete(id);
+    // 1. Delete associated Players
+    final playerIds = DatabaseService.leaguePlayers.values
+        .where((p) => p.leagueId == id)
+        .map((p) => p.id)
+        .toList();
+    for (final pid in playerIds) {
+      await DatabaseService.leaguePlayers.delete(pid);
+    }
 
-    // Cleanup based on system
+    // 2. Delete Matches and Participants for all systems
+    // We iterate through all match boxes and delete any matching this leagueId
+    final allMatchBoxes = [
+      DatabaseService.simpleMatches,
+      DatabaseService.firstToMatches,
+      DatabaseService.timedMatches,
+      DatabaseService.framesMatches,
+      DatabaseService.tennisMatches,
+    ];
+
+    for (final box in allMatchBoxes) {
+      final matchesToDelete = box.values
+          .where((m) => (m as dynamic).leagueId == id)
+          .map((m) => (m as dynamic).id as String)
+          .toList();
+
+      for (final mid in matchesToDelete) {
+        // Delete participants for this match
+        final participantsToDelete = DatabaseService.matchParticipants.values
+            .where((p) => p.matchId == mid)
+            .map((p) => p.id)
+            .toList();
+        for (final paid in participantsToDelete) {
+          await DatabaseService.matchParticipants.delete(paid);
+        }
+        await box.delete(mid);
+      }
+    }
+
+    // 3. Delete Configs
     switch (league.scoringSystem) {
       case ScoringSystem.simple:
         await DatabaseService.simpleConfigs.delete(id);
         break;
       case ScoringSystem.firstTo:
-        final box = await Hive.openBox<FirstToConfig>('first_to_configs');
-        await box.delete(id);
+        await DatabaseService.firstToConfigs.delete(id);
         break;
       case ScoringSystem.timed:
-        final box = await Hive.openBox<TimedConfig>('timed_configs');
-        await box.delete(id);
+        await DatabaseService.timedConfigs.delete(id);
         break;
       case ScoringSystem.frames:
-        final box = await Hive.openBox<FramesConfig>('frames_configs');
-        await box.delete(id);
+        await DatabaseService.framesConfigs.delete(id);
         break;
       case ScoringSystem.tennis:
-        final box = await Hive.openBox<TennisConfig>('tennis_configs');
-        await box.delete(id);
+        await DatabaseService.tennisConfigs.delete(id);
         break;
     }
+
+    // 4. Finally delete the league
+    await DatabaseService.leagues.delete(id);
   }
 
   Future<void> addPlayer({

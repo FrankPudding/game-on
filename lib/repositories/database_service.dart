@@ -96,10 +96,36 @@ class DatabaseService {
   static Box<League> get leagues => Hive.box<League>(boxLeagues);
   static Box<LeaguePlayer> get leaguePlayers =>
       Hive.box<LeaguePlayer>(boxLeaguePlayers);
+  static Box<MatchParticipant> get matchParticipants =>
+      Hive.box<MatchParticipant>(boxMatchParticipants);
+
+  // Simple
   static Box<SimpleConfig> get simpleConfigs =>
       Hive.box<SimpleConfig>(boxSimpleConfigs);
   static Box<SimpleMatch> get simpleMatches =>
       Hive.box<SimpleMatch>(boxSimpleMatches);
-  static Box<MatchParticipant> get matchParticipants =>
-      Hive.box<MatchParticipant>(boxMatchParticipants);
+
+  // First To
+  static Box<FirstToMatch> get firstToMatches =>
+      Hive.box<FirstToMatch>('first_to_matches');
+  static Box<FirstToConfig> get firstToConfigs =>
+      Hive.box<FirstToConfig>('first_to_configs');
+
+  // Timed
+  static Box<TimedMatch> get timedMatches =>
+      Hive.box<TimedMatch>('timed_matches');
+  static Box<TimedConfig> get timedConfigs =>
+      Hive.box<TimedConfig>('timed_configs');
+
+  // Frames
+  static Box<FramesMatch> get framesMatches =>
+      Hive.box<FramesMatch>('frames_matches');
+  static Box<FramesConfig> get framesConfigs =>
+      Hive.box<FramesConfig>('frames_configs');
+
+  // Tennis
+  static Box<TennisMatch> get tennisMatches =>
+      Hive.box<TennisMatch>('tennis_matches');
+  static Box<TennisConfig> get tennisConfigs =>
+      Hive.box<TennisConfig>('tennis_configs');
 }
