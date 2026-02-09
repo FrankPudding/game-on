@@ -86,13 +86,12 @@ class LeagueDetailNotifier
 
     for (final participant in allParticipants) {
       final playerId = participant.playerId;
-      if (playerStats.containsKey(playerId)) {
-        final current = playerStats[playerId]!;
-        playerStats[playerId] = current.copyWith(
-          points: current.points + (participant.pointsEarned ?? 0).toInt(),
-          matchesPlayed: current.matchesPlayed + 1,
-        );
-      }
+      final current = playerStats[playerId] ??
+          const PlayerStats(points: 0, matchesPlayed: 0);
+      playerStats[playerId] = current.copyWith(
+        points: current.points + (participant.pointsEarned ?? 0).toInt(),
+        matchesPlayed: current.matchesPlayed + 1,
+      );
     }
 
     // Sort players by points (descending)

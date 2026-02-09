@@ -7,10 +7,6 @@
 - **Scoring Systems**:
   - **Simple (Available)**: Standard Win/Loss/Draw (e.g., Board games, Casual play).
   - **Coming Soon**: First To, Timed, Frames, and Tennis scoring types.
-- **Premium UI/UX**:
-  - Interactive hero-style player selection.
-  - Dynamic standings that update in real-time.
-  - Beautiful "British Racing Green" and "Mikado Yellow" theme.
 - **Local-First Architecture**: 
   - Lightning-fast performance with **Hive** local storage.
   - Works perfectly offline—great for flights or basements.
@@ -65,3 +61,16 @@
 ## 📄 License
 
 This project is licensed under the Polyform Noncommercial License 1.0.0 - see the [LICENSE](LICENSE) file for details.
+
+## Test Coverage
+
+| Category | Coverage (Lines) |
+|----------|------------------|
+| **Total Project** | 30.2% |
+| **Domain & Providers** | 53.1% |
+| **Data Layer** | 31.8% |
+
+To generate a full coverage report, run:
+```bash
+flutter test --coverage
+```

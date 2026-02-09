@@ -1,0 +1,33 @@
+# Contributing to Game On
+
+Thank you for your interest in contributing! This project follows strict testing guidelines to ensure stability and reliability.
+
+## Running Tests
+
+### Unit Tests
+Run unit tests (no external dependencies):
+```bash
+flutter test test/unit
+```
+
+### Integration Tests
+Run integration tests (repositories and UI):
+```bash
+flutter test test/integration
+```
+
+### All Tests & Coverage
+```bash
+flutter test --coverage
+```
+> [!NOTE]
+> Coverage is automatically updated in the `README.md` via GitHub Actions on every push to the `main` branch.
+
+## Testing Philosophy
+- **Unit Layer (`test/unit`)**: 100% coverage preferred. No external dependencies. Includes Domain and Provider logic.
+- **Integration Layer (`test/integration`)**: Test interactions with Hive and UI components.
+
+## Test Naming Conventions
+- Test files should be located in `test/unit/` or `test/integration/`, mirroring `lib/`.
+- Test files must end with `_test.dart`.
+- Group related tests using `group()` and provide descriptive `test()` names.
