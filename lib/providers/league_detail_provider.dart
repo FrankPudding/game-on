@@ -1,13 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/league_player.dart';
-import '../models/match_participant.dart';
-import '../repositories/league_repository.dart';
-import '../repositories/match_repository.dart';
-import '../repositories/database_service.dart';
+import 'package:uuid/uuid.dart';
+import '../domain/entities/league_player.dart';
+import '../domain/entities/match_participant.dart';
+import '../domain/entities/simple_match.dart';
+import '../domain/repositories/league_repository.dart';
+import '../domain/repositories/simple_match_repository.dart';
+import '../core/injection_container.dart';
 import 'leagues_provider.dart';
 
 // Match Repository Provider
-final matchRepositoryProvider = Provider((ref) => MatchRepository());
+final simpleMatchRepositoryProvider = Provider<SimpleMatchRepository>((ref) {
+  return sl<SimpleMatchRepository>();
+});
 
 // State Class
 class PlayerStats {
@@ -29,7 +33,7 @@ class PlayerStats {
 
 class LeagueDetailState {
   final List<LeaguePlayer> players;
-  final List<dynamic> matches; // Can be SimpleMatch, FirstToMatch, etc.
+  final List<SimpleMatch> matches;
   final Map<String, PlayerStats> playerStats; // leaguePlayerId -> stats
 
   const LeagueDetailState({
@@ -48,25 +52,26 @@ final leagueDetailProvider = AsyncNotifierProvider.family<LeagueDetailNotifier,
 class LeagueDetailNotifier
     extends FamilyAsyncNotifier<LeagueDetailState, String> {
   late final LeagueRepository _leagueRepo;
-  late final MatchRepository _matchRepo;
+  late final SimpleMatchRepository _matchRepo;
   late String _leagueId;
+  final _uuid = const Uuid();
 
   @override
   Future<LeagueDetailState> build(String arg) async {
     _leagueId = arg;
     _leagueRepo = ref.read(leagueRepositoryProvider);
-    _matchRepo = ref.read(matchRepositoryProvider);
+    _matchRepo = ref.read(simpleMatchRepositoryProvider);
 
     return _fetchData();
   }
 
   Future<LeagueDetailState> _fetchData() async {
-    final league = await _leagueRepo.getLeague(_leagueId);
+    final league = await _leagueRepo.get(_leagueId);
     if (league == null) throw Exception('League not found');
 
     final rawPlayers = _leagueRepo.getLeaguePlayers(_leagueId);
-    final matches =
-        await _matchRepo.getMatches(_leagueId, league.scoringSystem);
+    final matches = await _matchRepo.getByLeague(_leagueId);
+    matches.sort((a, b) => b.playedAt.compareTo(a.playedAt));
 
     // Dynamic stat calculation
     final playerStats = <String, PlayerStats>{};
@@ -75,17 +80,16 @@ class LeagueDetailNotifier
     }
 
     // Get all participants for these matches
-    final matchIds = matches.map((m) => (m as dynamic).id as String).toSet();
-    final allParticipants = DatabaseService.matchParticipants.values
-        .where((p) => matchIds.contains(p.matchId))
-        .toList();
+    final matchIds = matches.map((m) => m.id).toList();
+    final allParticipants =
+        await _matchRepo.getParticipantsForMatches(matchIds);
 
     for (final participant in allParticipants) {
       final playerId = participant.playerId;
       if (playerStats.containsKey(playerId)) {
         final current = playerStats[playerId]!;
         playerStats[playerId] = current.copyWith(
-          points: current.points + (participant.pointsEarned ?? 0),
+          points: current.points + (participant.pointsEarned ?? 0).toInt(),
           matchesPlayed: current.matchesPlayed + 1,
         );
       }
@@ -126,11 +130,42 @@ class LeagueDetailNotifier
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      await _matchRepo.logSimpleMatch(
-          leagueId: _leagueId,
-          winnerId: winnerId,
-          loserId: loserId,
-          isDraw: isDraw);
+      final league = await _leagueRepo.get(_leagueId);
+      if (league == null) return _fetchData();
+
+      final matchId = _uuid.v4();
+      final match = SimpleMatch(
+        id: matchId,
+        leagueId: _leagueId,
+        playedAt: DateTime.now(),
+        isComplete: true,
+        isDraw: isDraw,
+        winnerId: isDraw ? null : winnerId,
+      );
+
+      final winnerPoints = isDraw ? league.pointsForDraw : league.pointsForWin;
+      final loserPoints = isDraw ? league.pointsForDraw : league.pointsForLoss;
+
+      final participants = [
+        MatchParticipant(
+          id: _uuid.v4(),
+          playerId: winnerId,
+          matchId: matchId,
+          score: null,
+          isWinner: isDraw ? null : true,
+          pointsEarned: winnerPoints,
+        ),
+        MatchParticipant(
+          id: _uuid.v4(),
+          playerId: loserId,
+          matchId: matchId,
+          score: null,
+          isWinner: isDraw ? null : false,
+          pointsEarned: loserPoints,
+        ),
+      ];
+
+      await _matchRepo.logSimpleMatch(match: match, participants: participants);
       return _fetchData();
     });
   }

@@ -1,9 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/league.dart';
-import '../repositories/league_repository.dart';
+import '../domain/entities/league.dart';
+import '../domain/repositories/league_repository.dart';
+import '../core/injection_container.dart';
 
 final leagueRepositoryProvider = Provider<LeagueRepository>((ref) {
-  return LeagueRepository();
+  return sl<LeagueRepository>();
 });
 
 final leaguesProvider =
@@ -17,10 +18,11 @@ class LeaguesNotifier extends AsyncNotifier<List<League>> {
   @override
   Future<List<League>> build() async {
     _repository = ref.read(leagueRepositoryProvider);
-    return _repository.getAllLeagues();
+    return _repository.getAll();
   }
 
-  Future<void> addSimpleLeague({
+  Future<void> addLeague({
+    required String id,
     required String name,
     required int pointsForWin,
     required int pointsForDraw,
@@ -28,95 +30,24 @@ class LeaguesNotifier extends AsyncNotifier<List<League>> {
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      await _repository.createSimpleLeague(
+      final league = League(
+        id: id,
         name: name,
+        createdAt: DateTime.now(),
         pointsForWin: pointsForWin,
         pointsForDraw: pointsForDraw,
         pointsForLoss: pointsForLoss,
       );
-      return _repository.getAllLeagues();
-    });
-  }
-
-  Future<void> addFirstToLeague({
-    required String name,
-    required int targetScore,
-    required int winByMargin,
-    required List<int> placementPoints,
-  }) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      await _repository.createFirstToLeague(
-        name: name,
-        targetScore: targetScore,
-        winByMargin: winByMargin,
-        placementPoints: placementPoints,
-      );
-      return _repository.getAllLeagues();
-    });
-  }
-
-  Future<void> addTimedLeague({
-    required String name,
-    required bool lowerScoreWins,
-    required List<int> placementPoints,
-  }) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      await _repository.createTimedLeague(
-        name: name,
-        lowerScoreWins: lowerScoreWins,
-        placementPoints: placementPoints,
-      );
-      return _repository.getAllLeagues();
-    });
-  }
-
-  Future<void> addFramesLeague({
-    required String name,
-    required int framesToWin,
-    required String frameType,
-    int? frameTargetScore,
-    required List<int> placementPoints,
-  }) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      await _repository.createFramesLeague(
-        name: name,
-        framesToWin: framesToWin,
-        frameType: frameType,
-        frameTargetScore: frameTargetScore,
-        placementPoints: placementPoints,
-      );
-      return _repository.getAllLeagues();
-    });
-  }
-
-  Future<void> addTennisLeague({
-    required String name,
-    required int setsToWin,
-    required int gamesPerSet,
-    required int tiebreakAt,
-    required List<int> placementPoints,
-  }) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      await _repository.createTennisLeague(
-        name: name,
-        setsToWin: setsToWin,
-        gamesPerSet: gamesPerSet,
-        tiebreakAt: tiebreakAt,
-        placementPoints: placementPoints,
-      );
-      return _repository.getAllLeagues();
+      await _repository.put(league);
+      return _repository.getAll();
     });
   }
 
   Future<void> deleteLeague(String id) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      await _repository.deleteLeague(id);
-      return _repository.getAllLeagues();
+      await _repository.delete(id);
+      return _repository.getAll();
     });
   }
 }

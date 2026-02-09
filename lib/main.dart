@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'repositories/database_service.dart';
-import 'screens/main_navigation.dart';
-import 'theme/app_theme.dart';
+import 'core/config.dart';
+import 'core/injection_container.dart';
+import 'presentation/screens/main_navigation.dart';
+import 'presentation/theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    print('DEBUG: Initializing database...');
-    await DatabaseService.init();
-    print('DEBUG: Database initialized.');
+    debugPrint('Initializing app...');
+    await initInjection(AppConfig());
+    debugPrint('Initialization complete.');
 
     runApp(
       const ProviderScope(
@@ -18,8 +19,8 @@ void main() async {
       ),
     );
   } catch (e, stack) {
-    print('CRITICAL ERROR during initialization: $e');
-    print(stack);
+    debugPrint('CRITICAL ERROR during initialization: $e');
+    debugPrint(stack.toString());
 
     runApp(
       MaterialApp(
