@@ -8,23 +8,18 @@ part 'league_player.g.dart';
 class LeaguePlayer extends HiveObject {
   @HiveField(0)
   final String id;
-  
+
   @HiveField(1)
   final String playerId; // Use 'id' for JSON key if matching User ID
-  
+
   @HiveField(2)
   final String leagueId;
 
   @HiveField(3)
-  final String name; 
-  
+  final String name;
+
   @HiveField(4)
   final String avatarColorHex;
-  
-  // Total points in the league (denormalized for performance)
-  @HiveField(5)
-  @JsonKey(defaultValue: 0)
-  final int totalPoints;
 
   LeaguePlayer({
     required this.id,
@@ -32,10 +27,10 @@ class LeaguePlayer extends HiveObject {
     required this.leagueId,
     required this.name,
     required this.avatarColorHex,
-    this.totalPoints = 0,
   });
 
-  factory LeaguePlayer.fromJson(Map<String, dynamic> json) => _$LeaguePlayerFromJson(json);
+  factory LeaguePlayer.fromJson(Map<String, dynamic> json) =>
+      _$LeaguePlayerFromJson(json);
   Map<String, dynamic> toJson() => _$LeaguePlayerToJson(this);
 
   LeaguePlayer copyWith({
@@ -44,7 +39,6 @@ class LeaguePlayer extends HiveObject {
     String? leagueId,
     String? name,
     String? avatarColorHex,
-    int? totalPoints,
   }) {
     return LeaguePlayer(
       id: id ?? this.id,
@@ -52,7 +46,6 @@ class LeaguePlayer extends HiveObject {
       leagueId: leagueId ?? this.leagueId,
       name: name ?? this.name,
       avatarColorHex: avatarColorHex ?? this.avatarColorHex,
-      totalPoints: totalPoints ?? this.totalPoints,
     );
   }
 }

@@ -226,7 +226,6 @@ class LeagueRepository {
       leagueId: leagueId,
       name: name,
       avatarColorHex: 'FFC40C',
-      totalPoints: 0,
     );
     await DatabaseService.leaguePlayers.put(leaguePlayerId, leaguePlayer);
   }

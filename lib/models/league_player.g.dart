@@ -22,14 +22,13 @@ class LeaguePlayerAdapter extends TypeAdapter<LeaguePlayer> {
       leagueId: fields[2] as String,
       name: fields[3] as String,
       avatarColorHex: fields[4] as String,
-      totalPoints: fields[5] as int,
     );
   }
 
   @override
   void write(BinaryWriter writer, LeaguePlayer obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -39,9 +38,7 @@ class LeaguePlayerAdapter extends TypeAdapter<LeaguePlayer> {
       ..writeByte(3)
       ..write(obj.name)
       ..writeByte(4)
-      ..write(obj.avatarColorHex)
-      ..writeByte(5)
-      ..write(obj.totalPoints);
+      ..write(obj.avatarColorHex);
   }
 
   @override
@@ -65,7 +62,6 @@ LeaguePlayer _$LeaguePlayerFromJson(Map<String, dynamic> json) => LeaguePlayer(
       leagueId: json['leagueId'] as String,
       name: json['name'] as String,
       avatarColorHex: json['avatarColorHex'] as String,
-      totalPoints: (json['totalPoints'] as num?)?.toInt() ?? 0,
     );
 
 Map<String, dynamic> _$LeaguePlayerToJson(LeaguePlayer instance) =>
@@ -75,5 +71,4 @@ Map<String, dynamic> _$LeaguePlayerToJson(LeaguePlayer instance) =>
       'leagueId': instance.leagueId,
       'name': instance.name,
       'avatarColorHex': instance.avatarColorHex,
-      'totalPoints': instance.totalPoints,
     };

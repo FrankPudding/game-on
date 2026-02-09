@@ -93,22 +93,6 @@ class MatchRepository {
     await DatabaseService.matchParticipants
         .put(loserParticipant.id, loserParticipant);
 
-    // 5. Update Player Stats
-    final winner = DatabaseService.leaguePlayers.get(winnerId)!;
-    final loser = DatabaseService.leaguePlayers.get(loserId)!;
-
-    // Create new player objects with updated stats (immutable-ish)
-    // LeaguePlayer is HiveObject so we can just update fields and save() if method exists,
-    // or put() again. CopyWith is safer.
-
-    final updatedWinner = winner.copyWith(
-      totalPoints: winner.totalPoints + winnerPoints,
-    );
-    final updatedLoser = loser.copyWith(
-      totalPoints: loser.totalPoints + loserPoints,
-    );
-
-    await DatabaseService.leaguePlayers.put(winnerId, updatedWinner);
-    await DatabaseService.leaguePlayers.put(loserId, updatedLoser);
+    // 5. Update Player Stats is no longer needed as stats are calculated dynamically
   }
 }

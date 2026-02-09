@@ -1,21 +1,41 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/league.dart';
 import '../models/league_player.dart';
+import '../models/match_participant.dart';
 import '../repositories/league_repository.dart';
 import '../repositories/match_repository.dart';
+import '../repositories/database_service.dart';
 import 'leagues_provider.dart';
 
 // Match Repository Provider
 final matchRepositoryProvider = Provider((ref) => MatchRepository());
 
 // State Class
+class PlayerStats {
+  final int points;
+  final int matchesPlayed;
+
+  const PlayerStats({
+    required this.points,
+    required this.matchesPlayed,
+  });
+
+  PlayerStats copyWith({int? points, int? matchesPlayed}) {
+    return PlayerStats(
+      points: points ?? this.points,
+      matchesPlayed: matchesPlayed ?? this.matchesPlayed,
+    );
+  }
+}
+
 class LeagueDetailState {
   final List<LeaguePlayer> players;
   final List<dynamic> matches; // Can be SimpleMatch, FirstToMatch, etc.
+  final Map<String, PlayerStats> playerStats; // leaguePlayerId -> stats
 
   const LeagueDetailState({
     required this.players,
     required this.matches,
+    required this.playerStats,
   });
 }
 
@@ -44,14 +64,46 @@ class LeagueDetailNotifier
     final league = await _leagueRepo.getLeague(_leagueId);
     if (league == null) throw Exception('League not found');
 
-    // Fetch players sorted by points (descending)
-    final players = _leagueRepo.getLeaguePlayers(_leagueId)
-      ..sort((a, b) => b.totalPoints.compareTo(a.totalPoints));
-
+    final rawPlayers = _leagueRepo.getLeaguePlayers(_leagueId);
     final matches =
         await _matchRepo.getMatches(_leagueId, league.scoringSystem);
 
-    return LeagueDetailState(players: players, matches: matches);
+    // Dynamic stat calculation
+    final playerStats = <String, PlayerStats>{};
+    for (final player in rawPlayers) {
+      playerStats[player.id] = const PlayerStats(points: 0, matchesPlayed: 0);
+    }
+
+    // Get all participants for these matches
+    final matchIds = matches.map((m) => (m as dynamic).id as String).toSet();
+    final allParticipants = DatabaseService.matchParticipants.values
+        .where((p) => matchIds.contains(p.matchId))
+        .toList();
+
+    for (final participant in allParticipants) {
+      final playerId = participant.playerId;
+      if (playerStats.containsKey(playerId)) {
+        final current = playerStats[playerId]!;
+        playerStats[playerId] = current.copyWith(
+          points: current.points + (participant.pointsEarned ?? 0),
+          matchesPlayed: current.matchesPlayed + 1,
+        );
+      }
+    }
+
+    // Sort players by points (descending)
+    final sortedPlayers = List<LeaguePlayer>.from(rawPlayers)
+      ..sort((a, b) {
+        final ptsA = playerStats[a.id]?.points ?? 0;
+        final ptsB = playerStats[b.id]?.points ?? 0;
+        return ptsB.compareTo(ptsA);
+      });
+
+    return LeagueDetailState(
+      players: sortedPlayers,
+      matches: matches,
+      playerStats: playerStats,
+    );
   }
 
   Future<void> refresh() async {

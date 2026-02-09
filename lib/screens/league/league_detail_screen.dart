@@ -127,7 +127,10 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
           controller: _tabController,
           children: [
             _StandingsTab(
-                players: state.players, onAddPlayer: _showAddPlayerDialog),
+              players: state.players,
+              playerStats: state.playerStats,
+              onAddPlayer: _showAddPlayerDialog,
+            ),
             _MatchesTab(
               matches: state.matches,
               players: state.players, // Pass players for name lookup
@@ -168,9 +171,14 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
 
 class _StandingsTab extends StatelessWidget {
   final List<LeaguePlayer> players;
+  final Map<String, PlayerStats> playerStats;
   final VoidCallback onAddPlayer;
 
-  const _StandingsTab({required this.players, required this.onAddPlayer});
+  const _StandingsTab({
+    required this.players,
+    required this.playerStats,
+    required this.onAddPlayer,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -180,7 +188,7 @@ class _StandingsTab extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.leaderboard,
-                size: 64, color: Colors.white.withOpacity(0.2)),
+                size: 64, color: AppTheme.textTertiary.withOpacity(0.2)),
             const SizedBox(height: 16),
             const Text('No players yet'),
             const SizedBox(height: 8),
@@ -193,32 +201,153 @@ class _StandingsTab extends StatelessWidget {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: players.length,
-      itemBuilder: (context, index) {
-        final player = players[index];
-        return Card(
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: AppTheme.accentRed,
-              foregroundColor: Colors.white,
-              child: Text(
-                  player.name.isNotEmpty ? player.name[0].toUpperCase() : '?'),
-            ),
-            title: Text(player.name,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            trailing: Text(
-              '${player.totalPoints} pts',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: AppTheme.accentRed,
-              ),
+    return Column(
+      children: [
+        // Table Header
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppTheme.backgroundLight,
+            border: Border(
+              bottom: BorderSide(color: Colors.black.withOpacity(0.1)),
             ),
           ),
-        );
-      },
+          child: Row(
+            children: [
+              const SizedBox(width: 32, child: Text('#', style: _headerStyle)),
+              const Expanded(child: Text('PLAYER', style: _headerStyle)),
+              _buildHeaderCell('P', 'Matches Played'),
+              const SizedBox(width: 16),
+              _buildHeaderCell('Pts', 'Total Points',
+                  width: 60, align: TextAlign.right),
+            ],
+          ),
+        ),
+        // Standings List
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            itemCount: players.length,
+            separatorBuilder: (context, index) => const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24),
+              child: Divider(height: 1),
+            ),
+            itemBuilder: (context, index) {
+              final player = players[index];
+              final stats = playerStats[player.id] ??
+                  const PlayerStats(points: 0, matchesPlayed: 0);
+              final isTop3 = index < 3;
+
+              return Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                child: Row(
+                  children: [
+                    // Rank
+                    SizedBox(
+                      width: 32,
+                      child: Text(
+                        '${index + 1}',
+                        style: TextStyle(
+                          fontWeight:
+                              isTop3 ? FontWeight.bold : FontWeight.normal,
+                          color: isTop3
+                              ? AppTheme.accentRed
+                              : AppTheme.textSecondary,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    // Player Info
+                    Expanded(
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 14,
+                            backgroundColor:
+                                AppTheme.accentRed.withOpacity(0.1),
+                            child: Text(
+                              player.name.isNotEmpty
+                                  ? player.name[0].toUpperCase()
+                                  : '?',
+                              style: const TextStyle(
+                                  color: AppTheme.accentRed,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              player.name,
+                              style: TextStyle(
+                                fontWeight:
+                                    isTop3 ? FontWeight.bold : FontWeight.w500,
+                                color: AppTheme.textPrimary,
+                                fontSize: 16,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Matches Played
+                    SizedBox(
+                      width: 40,
+                      child: Text(
+                        '${stats.matchesPlayed}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Points
+                    SizedBox(
+                      width: 60,
+                      child: Text(
+                        '${stats.points}',
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
+                          color: AppTheme.accentRed,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  static const _headerStyle = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w900,
+    color: AppTheme.textTertiary,
+    letterSpacing: 1.2,
+  );
+
+  Widget _buildHeaderCell(String label, String tooltip,
+      {double width = 40, TextAlign align = TextAlign.center}) {
+    return Tooltip(
+      message: tooltip,
+      triggerMode: TooltipTriggerMode.tap,
+      child: SizedBox(
+        width: width,
+        child: Text(
+          label,
+          textAlign: align,
+          style: _headerStyle,
+        ),
+      ),
     );
   }
 }
@@ -293,12 +422,12 @@ class _MatchesTab extends StatelessWidget {
   }
 
   LeaguePlayer _unknownPlayer() => LeaguePlayer(
-      id: '',
-      leagueId: '',
-      playerId: '',
-      name: 'Unknown',
-      avatarColorHex: '',
-      totalPoints: 0);
+        id: '',
+        leagueId: '',
+        playerId: '',
+        name: 'Unknown',
+        avatarColorHex: '',
+      );
 }
 
 class _AddPlayerDialog extends ConsumerStatefulWidget {
