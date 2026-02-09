@@ -9,7 +9,7 @@ class LeaguePlayerHiveModel extends HiveObject {
   final String id;
 
   @HiveField(1)
-  final String playerId;
+  final String userId;
 
   @HiveField(2)
   final String leagueId;
@@ -25,7 +25,7 @@ class LeaguePlayerHiveModel extends HiveObject {
 
   LeaguePlayerHiveModel({
     required this.id,
-    required this.playerId,
+    required this.userId,
     required this.leagueId,
     required this.name,
     required this.avatarColorHex,
@@ -35,7 +35,7 @@ class LeaguePlayerHiveModel extends HiveObject {
   factory LeaguePlayerHiveModel.fromDomain(LeaguePlayer player) {
     return LeaguePlayerHiveModel(
       id: player.id,
-      playerId: player.playerId,
+      userId: player.userId,
       leagueId: player.leagueId,
       name: player.name,
       avatarColorHex: player.avatarColorHex,
@@ -46,7 +46,7 @@ class LeaguePlayerHiveModel extends HiveObject {
   LeaguePlayer toDomain() {
     return LeaguePlayer(
       id: id,
-      playerId: playerId,
+      userId: userId,
       leagueId: leagueId,
       name: name,
       avatarColorHex: avatarColorHex,

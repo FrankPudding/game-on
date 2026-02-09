@@ -392,7 +392,7 @@ class _MatchesTab extends StatelessWidget {
   LeaguePlayer _unknownPlayer() => LeaguePlayer(
         id: '',
         leagueId: '',
-        playerId: '',
+        userId: '',
         name: 'Unknown',
         avatarColorHex: '',
       );

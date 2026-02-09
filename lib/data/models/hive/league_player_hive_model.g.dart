@@ -18,7 +18,7 @@ class LeaguePlayerHiveModelAdapter extends TypeAdapter<LeaguePlayerHiveModel> {
     };
     return LeaguePlayerHiveModel(
       id: fields[0] as String,
-      playerId: fields[1] as String,
+      userId: fields[1] as String,
       leagueId: fields[2] as String,
       name: fields[3] as String,
       avatarColorHex: fields[4] as String,
@@ -33,7 +33,7 @@ class LeaguePlayerHiveModelAdapter extends TypeAdapter<LeaguePlayerHiveModel> {
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.playerId)
+      ..write(obj.userId)
       ..writeByte(2)
       ..write(obj.leagueId)
       ..writeByte(3)

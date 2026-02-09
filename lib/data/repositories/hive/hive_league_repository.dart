@@ -80,7 +80,7 @@ class HiveLeagueRepository implements LeagueRepository {
     final leaguePlayerId = _uuid.v4();
     final leaguePlayerModel = LeaguePlayerHiveModel(
       id: leaguePlayerId,
-      playerId: finalUserId,
+      userId: finalUserId,
       leagueId: leagueId,
       name: finalName,
       avatarColorHex: 'AE0C00',
