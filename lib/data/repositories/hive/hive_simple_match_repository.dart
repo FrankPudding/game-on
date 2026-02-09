@@ -6,10 +6,9 @@ import '../../models/hive/simple_match_hive_model.dart';
 import '../../models/hive/match_participant_hive_model.dart';
 
 class HiveSimpleMatchRepository implements SimpleMatchRepository {
+  HiveSimpleMatchRepository(this._box, this._participantBox);
   final Box<SimpleMatchHiveModel> _box;
   final Box<MatchParticipantHiveModel> _participantBox;
-
-  HiveSimpleMatchRepository(this._box, this._participantBox);
 
   @override
   Future<SimpleMatch?> get(String id) async {

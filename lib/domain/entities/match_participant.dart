@@ -1,11 +1,4 @@
 class MatchParticipant {
-  final String id;
-  final String playerId;
-  final String matchId;
-  final int? score;
-  final bool? isWinner;
-  final int? pointsEarned;
-
   MatchParticipant({
     required this.id,
     required this.playerId,
@@ -14,6 +7,12 @@ class MatchParticipant {
     this.isWinner,
     this.pointsEarned,
   });
+  final String id;
+  final String playerId;
+  final String matchId;
+  final int? score;
+  final bool? isWinner;
+  final int? pointsEarned;
 
   MatchParticipant copyWith({
     String? id,

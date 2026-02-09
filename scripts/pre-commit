@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# Check if we are merging
+if [ -e .git/MERGE_HEAD ]; then
+    echo "Hook skipped during merge."
+    exit 0
+fi
+
+echo "Running pre-commit checks..."
+
+# Check if make is available
+if ! command -v make >/dev/null 2>&1; then
+    echo "Error: make is not installed."
+    exit 1
+fi
+
+# Run the check target
+if make check; then
+    echo "Checks passed!"
+    exit 0
+else
+    echo "Checks failed. Please fix before committing."
+    exit 1
+fi

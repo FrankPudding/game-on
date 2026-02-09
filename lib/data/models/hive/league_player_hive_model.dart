@@ -5,24 +5,6 @@ part 'league_player_hive_model.g.dart';
 
 @HiveType(typeId: 1)
 class LeaguePlayerHiveModel extends HiveObject {
-  @HiveField(0)
-  final String id;
-
-  @HiveField(1)
-  final String userId;
-
-  @HiveField(2)
-  final String leagueId;
-
-  @HiveField(3)
-  final String name;
-
-  @HiveField(4)
-  final String avatarColorHex;
-
-  @HiveField(5)
-  final String? icon;
-
   LeaguePlayerHiveModel({
     required this.id,
     required this.userId,
@@ -42,6 +24,23 @@ class LeaguePlayerHiveModel extends HiveObject {
       icon: player.icon,
     );
   }
+  @HiveField(0)
+  final String id;
+
+  @HiveField(1)
+  final String userId;
+
+  @HiveField(2)
+  final String leagueId;
+
+  @HiveField(3)
+  final String name;
+
+  @HiveField(4)
+  final String avatarColorHex;
+
+  @HiveField(5)
+  final String? icon;
 
   LeaguePlayer toDomain() {
     return LeaguePlayer(

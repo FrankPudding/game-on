@@ -70,7 +70,8 @@ class AppTheme {
         color: surfaceWhite,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: Colors.black.withOpacity(0.05), width: 1),
+          side:
+              BorderSide(color: Colors.black.withValues(alpha: 0.05), width: 1),
         ),
         elevation: 2,
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -104,7 +105,7 @@ class AppTheme {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide:
-              BorderSide(color: Colors.black.withOpacity(0.1), width: 1),
+              BorderSide(color: Colors.black.withValues(alpha: 0.1), width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -130,7 +131,7 @@ class AppTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: surfaceWhite,
-        indicatorColor: accentRed.withOpacity(0.1),
+        indicatorColor: accentRed.withValues(alpha: 0.1),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return const IconThemeData(color: accentRed, size: 28);
@@ -177,7 +178,7 @@ class AppTheme {
       tabBarTheme: TabBarThemeData(
         indicatorColor: Colors.white,
         labelColor: Colors.white,
-        unselectedLabelColor: Colors.white.withOpacity(0.7),
+        unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
         indicatorSize: TabBarIndicatorSize.tab,
         labelStyle: GoogleFonts.outfit(
           fontWeight: FontWeight.bold,

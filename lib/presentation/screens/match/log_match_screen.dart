@@ -5,9 +5,8 @@ import '../../../providers/league_detail_provider.dart';
 import '../../theme/app_theme.dart';
 
 class LogMatchScreen extends ConsumerStatefulWidget {
-  final String leagueId;
-
   const LogMatchScreen({super.key, required this.leagueId});
+  final String leagueId;
 
   @override
   ConsumerState<LogMatchScreen> createState() => _LogMatchScreenState();
@@ -167,7 +166,7 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.05),
+        color: Colors.black.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -193,12 +192,11 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
 }
 
 class _ToggleItem extends StatelessWidget {
+  const _ToggleItem(
+      {required this.label, required this.isSelected, required this.onTap});
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
-
-  const _ToggleItem(
-      {required this.label, required this.isSelected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -225,13 +223,6 @@ class _ToggleItem extends StatelessWidget {
 }
 
 class _PlayerSelector extends StatelessWidget {
-  final String title;
-  final String? selectedId;
-  final List<LeaguePlayer> players;
-  final String? excludeId;
-  final ValueChanged<String> onSelected;
-  final Color color;
-
   const _PlayerSelector({
     required this.title,
     required this.selectedId,
@@ -240,6 +231,12 @@ class _PlayerSelector extends StatelessWidget {
     required this.onSelected,
     required this.color,
   });
+  final String title;
+  final String? selectedId;
+  final List<LeaguePlayer> players;
+  final String? excludeId;
+  final ValueChanged<String> onSelected;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -266,14 +263,15 @@ class _PlayerSelector extends StatelessWidget {
               color: AppTheme.surfaceOffWhite,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color:
-                    selectedId != null ? color : Colors.black.withOpacity(0.05),
+                color: selectedId != null
+                    ? color
+                    : Colors.black.withValues(alpha: 0.05),
                 width: 2,
               ),
               boxShadow: selectedId != null
                   ? [
                       BoxShadow(
-                          color: color.withOpacity(0.1),
+                          color: color.withValues(alpha: 0.1),
                           blurRadius: 10,
                           spreadRadius: 1)
                     ]
@@ -286,8 +284,8 @@ class _PlayerSelector extends StatelessWidget {
                   backgroundColor: selectedPlayer != null
                       ? Color(int.parse(selectedPlayer.avatarColorHex,
                               radix: 16))
-                          .withOpacity(1.0)
-                      : Colors.black.withOpacity(0.05),
+                          .withValues(alpha: 1.0)
+                      : Colors.black.withValues(alpha: 0.05),
                   child: selectedPlayer != null
                       ? Text(selectedPlayer.name[0],
                           style: const TextStyle(
@@ -341,7 +339,7 @@ class _PlayerSelector extends StatelessWidget {
                       leading: CircleAvatar(
                         backgroundColor:
                             Color(int.parse(p.avatarColorHex, radix: 16))
-                                .withOpacity(1.0),
+                                .withValues(alpha: 1.0),
                         child: Text(p.name[0]),
                       ),
                       title: Text(p.name,

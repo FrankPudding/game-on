@@ -1,15 +1,14 @@
 class User {
-  final String id;
-  final String name;
-  final String avatarColorHex;
-  final String? icon;
-
   User({
     required this.id,
     required this.name,
     required this.avatarColorHex,
     this.icon,
   });
+  final String id;
+  final String name;
+  final String avatarColorHex;
+  final String? icon;
 
   User copyWith({
     String? id,

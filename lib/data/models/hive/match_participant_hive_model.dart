@@ -5,24 +5,6 @@ part 'match_participant_hive_model.g.dart';
 
 @HiveType(typeId: 5)
 class MatchParticipantHiveModel extends HiveObject {
-  @HiveField(0)
-  final String id;
-
-  @HiveField(1)
-  final String playerId;
-
-  @HiveField(2)
-  final String matchId;
-
-  @HiveField(3)
-  final int? score;
-
-  @HiveField(4)
-  final bool? isWinner;
-
-  @HiveField(5)
-  final int? pointsEarned;
-
   MatchParticipantHiveModel({
     required this.id,
     required this.playerId,
@@ -42,6 +24,23 @@ class MatchParticipantHiveModel extends HiveObject {
       pointsEarned: participant.pointsEarned,
     );
   }
+  @HiveField(0)
+  final String id;
+
+  @HiveField(1)
+  final String playerId;
+
+  @HiveField(2)
+  final String matchId;
+
+  @HiveField(3)
+  final int? score;
+
+  @HiveField(4)
+  final bool? isWinner;
+
+  @HiveField(5)
+  final int? pointsEarned;
 
   MatchParticipant toDomain() {
     return MatchParticipant(

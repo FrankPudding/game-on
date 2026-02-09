@@ -1,11 +1,4 @@
 class SimpleMatch {
-  final String id;
-  final String leagueId;
-  final DateTime playedAt;
-  final bool isComplete;
-  final bool isDraw;
-  final String? winnerId;
-
   SimpleMatch({
     required this.id,
     required this.leagueId,
@@ -14,6 +7,12 @@ class SimpleMatch {
     this.isDraw = false,
     this.winnerId,
   });
+  final String id;
+  final String leagueId;
+  final DateTime playedAt;
+  final bool isComplete;
+  final bool isDraw;
+  final String? winnerId;
 
   SimpleMatch copyWith({
     String? id,

@@ -5,18 +5,6 @@ part 'user_hive_model.g.dart';
 
 @HiveType(typeId: 0)
 class UserHiveModel extends HiveObject {
-  @HiveField(0)
-  final String id;
-
-  @HiveField(1)
-  final String name;
-
-  @HiveField(2)
-  final String avatarColorHex;
-
-  @HiveField(3)
-  final String? icon;
-
   UserHiveModel({
     required this.id,
     required this.name,
@@ -32,6 +20,17 @@ class UserHiveModel extends HiveObject {
       icon: user.icon,
     );
   }
+  @HiveField(0)
+  final String id;
+
+  @HiveField(1)
+  final String name;
+
+  @HiveField(2)
+  final String avatarColorHex;
+
+  @HiveField(3)
+  final String? icon;
 
   User toDomain() {
     return User(

@@ -11,12 +11,11 @@ import '../../theme/app_theme.dart';
 import '../match/log_match_screen.dart';
 
 class LeagueDetailScreen extends ConsumerStatefulWidget {
-  final League league;
-
   const LeagueDetailScreen({
     super.key,
     required this.league,
   });
+  final League league;
 
   @override
   ConsumerState<LeagueDetailScreen> createState() => _LeagueDetailScreenState();
@@ -152,15 +151,14 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
 }
 
 class _StandingsTab extends StatelessWidget {
-  final List<LeaguePlayer> players;
-  final Map<String, PlayerStats> playerStats;
-  final VoidCallback onAddPlayer;
-
   const _StandingsTab({
     required this.players,
     required this.playerStats,
     required this.onAddPlayer,
   });
+  final List<LeaguePlayer> players;
+  final Map<String, PlayerStats> playerStats;
+  final VoidCallback onAddPlayer;
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +168,7 @@ class _StandingsTab extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.leaderboard,
-                size: 64, color: AppTheme.textTertiary.withOpacity(0.2)),
+                size: 64, color: AppTheme.textTertiary.withValues(alpha: 0.2)),
             const SizedBox(height: 16),
             const Text('No players yet'),
             const SizedBox(height: 8),
@@ -190,7 +188,7 @@ class _StandingsTab extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppTheme.backgroundLight,
             border: Border(
-              bottom: BorderSide(color: Colors.black.withOpacity(0.1)),
+              bottom: BorderSide(color: Colors.black.withValues(alpha: 0.1)),
             ),
           ),
           child: Row(
@@ -243,7 +241,7 @@ class _StandingsTab extends StatelessWidget {
                           CircleAvatar(
                             radius: 14,
                             backgroundColor:
-                                AppTheme.accentRed.withOpacity(0.1),
+                                AppTheme.accentRed.withValues(alpha: 0.1),
                             child: player.icon != null
                                 ? Text(player.icon!,
                                     style: const TextStyle(fontSize: 14))
@@ -332,13 +330,12 @@ class _StandingsTab extends StatelessWidget {
 }
 
 class _MatchesTab extends StatelessWidget {
-  final List<SimpleMatch> matches;
-  final List<LeaguePlayer> players;
-
   const _MatchesTab({
     required this.matches,
     required this.players,
   });
+  final List<SimpleMatch> matches;
+  final List<LeaguePlayer> players;
 
   @override
   Widget build(BuildContext context) {
@@ -347,7 +344,8 @@ class _MatchesTab extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.history, size: 64, color: Colors.white.withOpacity(0.2)),
+            Icon(Icons.history,
+                size: 64, color: Colors.white.withValues(alpha: 0.2)),
             const SizedBox(height: 16),
             const Text('No matches played yet'),
           ],
@@ -399,8 +397,8 @@ class _MatchesTab extends StatelessWidget {
 }
 
 class _AddPlayerDialog extends ConsumerStatefulWidget {
-  final String leagueId;
   const _AddPlayerDialog({required this.leagueId});
+  final String leagueId;
 
   @override
   ConsumerState<_AddPlayerDialog> createState() => _AddPlayerDialogState();
@@ -445,9 +443,11 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
           );
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding player: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error adding player: $e')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -491,7 +491,7 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
                 data: (users) => Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: DropdownButtonFormField<String>(
-                    value: _selectedUserId,
+                    initialValue: _selectedUserId,
                     decoration: const InputDecoration(
                       labelText: 'Select User',
                       border: OutlineInputBorder(),
@@ -543,12 +543,12 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: _selectedIcon == icon
-                          ? AppTheme.accentRed.withOpacity(0.2)
+                          ? AppTheme.accentRed.withValues(alpha: 0.2)
                           : Colors.transparent,
                       border: Border.all(
                         color: _selectedIcon == icon
                             ? AppTheme.accentRed
-                            : Colors.grey.withOpacity(0.3),
+                            : Colors.grey.withValues(alpha: 0.3),
                       ),
                       borderRadius: BorderRadius.circular(8),
                     ),

@@ -8,12 +8,11 @@ import '../../models/hive/user_hive_model.dart';
 import '../../models/hive/league_player_hive_model.dart';
 
 class HiveLeagueRepository implements LeagueRepository {
+  HiveLeagueRepository(this._box, this._userBox, this._playerBox);
   final Box<LeagueHiveModel> _box;
   final Box<UserHiveModel> _userBox;
   final Box<LeaguePlayerHiveModel> _playerBox;
   final _uuid = const Uuid();
-
-  HiveLeagueRepository(this._box, this._userBox, this._playerBox);
 
   @override
   Future<League?> get(String id) async {

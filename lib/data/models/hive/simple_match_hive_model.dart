@@ -5,24 +5,6 @@ part 'simple_match_hive_model.g.dart';
 
 @HiveType(typeId: 6)
 class SimpleMatchHiveModel extends HiveObject {
-  @HiveField(0)
-  final String id;
-
-  @HiveField(1)
-  final String leagueId;
-
-  @HiveField(2)
-  final DateTime playedAt;
-
-  @HiveField(3)
-  final bool isComplete;
-
-  @HiveField(4)
-  final bool isDraw;
-
-  @HiveField(5)
-  final String? winnerId;
-
   SimpleMatchHiveModel({
     required this.id,
     required this.leagueId,
@@ -42,6 +24,23 @@ class SimpleMatchHiveModel extends HiveObject {
       winnerId: match.winnerId,
     );
   }
+  @HiveField(0)
+  final String id;
+
+  @HiveField(1)
+  final String leagueId;
+
+  @HiveField(2)
+  final DateTime playedAt;
+
+  @HiveField(3)
+  final bool isComplete;
+
+  @HiveField(4)
+  final bool isDraw;
+
+  @HiveField(5)
+  final String? winnerId;
 
   SimpleMatch toDomain() {
     return SimpleMatch(

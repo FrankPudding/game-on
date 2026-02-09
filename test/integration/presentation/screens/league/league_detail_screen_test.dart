@@ -18,7 +18,7 @@ void main() {
   late LeagueDetailState tState;
 
   setUpAll(() {
-    registerFallbackValue(AsyncValue.data(
+    registerFallbackValue(const AsyncValue.data(
         LeagueDetailState(players: [], matches: [], playerStats: {})));
   });
 
@@ -73,7 +73,7 @@ void main() {
 
     testWidgets('should show error message on error', (tester) async {
       await tester.pumpWidget(createWidgetWithValue(
-          AsyncValue.error('Error occurred', StackTrace.empty)));
+          const AsyncValue.error('Error occurred', StackTrace.empty)));
       await tester.pump();
       expect(find.textContaining('Error occurred'), findsOneWidget);
     });
@@ -90,10 +90,10 @@ void main() {
     });
 
     testWidgets('should show empty state when no players', (tester) async {
-      final emptyState =
-          const LeagueDetailState(players: [], matches: [], playerStats: {});
+      const emptyState =
+          LeagueDetailState(players: [], matches: [], playerStats: {});
       await tester
-          .pumpWidget(createWidgetWithValue(AsyncValue.data(emptyState)));
+          .pumpWidget(createWidgetWithValue(const AsyncValue.data(emptyState)));
       await tester.pump();
 
       expect(find.text('No players yet'), findsOneWidget);

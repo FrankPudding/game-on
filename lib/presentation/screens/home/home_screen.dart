@@ -23,7 +23,7 @@ class HomeScreen extends ConsumerWidget {
                 Icon(
                   Icons.emoji_events_outlined,
                   size: 80,
-                  color: AppTheme.textTertiary.withOpacity(0.2),
+                  color: AppTheme.textTertiary.withValues(alpha: 0.2),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -68,9 +68,8 @@ class HomeScreen extends ConsumerWidget {
 }
 
 class _LeagueCard extends StatelessWidget {
-  final League league;
-
   const _LeagueCard({required this.league});
+  final League league;
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +95,7 @@ class _LeagueCard extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: AppTheme.accentRed.withOpacity(0.1),
+                      color: AppTheme.accentRed.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(Icons.sports_esports,

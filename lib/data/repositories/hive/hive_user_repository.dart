@@ -4,9 +4,8 @@ import '../../../domain/repositories/user_repository.dart';
 import '../../models/hive/user_hive_model.dart';
 
 class HiveUserRepository implements UserRepository {
-  final Box<UserHiveModel> _box;
-
   HiveUserRepository(this._box);
+  final Box<UserHiveModel> _box;
 
   @override
   Future<User?> get(String id) async {

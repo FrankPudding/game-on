@@ -1,11 +1,4 @@
 class LeaguePlayer {
-  final String id;
-  final String userId;
-  final String leagueId;
-  final String name;
-  final String? icon;
-  final String avatarColorHex;
-
   LeaguePlayer({
     required this.id,
     required this.userId,
@@ -14,6 +7,12 @@ class LeaguePlayer {
     required this.avatarColorHex,
     this.icon,
   });
+  final String id;
+  final String userId;
+  final String leagueId;
+  final String name;
+  final String? icon;
+  final String avatarColorHex;
 
   LeaguePlayer copyWith({
     String? id,

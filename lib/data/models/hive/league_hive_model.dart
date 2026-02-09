@@ -5,27 +5,6 @@ part 'league_hive_model.g.dart';
 
 @HiveType(typeId: 3)
 class LeagueHiveModel extends HiveObject {
-  @HiveField(0)
-  final String id;
-
-  @HiveField(1)
-  final String name;
-
-  @HiveField(2)
-  final DateTime createdAt;
-
-  @HiveField(3)
-  final bool isArchived;
-
-  @HiveField(4)
-  final int pointsForWin;
-
-  @HiveField(5)
-  final int pointsForDraw;
-
-  @HiveField(6)
-  final int pointsForLoss;
-
   LeagueHiveModel({
     required this.id,
     required this.name,
@@ -47,6 +26,26 @@ class LeagueHiveModel extends HiveObject {
       pointsForLoss: league.pointsForLoss,
     );
   }
+  @HiveField(0)
+  final String id;
+
+  @HiveField(1)
+  final String name;
+
+  @HiveField(2)
+  final DateTime createdAt;
+
+  @HiveField(3)
+  final bool isArchived;
+
+  @HiveField(4)
+  final int pointsForWin;
+
+  @HiveField(5)
+  final int pointsForDraw;
+
+  @HiveField(6)
+  final int pointsForLoss;
 
   League toDomain() {
     return League(

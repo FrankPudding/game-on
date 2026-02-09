@@ -1,12 +1,4 @@
 class League {
-  final String id;
-  final String name;
-  final DateTime createdAt;
-  final bool isArchived;
-  final int pointsForWin;
-  final int pointsForDraw;
-  final int pointsForLoss;
-
   League({
     required this.id,
     required this.name,
@@ -16,6 +8,13 @@ class League {
     this.pointsForDraw = 1,
     this.pointsForLoss = 0,
   });
+  final String id;
+  final String name;
+  final DateTime createdAt;
+  final bool isArchived;
+  final int pointsForWin;
+  final int pointsForDraw;
+  final int pointsForLoss;
 
   League copyWith({
     String? id,

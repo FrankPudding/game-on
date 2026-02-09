@@ -19,7 +19,7 @@ void main() {
   late MockSimpleMatchRepository mockMatchRepo;
   late ProviderContainer container;
 
-  final tLeagueId = 'l1';
+  const tLeagueId = 'l1';
   final tLeague =
       League(id: tLeagueId, name: 'Test League', createdAt: DateTime.now());
   final tPlayer1 = LeaguePlayer(
@@ -62,7 +62,7 @@ void main() {
 
   group('LeagueDetailNotifier', () {
     test('initial state should be loading and then data', () async {
-      final notifier = container.listen(
+      container.listen(
           leagueDetailProvider(tLeagueId).notifier, (prev, next) {});
 
       expect(container.read(leagueDetailProvider(tLeagueId)).isLoading, true);

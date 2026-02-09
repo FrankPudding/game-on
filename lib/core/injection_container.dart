@@ -31,8 +31,9 @@ Future<void> initInjection(AppConfig config) async {
 
 Future<void> _initHive() async {
   // Register Adapters
-  if (!Hive.isAdapterRegistered(0))
+  if (!Hive.isAdapterRegistered(0)) {
     Hive.registerAdapter(UserHiveModelAdapter());
+  }
   if (!Hive.isAdapterRegistered(3)) {
     Hive.registerAdapter(LeagueHiveModelAdapter());
   }

@@ -15,13 +15,12 @@ final simpleMatchRepositoryProvider = Provider<SimpleMatchRepository>((ref) {
 
 // State Class
 class PlayerStats {
-  final int points;
-  final int matchesPlayed;
-
   const PlayerStats({
     required this.points,
     required this.matchesPlayed,
   });
+  final int points;
+  final int matchesPlayed;
 
   PlayerStats copyWith({int? points, int? matchesPlayed}) {
     return PlayerStats(
@@ -32,15 +31,16 @@ class PlayerStats {
 }
 
 class LeagueDetailState {
-  final List<LeaguePlayer> players;
-  final List<SimpleMatch> matches;
-  final Map<String, PlayerStats> playerStats; // leaguePlayerId -> stats
+  // leaguePlayerId -> stats
 
   const LeagueDetailState({
     required this.players,
     required this.matches,
     required this.playerStats,
   });
+  final List<LeaguePlayer> players;
+  final List<SimpleMatch> matches;
+  final Map<String, PlayerStats> playerStats;
 }
 
 // Notifier
