@@ -1,4 +1,4 @@
-.PHONY: all format lint fix check
+.PHONY: all format lint fix check check-format coverage
 
 # Default target
 all: format lint
@@ -19,6 +19,11 @@ fix:
 # Check formatting without changing files (for CI)
 check-format:
 	dart format --set-exit-if-changed .
+
+# Update README with current coverage
+coverage:
+	flutter test --coverage
+	dart scripts/update_coverage.dart
 
 # Run all checks (for CI or pre-commit)
 check: check-format lint

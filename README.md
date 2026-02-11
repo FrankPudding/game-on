@@ -66,7 +66,7 @@ This project is licensed under the Polyform Noncommercial License 1.0.0 - see th
 
 | Category | Coverage (Lines) |
 |----------|------------------|
-| **Total Project** | 30.2% |
+| **Total Project** | 30.1% |
 | **Domain & Providers** | 53.1% |
 | **Data Layer** | 31.8% |
 

@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: [ main ]
 
-permissions:
-  contents: write
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -20,12 +17,22 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          cache: true
+
+      - name: Flutter Doctor
+        run: flutter doctor -v
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Run lint and format checks
-        run: make check
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Run format check
+        run: make check-format
+
+      - name: Run lint check
+        run: make lint
 
       - name: Run tests with coverage
         run: flutter test --coverage
@@ -33,10 +40,6 @@ jobs:
       - name: Update README coverage
         run: dart scripts/update_coverage.dart
 
-      - name: Commit and push changes
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Verify README coverage is up to date
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add README.md
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update coverage in README [skip ci]" && git push)
+          git diff --exit-code README.md || (echo "Error: README.md coverage is outdated. Please run 'make coverage' locally and commit the changes." && exit 1)
