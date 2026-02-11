@@ -1,5 +1,5 @@
 import 'package:get_it/get_it.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import '../data/models/hive/user_hive_model.dart';
 import '../data/models/hive/league_hive_model.dart';
 import '../data/models/hive/league_player_hive_model.dart';

@@ -1,4 +1,4 @@
-import 'package:hive/hive.dart';
+import 'package:hive_ce/hive_ce.dart';
 import 'package:uuid/uuid.dart';
 import '../../../domain/entities/league.dart';
 import '../../../domain/entities/league_player.dart';

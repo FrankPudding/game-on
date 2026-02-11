@@ -8,7 +8,7 @@ part of 'league_hive_model.dart';
 
 class LeagueHiveModelAdapter extends TypeAdapter<LeagueHiveModel> {
   @override
-  final int typeId = 3;
+  final typeId = 3;
 
   @override
   LeagueHiveModel read(BinaryReader reader) {
@@ -21,9 +21,9 @@ class LeagueHiveModelAdapter extends TypeAdapter<LeagueHiveModel> {
       name: fields[1] as String,
       createdAt: fields[2] as DateTime,
       isArchived: fields[3] as bool,
-      pointsForWin: fields[4] as int,
-      pointsForDraw: fields[5] as int,
-      pointsForLoss: fields[6] as int,
+      pointsForWin: (fields[4] as num).toInt(),
+      pointsForDraw: (fields[5] as num).toInt(),
+      pointsForLoss: (fields[6] as num).toInt(),
     );
   }
 

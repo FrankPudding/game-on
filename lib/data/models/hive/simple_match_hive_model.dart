@@ -1,4 +1,4 @@
-import 'package:hive/hive.dart';
+import 'package:hive_ce/hive_ce.dart';
 import '../../../../domain/entities/simple_match.dart';
 
 part 'simple_match_hive_model.g.dart';

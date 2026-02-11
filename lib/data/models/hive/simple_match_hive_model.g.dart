@@ -8,7 +8,7 @@ part of 'simple_match_hive_model.dart';
 
 class SimpleMatchHiveModelAdapter extends TypeAdapter<SimpleMatchHiveModel> {
   @override
-  final int typeId = 6;
+  final typeId = 6;
 
   @override
   SimpleMatchHiveModel read(BinaryReader reader) {

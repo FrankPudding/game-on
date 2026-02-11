@@ -17,11 +17,18 @@ flutter test test/integration
 ```
 
 ### All Tests & Coverage
+Run all tests and automatically update the `README.md` coverage table:
+```bash
+make coverage
+```
+Alternatively, you can run the commands manually:
 ```bash
 flutter test --coverage
+dart scripts/update_coverage.dart
 ```
-> [!NOTE]
-> Coverage is automatically updated in the `README.md` via GitHub Actions on every push to the `main` branch.
+
+> [!IMPORTANT]
+> **CI Enforcement**: GitHub Actions will fail if your `README.md` is not in sync with the current test results. Always run `make coverage` before pushing your changes to `main`.
 
 ## Testing Philosophy
 - **Unit Layer (`test/unit`)**: 100% coverage preferred. No external dependencies. Includes Domain and Provider logic.

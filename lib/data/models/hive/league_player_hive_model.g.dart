@@ -8,7 +8,7 @@ part of 'league_player_hive_model.dart';
 
 class LeaguePlayerHiveModelAdapter extends TypeAdapter<LeaguePlayerHiveModel> {
   @override
-  final int typeId = 1;
+  final typeId = 1;
 
   @override
   LeaguePlayerHiveModel read(BinaryReader reader) {

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hive/hive.dart';
+import 'package:hive_ce/hive.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:game_on/data/repositories/hive/hive_league_repository.dart';
 import 'package:game_on/data/models/hive/league_hive_model.dart';

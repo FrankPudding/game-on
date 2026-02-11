@@ -9,7 +9,7 @@ part of 'match_participant_hive_model.dart';
 class MatchParticipantHiveModelAdapter
     extends TypeAdapter<MatchParticipantHiveModel> {
   @override
-  final int typeId = 5;
+  final typeId = 5;
 
   @override
   MatchParticipantHiveModel read(BinaryReader reader) {
@@ -21,9 +21,9 @@ class MatchParticipantHiveModelAdapter
       id: fields[0] as String,
       playerId: fields[1] as String,
       matchId: fields[2] as String,
-      score: fields[3] as int?,
+      score: (fields[3] as num?)?.toInt(),
       isWinner: fields[4] as bool?,
-      pointsEarned: fields[5] as int?,
+      pointsEarned: (fields[5] as num?)?.toInt(),
     );
   }
 
