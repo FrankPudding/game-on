@@ -5,16 +5,18 @@
 import 'package:hive_ce/hive.dart';
 import 'package:game_on/data/models/hive/league_hive_model.dart';
 import 'package:game_on/data/models/hive/league_player_hive_model.dart';
-import 'package:game_on/data/models/hive/match_participant_hive_model.dart';
-import 'package:game_on/data/models/hive/simple_match_hive_model.dart';
+import 'package:game_on/data/models/hive/matches/simple_match_hive_model.dart';
+import 'package:game_on/data/models/hive/ranking_policies/simple_ranking_policy_hive_model.dart';
+import 'package:game_on/data/models/hive/side_hive_model.dart';
 import 'package:game_on/data/models/hive/user_hive_model.dart';
 
 extension HiveRegistrar on HiveInterface {
   void registerAdapters() {
     registerAdapter(LeagueHiveModelAdapter());
     registerAdapter(LeaguePlayerHiveModelAdapter());
-    registerAdapter(MatchParticipantHiveModelAdapter());
+    registerAdapter(SideHiveModelAdapter());
     registerAdapter(SimpleMatchHiveModelAdapter());
+    registerAdapter(SimpleRankingPolicyHiveModelAdapter());
     registerAdapter(UserHiveModelAdapter());
   }
 }
@@ -23,8 +25,9 @@ extension IsolatedHiveRegistrar on IsolatedHiveInterface {
   void registerAdapters() {
     registerAdapter(LeagueHiveModelAdapter());
     registerAdapter(LeaguePlayerHiveModelAdapter());
-    registerAdapter(MatchParticipantHiveModelAdapter());
+    registerAdapter(SideHiveModelAdapter());
     registerAdapter(SimpleMatchHiveModelAdapter());
+    registerAdapter(SimpleRankingPolicyHiveModelAdapter());
     registerAdapter(UserHiveModelAdapter());
   }
 }

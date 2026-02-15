@@ -1,16 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../domain/entities/league_player.dart';
-import '../domain/entities/match_participant.dart';
-import '../domain/entities/simple_match.dart';
+import '../domain/entities/side.dart';
+import '../domain/entities/matches/simple_match.dart';
+import '../domain/entities/ranking_policies/simple_ranking_policy.dart';
+import '../domain/entities/user.dart';
 import '../domain/repositories/league_repository.dart';
-import '../domain/repositories/simple_match_repository.dart';
+import '../domain/repositories/league_player_repository.dart';
+import '../domain/repositories/match/simple_match_repository.dart';
+import '../domain/repositories/user_repository.dart';
 import '../core/injection_container.dart';
 import 'leagues_provider.dart';
+import 'users_provider.dart';
 
 // Match Repository Provider
 final simpleMatchRepositoryProvider = Provider<SimpleMatchRepository>((ref) {
   return sl<SimpleMatchRepository>();
+});
+
+final leaguePlayerRepositoryProvider = Provider<LeaguePlayerRepository>((ref) {
+  return sl<LeaguePlayerRepository>();
 });
 
 // State Class
@@ -31,8 +40,6 @@ class PlayerStats {
 }
 
 class LeagueDetailState {
-  // leaguePlayerId -> stats
-
   const LeagueDetailState({
     required this.players,
     required this.matches,
@@ -52,6 +59,8 @@ final leagueDetailProvider = AsyncNotifierProvider.family<LeagueDetailNotifier,
 class LeagueDetailNotifier
     extends FamilyAsyncNotifier<LeagueDetailState, String> {
   late final LeagueRepository _leagueRepo;
+  late final LeaguePlayerRepository _playerRepo;
+  late final UserRepository _userRepo;
   late final SimpleMatchRepository _matchRepo;
   late String _leagueId;
   final _uuid = const Uuid();
@@ -60,6 +69,8 @@ class LeagueDetailNotifier
   Future<LeagueDetailState> build(String arg) async {
     _leagueId = arg;
     _leagueRepo = ref.read(leagueRepositoryProvider);
+    _playerRepo = ref.read(leaguePlayerRepositoryProvider);
+    _userRepo = ref.read(userRepositoryProvider);
     _matchRepo = ref.read(simpleMatchRepositoryProvider);
 
     return _fetchData();
@@ -69,29 +80,37 @@ class LeagueDetailNotifier
     final league = await _leagueRepo.get(_leagueId);
     if (league == null) throw Exception('League not found');
 
-    final rawPlayers = _leagueRepo.getLeaguePlayers(_leagueId);
+    final rawPlayers = await _playerRepo.getByLeague(_leagueId);
     final matches = await _matchRepo.getByLeague(_leagueId);
     matches.sort((a, b) => b.playedAt.compareTo(a.playedAt));
 
-    // Dynamic stat calculation
+    // Dynamic stat calculation using the league's ranking policy if possible
     final playerStats = <String, PlayerStats>{};
     for (final player in rawPlayers) {
       playerStats[player.id] = const PlayerStats(points: 0, matchesPlayed: 0);
     }
 
-    // Get all participants for these matches
-    final matchIds = matches.map((m) => m.id).toList();
-    final allParticipants =
-        await _matchRepo.getParticipantsForMatches(matchIds);
+    final policy = league.rankingPolicy;
+    if (policy is SimpleRankingPolicy) {
+      for (final match in matches) {
+        if (!match.isComplete) continue;
 
-    for (final participant in allParticipants) {
-      final playerId = participant.playerId;
-      final current = playerStats[playerId] ??
-          const PlayerStats(points: 0, matchesPlayed: 0);
-      playerStats[playerId] = current.copyWith(
-        points: current.points + (participant.pointsEarned ?? 0).toInt(),
-        matchesPlayed: current.matchesPlayed + 1,
-      );
+        for (final side in match.sides) {
+          final isWinner = !match.isDraw && match.winnerSideId == side.id;
+          final points = match.isDraw
+              ? policy.pointsForDraw
+              : (isWinner ? policy.pointsForWin : policy.pointsForLoss);
+
+          for (final playerId in side.playerIds) {
+            final current = playerStats[playerId] ??
+                const PlayerStats(points: 0, matchesPlayed: 0);
+            playerStats[playerId] = current.copyWith(
+              points: current.points + points,
+              matchesPlayed: current.matchesPlayed + 1,
+            );
+          }
+        }
+      }
     }
 
     // Sort players by points (descending)
@@ -121,12 +140,38 @@ class LeagueDetailNotifier
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      await _leagueRepo.addPlayer(
+      String finalUserId;
+      String finalName = name;
+      String? finalIcon = icon;
+
+      if (userId != null) {
+        finalUserId = userId;
+        final user = await _userRepo.get(userId);
+        if (user != null) {
+          if (finalName.isEmpty) finalName = user.name;
+          finalIcon ??= user.icon;
+        }
+      } else {
+        finalUserId = _uuid.v4();
+        final user = User(
+          id: finalUserId,
+          name: name,
+          avatarColorHex: 'AE0C00', // Brand Red
+          icon: icon,
+        );
+        await _userRepo.put(user);
+      }
+
+      final leaguePlayer = LeaguePlayer(
+        id: _uuid.v4(),
+        userId: finalUserId,
         leagueId: _leagueId,
-        name: name,
-        userId: userId,
-        icon: icon,
+        name: finalName,
+        avatarColorHex: 'AE0C00',
+        icon: finalIcon,
       );
+
+      await _playerRepo.put(leaguePlayer);
       return _fetchData();
     });
   }
@@ -138,42 +183,26 @@ class LeagueDetailNotifier
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final league = await _leagueRepo.get(_leagueId);
-      if (league == null) return _fetchData();
+      final winnerSide = Side(
+        id: _uuid.v4(),
+        playerIds: [winnerId],
+      );
+      final loserSide = Side(
+        id: _uuid.v4(),
+        playerIds: [loserId],
+      );
 
-      final matchId = _uuid.v4();
       final match = SimpleMatch(
-        id: matchId,
+        id: _uuid.v4(),
         leagueId: _leagueId,
         playedAt: DateTime.now(),
         isComplete: true,
         isDraw: isDraw,
-        winnerId: isDraw ? null : winnerId,
+        sides: [winnerSide, loserSide],
+        winnerSideId: isDraw ? null : winnerSide.id,
       );
 
-      final winnerPoints = isDraw ? league.pointsForDraw : league.pointsForWin;
-      final loserPoints = isDraw ? league.pointsForDraw : league.pointsForLoss;
-
-      final participants = [
-        MatchParticipant(
-          id: _uuid.v4(),
-          playerId: winnerId,
-          matchId: matchId,
-          score: null,
-          isWinner: isDraw ? null : true,
-          pointsEarned: winnerPoints,
-        ),
-        MatchParticipant(
-          id: _uuid.v4(),
-          playerId: loserId,
-          matchId: matchId,
-          score: null,
-          isWinner: isDraw ? null : false,
-          pointsEarned: loserPoints,
-        ),
-      ];
-
-      await _matchRepo.logSimpleMatch(match: match, participants: participants);
+      await _matchRepo.logSimpleMatch(match: match);
       return _fetchData();
     });
   }

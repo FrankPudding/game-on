@@ -1,5 +1,6 @@
 import 'package:hive_ce/hive_ce.dart';
-import '../../../../domain/entities/simple_match.dart';
+import '../../../../domain/entities/matches/simple_match.dart';
+import '../side_hive_model.dart';
 
 part 'simple_match_hive_model.g.dart';
 
@@ -11,7 +12,8 @@ class SimpleMatchHiveModel extends HiveObject {
     required this.playedAt,
     required this.isComplete,
     required this.isDraw,
-    this.winnerId,
+    this.sides,
+    this.winnerSideId,
   });
 
   factory SimpleMatchHiveModel.fromDomain(SimpleMatch match) {
@@ -21,7 +23,8 @@ class SimpleMatchHiveModel extends HiveObject {
       playedAt: match.playedAt,
       isComplete: match.isComplete,
       isDraw: match.isDraw,
-      winnerId: match.winnerId,
+      sides: match.sides.map((s) => SideHiveModel.fromDomain(s)).toList(),
+      winnerSideId: match.winnerSideId,
     );
   }
   @HiveField(0)
@@ -40,7 +43,10 @@ class SimpleMatchHiveModel extends HiveObject {
   final bool isDraw;
 
   @HiveField(5)
-  final String? winnerId;
+  final String? winnerSideId;
+
+  @HiveField(6)
+  final List<SideHiveModel>? sides;
 
   SimpleMatch toDomain() {
     return SimpleMatch(
@@ -49,7 +55,8 @@ class SimpleMatchHiveModel extends HiveObject {
       playedAt: playedAt,
       isComplete: isComplete,
       isDraw: isDraw,
-      winnerId: winnerId,
+      sides: (sides ?? []).map((s) => s.toDomain()).toList(),
+      winnerSideId: winnerSideId,
     );
   }
 }

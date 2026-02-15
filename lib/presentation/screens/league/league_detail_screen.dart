@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../domain/entities/league.dart';
 import '../../../domain/entities/league_player.dart';
-import '../../../domain/entities/simple_match.dart';
+import '../../../domain/entities/side.dart';
+import '../../../domain/entities/matches/simple_match.dart';
 import '../../../providers/league_detail_provider.dart';
 import '../../../providers/leagues_provider.dart';
 import '../../../providers/users_provider.dart';
@@ -15,7 +16,7 @@ class LeagueDetailScreen extends ConsumerStatefulWidget {
     super.key,
     required this.league,
   });
-  final League league;
+  final League<SimpleMatch> league;
 
   @override
   ConsumerState<LeagueDetailScreen> createState() => _LeagueDetailScreenState();
@@ -365,12 +366,19 @@ class _MatchesTab extends StatelessWidget {
 
         if (match.isDraw) {
           title = 'Draw';
-        } else if (match.winnerId != null) {
-          final winner = players.firstWhere(
-            (p) => p.id == match.winnerId,
-            orElse: () => _unknownPlayer(),
+        } else if (match.winnerSideId != null) {
+          final winnerSide = match.sides.firstWhere(
+            (s) => s.id == match.winnerSideId,
+            orElse: () => Side(id: '', playerIds: []),
           );
-          title = 'Winner: ${winner.icon ?? ""} ${winner.name}';
+          if (winnerSide.playerIds.isNotEmpty) {
+            final winnerId = winnerSide.playerIds.first;
+            final winner = players.firstWhere(
+              (p) => p.id == winnerId,
+              orElse: () => _unknownPlayer(),
+            );
+            title = 'Winner: ${winner.icon ?? ""} ${winner.name}';
+          }
         }
 
         return Card(

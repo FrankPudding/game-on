@@ -1,48 +1,50 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'match_participant_hive_model.dart';
+part of 'simple_match_hive_model.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class MatchParticipantHiveModelAdapter
-    extends TypeAdapter<MatchParticipantHiveModel> {
+class SimpleMatchHiveModelAdapter extends TypeAdapter<SimpleMatchHiveModel> {
   @override
-  final typeId = 5;
+  final typeId = 6;
 
   @override
-  MatchParticipantHiveModel read(BinaryReader reader) {
+  SimpleMatchHiveModel read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return MatchParticipantHiveModel(
+    return SimpleMatchHiveModel(
       id: fields[0] as String,
-      playerId: fields[1] as String,
-      matchId: fields[2] as String,
-      score: (fields[3] as num?)?.toInt(),
-      isWinner: fields[4] as bool?,
-      pointsEarned: (fields[5] as num?)?.toInt(),
+      leagueId: fields[1] as String,
+      playedAt: fields[2] as DateTime,
+      isComplete: fields[3] as bool,
+      isDraw: fields[4] as bool,
+      sides: (fields[6] as List?)?.cast<SideHiveModel>(),
+      winnerSideId: fields[5] as String?,
     );
   }
 
   @override
-  void write(BinaryWriter writer, MatchParticipantHiveModel obj) {
+  void write(BinaryWriter writer, SimpleMatchHiveModel obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.playerId)
+      ..write(obj.leagueId)
       ..writeByte(2)
-      ..write(obj.matchId)
+      ..write(obj.playedAt)
       ..writeByte(3)
-      ..write(obj.score)
+      ..write(obj.isComplete)
       ..writeByte(4)
-      ..write(obj.isWinner)
+      ..write(obj.isDraw)
       ..writeByte(5)
-      ..write(obj.pointsEarned);
+      ..write(obj.winnerSideId)
+      ..writeByte(6)
+      ..write(obj.sides);
   }
 
   @override
@@ -51,7 +53,7 @@ class MatchParticipantHiveModelAdapter
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is MatchParticipantHiveModelAdapter &&
+      other is SimpleMatchHiveModelAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

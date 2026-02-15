@@ -3,15 +3,12 @@ import 'package:hive_ce/hive.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:game_on/data/repositories/hive/hive_league_repository.dart';
 import 'package:game_on/data/models/hive/league_hive_model.dart';
-import 'package:game_on/data/models/hive/user_hive_model.dart';
-import 'package:game_on/data/models/hive/league_player_hive_model.dart';
+import 'package:game_on/data/models/hive/ranking_policies/simple_ranking_policy_hive_model.dart';
 import 'package:game_on/domain/entities/league.dart';
+import 'package:game_on/domain/entities/matches/simple_match.dart';
+import 'package:game_on/domain/entities/ranking_policies/simple_ranking_policy.dart';
 
 class MockLeagueBox extends Mock implements Box<LeagueHiveModel> {}
-
-class MockUserBox extends Mock implements Box<UserHiveModel> {}
-
-class MockPlayerBox extends Mock implements Box<LeaguePlayerHiveModel> {}
 
 void main() {
   setUpAll(() {
@@ -20,32 +17,36 @@ void main() {
         name: '',
         createdAt: DateTime.now(),
         isArchived: false,
-        pointsForWin: 0,
-        pointsForDraw: 0,
-        pointsForLoss: 0));
-    registerFallbackValue(UserHiveModel(id: '', name: '', avatarColorHex: ''));
-    registerFallbackValue(LeaguePlayerHiveModel(
-        id: '', userId: '', leagueId: '', name: '', avatarColorHex: ''));
+        rankingPolicy: SimpleRankingPolicyHiveModel(
+          id: 'rp1',
+          name: 'Standard',
+          pointsForWin: 3,
+          pointsForDraw: 1,
+          pointsForLoss: 0,
+        )));
   });
 
   late HiveLeagueRepository repository;
   late MockLeagueBox mockLeagueBox;
-  late MockUserBox mockUserBox;
-  late MockPlayerBox mockPlayerBox;
 
   setUp(() {
     mockLeagueBox = MockLeagueBox();
-    mockUserBox = MockUserBox();
-    mockPlayerBox = MockPlayerBox();
-    repository =
-        HiveLeagueRepository(mockLeagueBox, mockUserBox, mockPlayerBox);
+    repository = HiveLeagueRepository(mockLeagueBox);
   });
 
   group('HiveLeagueRepository', () {
-    final tLeague = League(
+    final tRankingPolicy = SimpleRankingPolicy(
+      id: 'rp1',
+      name: 'Standard',
+      pointsForWin: 3,
+      pointsForDraw: 1,
+      pointsForLoss: 0,
+    );
+    final tLeague = League<SimpleMatch>(
       id: '1',
       name: 'Test League',
       createdAt: DateTime(2023),
+      rankingPolicy: tRankingPolicy,
     );
     final tModel = LeagueHiveModel.fromDomain(tLeague);
 
@@ -56,6 +57,8 @@ void main() {
 
       expect(result?.id, tLeague.id);
       expect(result?.name, tLeague.name);
+      final policy = result?.rankingPolicy as SimpleRankingPolicy;
+      expect(policy.pointsForWin, 3);
       verify(() => mockLeagueBox.get('1')).called(1);
     });
 
@@ -96,37 +99,6 @@ void main() {
           any(
               that: isA<LeagueHiveModel>()
                   .having((m) => m.isArchived, 'isArchived', true)))).called(1);
-    });
-
-    group('addPlayer', () {
-      test('should create new user and player if userId is null', () async {
-        when(() => mockUserBox.put(any(), any())).thenAnswer((_) async => {});
-        when(() => mockPlayerBox.put(any(), any())).thenAnswer((_) async => {});
-
-        await repository.addPlayer(leagueId: 'l1', name: 'New Player');
-
-        verify(() => mockUserBox.put(any(), any())).called(1);
-        verify(() => mockPlayerBox.put(any(), any())).called(1);
-      });
-
-      test('should use existing user and create player if userId is provided',
-          () async {
-        final tUser = UserHiveModel(
-            id: 'u1', name: 'Existing User', avatarColorHex: 'FFFAAA');
-        when(() => mockUserBox.get('u1')).thenReturn(tUser);
-        when(() => mockPlayerBox.put(any(), any())).thenAnswer((_) async => {});
-
-        await repository.addPlayer(
-            leagueId: 'l1', name: 'Nickname', userId: 'u1');
-
-        verify(() => mockUserBox.get('u1')).called(1);
-        verify(() => mockPlayerBox.put(
-            any(),
-            any(
-                that: isA<LeaguePlayerHiveModel>()
-                    .having((p) => p.userId, 'userId', 'u1')))).called(1);
-        verifyNever(() => mockUserBox.put(any(), any()));
-      });
     });
   });
 }

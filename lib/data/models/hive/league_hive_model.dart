@@ -1,5 +1,9 @@
 import 'package:hive_ce/hive_ce.dart';
 import '../../../../domain/entities/league.dart';
+import '../../../../domain/entities/matches/simple_match.dart';
+import '../../../../domain/entities/ranking_policies/simple_ranking_policy.dart';
+import 'ranking_policy_hive_model.dart';
+import 'ranking_policies/simple_ranking_policy_hive_model.dart';
 
 part 'league_hive_model.g.dart';
 
@@ -10,20 +14,20 @@ class LeagueHiveModel extends HiveObject {
     required this.name,
     required this.createdAt,
     required this.isArchived,
-    required this.pointsForWin,
-    required this.pointsForDraw,
-    required this.pointsForLoss,
+    this.rankingPolicy,
   });
 
   factory LeagueHiveModel.fromDomain(League league) {
+    final policyModel = switch (league.rankingPolicy) {
+      SimpleRankingPolicy p => SimpleRankingPolicyHiveModel.fromDomain(p),
+    };
+
     return LeagueHiveModel(
       id: league.id,
       name: league.name,
       createdAt: league.createdAt,
       isArchived: league.isArchived,
-      pointsForWin: league.pointsForWin,
-      pointsForDraw: league.pointsForDraw,
-      pointsForLoss: league.pointsForLoss,
+      rankingPolicy: policyModel,
     );
   }
   @HiveField(0)
@@ -38,24 +42,21 @@ class LeagueHiveModel extends HiveObject {
   @HiveField(3)
   final bool isArchived;
 
-  @HiveField(4)
-  final int pointsForWin;
+  @HiveField(10)
+  final RankingPolicyHiveModel? rankingPolicy;
 
-  @HiveField(5)
-  final int pointsForDraw;
-
-  @HiveField(6)
-  final int pointsForLoss;
-
-  League toDomain() {
-    return League(
+  League<SimpleMatch> toDomain() {
+    return League<SimpleMatch>(
       id: id,
       name: name,
       createdAt: createdAt,
       isArchived: isArchived,
-      pointsForWin: pointsForWin,
-      pointsForDraw: pointsForDraw,
-      pointsForLoss: pointsForLoss,
+      rankingPolicy: (rankingPolicy ??
+              SimpleRankingPolicyHiveModel(
+                id: 'default_policy',
+                name: 'Standard Policy',
+              ))
+          .toDomain() as SimpleRankingPolicy,
     );
   }
 }

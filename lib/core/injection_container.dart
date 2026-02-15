@@ -3,13 +3,17 @@ import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 import '../data/models/hive/user_hive_model.dart';
 import '../data/models/hive/league_hive_model.dart';
 import '../data/models/hive/league_player_hive_model.dart';
-import '../data/models/hive/match_participant_hive_model.dart';
-import '../data/models/hive/simple_match_hive_model.dart';
+import '../data/models/hive/ranking_policies/simple_ranking_policy_hive_model.dart';
+
+import '../data/models/hive/matches/simple_match_hive_model.dart';
+import '../data/models/hive/side_hive_model.dart';
 import '../data/repositories/hive/hive_league_repository.dart';
-import '../data/repositories/hive/hive_simple_match_repository.dart';
+import '../data/repositories/hive/hive_league_player_repository.dart';
+import '../data/repositories/hive/matches/hive_simple_match_repository.dart';
 import '../data/repositories/hive/hive_user_repository.dart';
 import '../domain/repositories/league_repository.dart';
-import '../domain/repositories/simple_match_repository.dart';
+import '../domain/repositories/league_player_repository.dart';
+import '../domain/repositories/match/simple_match_repository.dart';
 import '../domain/repositories/user_repository.dart';
 import 'config.dart';
 
@@ -40,11 +44,15 @@ Future<void> _initHive() async {
   if (!Hive.isAdapterRegistered(1)) {
     Hive.registerAdapter(LeaguePlayerHiveModelAdapter());
   }
-  if (!Hive.isAdapterRegistered(5)) {
-    Hive.registerAdapter(MatchParticipantHiveModelAdapter());
-  }
+
   if (!Hive.isAdapterRegistered(6)) {
     Hive.registerAdapter(SimpleMatchHiveModelAdapter());
+  }
+  if (!Hive.isAdapterRegistered(8)) {
+    Hive.registerAdapter(SideHiveModelAdapter());
+  }
+  if (!Hive.isAdapterRegistered(9)) {
+    Hive.registerAdapter(SimpleRankingPolicyHiveModelAdapter());
   }
 
   // Open Boxes
@@ -52,8 +60,6 @@ Future<void> _initHive() async {
   final leagueBox = await Hive.openBox<LeagueHiveModel>('leagues');
   final leaguePlayerBox =
       await Hive.openBox<LeaguePlayerHiveModel>('league_players');
-  final matchParticipantBox =
-      await Hive.openBox<MatchParticipantHiveModel>('match_participants');
   final simpleMatchBox =
       await Hive.openBox<SimpleMatchHiveModel>('simple_matches');
 
@@ -61,9 +67,12 @@ Future<void> _initHive() async {
   if (!sl.isRegistered<LeagueRepository>()) {
     sl.registerLazySingleton<LeagueRepository>(() => HiveLeagueRepository(
           leagueBox,
-          userBox,
-          leaguePlayerBox,
         ));
+  }
+
+  if (!sl.isRegistered<LeaguePlayerRepository>()) {
+    sl.registerLazySingleton<LeaguePlayerRepository>(
+        () => HiveLeaguePlayerRepository(leaguePlayerBox));
   }
 
   if (!sl.isRegistered<UserRepository>()) {
@@ -74,7 +83,6 @@ Future<void> _initHive() async {
     sl.registerLazySingleton<SimpleMatchRepository>(
         () => HiveSimpleMatchRepository(
               simpleMatchBox,
-              matchParticipantBox,
             ));
   }
 }

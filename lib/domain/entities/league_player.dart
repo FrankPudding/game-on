@@ -13,22 +13,4 @@ class LeaguePlayer {
   final String name;
   final String? icon;
   final String avatarColorHex;
-
-  LeaguePlayer copyWith({
-    String? id,
-    String? userId,
-    String? leagueId,
-    String? name,
-    String? icon,
-    String? avatarColorHex,
-  }) {
-    return LeaguePlayer(
-      id: id ?? this.id,
-      userId: userId ?? this.userId,
-      leagueId: leagueId ?? this.leagueId,
-      name: name ?? this.name,
-      icon: icon ?? this.icon,
-      avatarColorHex: avatarColorHex ?? this.avatarColorHex,
-    );
-  }
 }
