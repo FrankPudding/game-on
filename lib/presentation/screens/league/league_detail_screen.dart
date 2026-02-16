@@ -16,7 +16,7 @@ class LeagueDetailScreen extends ConsumerStatefulWidget {
     super.key,
     required this.league,
   });
-  final League<SimpleMatch> league;
+  final League league;
 
   @override
   ConsumerState<LeagueDetailScreen> createState() => _LeagueDetailScreenState();

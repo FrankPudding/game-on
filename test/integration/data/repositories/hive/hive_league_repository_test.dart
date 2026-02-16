@@ -3,27 +3,18 @@ import 'package:hive_ce/hive.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:game_on/data/repositories/hive/hive_league_repository.dart';
 import 'package:game_on/data/models/hive/league_hive_model.dart';
-import 'package:game_on/data/models/hive/ranking_policies/simple_ranking_policy_hive_model.dart';
 import 'package:game_on/domain/entities/league.dart';
-import 'package:game_on/domain/entities/matches/simple_match.dart';
-import 'package:game_on/domain/entities/ranking_policies/simple_ranking_policy.dart';
 
 class MockLeagueBox extends Mock implements Box<LeagueHiveModel> {}
 
 void main() {
   setUpAll(() {
     registerFallbackValue(LeagueHiveModel(
-        id: '',
-        name: '',
-        createdAt: DateTime.now(),
-        isArchived: false,
-        rankingPolicy: SimpleRankingPolicyHiveModel(
-          id: 'rp1',
-          name: 'Standard',
-          pointsForWin: 3,
-          pointsForDraw: 1,
-          pointsForLoss: 0,
-        )));
+      id: '',
+      name: '',
+      createdAt: DateTime.now(),
+      isArchived: false,
+    ));
   });
 
   late HiveLeagueRepository repository;
@@ -35,18 +26,10 @@ void main() {
   });
 
   group('HiveLeagueRepository', () {
-    final tRankingPolicy = SimpleRankingPolicy(
-      id: 'rp1',
-      name: 'Standard',
-      pointsForWin: 3,
-      pointsForDraw: 1,
-      pointsForLoss: 0,
-    );
-    final tLeague = League<SimpleMatch>(
+    final tLeague = League(
       id: '1',
       name: 'Test League',
       createdAt: DateTime(2023),
-      rankingPolicy: tRankingPolicy,
     );
     final tModel = LeagueHiveModel.fromDomain(tLeague);
 
@@ -57,8 +40,6 @@ void main() {
 
       expect(result?.id, tLeague.id);
       expect(result?.name, tLeague.name);
-      final policy = result?.rankingPolicy as SimpleRankingPolicy;
-      expect(policy.pointsForWin, 3);
       verify(() => mockLeagueBox.get('1')).called(1);
     });
 

@@ -20,6 +20,7 @@ class SimpleRankingPolicyHiveModelAdapter
     return SimpleRankingPolicyHiveModel(
       id: fields[0] as String,
       name: fields[1] as String,
+      leagueId: fields[5] == null ? '' : fields[5] as String?,
       pointsForWin: fields[2] == null ? 3 : (fields[2] as num).toInt(),
       pointsForDraw: fields[3] == null ? 1 : (fields[3] as num).toInt(),
       pointsForLoss: fields[4] == null ? 0 : (fields[4] as num).toInt(),
@@ -29,7 +30,7 @@ class SimpleRankingPolicyHiveModelAdapter
   @override
   void write(BinaryWriter writer, SimpleRankingPolicyHiveModel obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -39,7 +40,9 @@ class SimpleRankingPolicyHiveModelAdapter
       ..writeByte(3)
       ..write(obj.pointsForDraw)
       ..writeByte(4)
-      ..write(obj.pointsForLoss);
+      ..write(obj.pointsForLoss)
+      ..writeByte(5)
+      ..write(obj.leagueId);
   }
 
   @override

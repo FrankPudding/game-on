@@ -5,8 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:game_on/domain/entities/league.dart';
 import 'package:game_on/domain/entities/league_player.dart';
-import 'package:game_on/domain/entities/matches/simple_match.dart';
-import 'package:game_on/domain/entities/ranking_policies/simple_ranking_policy.dart';
+
 import 'package:game_on/providers/league_detail_provider.dart';
 import 'package:game_on/presentation/screens/league/league_detail_screen.dart';
 
@@ -16,7 +15,7 @@ class MockLeagueDetailNotifier
     implements LeagueDetailNotifier {}
 
 void main() {
-  late League<SimpleMatch> tLeague;
+  late League tLeague;
   late LeagueDetailState tState;
 
   setUpAll(() {
@@ -25,17 +24,10 @@ void main() {
   });
 
   setUp(() {
-    tLeague = League<SimpleMatch>(
+    tLeague = League(
       id: 'l1',
       name: 'Test League',
       createdAt: DateTime.now(),
-      rankingPolicy: SimpleRankingPolicy(
-        id: 'rp1',
-        name: 'Standard',
-        pointsForWin: 3,
-        pointsForDraw: 1,
-        pointsForLoss: 0,
-      ),
     );
 
     tState = LeagueDetailState(

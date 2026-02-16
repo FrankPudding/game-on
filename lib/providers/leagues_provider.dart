@@ -1,28 +1,42 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/entities/league.dart';
-import '../domain/entities/matches/simple_match.dart';
+
 import '../domain/entities/ranking_policies/simple_ranking_policy.dart';
 import '../domain/repositories/league_repository.dart';
 import '../core/injection_container.dart';
+
+import '../domain/repositories/ranking_policy_repository.dart';
+
+import '../application/services/create_league_service.dart';
 
 final leagueRepositoryProvider = Provider<LeagueRepository>((ref) {
   return sl<LeagueRepository>();
 });
 
+final rankingPolicyRepositoryProvider =
+    Provider<RankingPolicyRepository>((ref) {
+  return sl<RankingPolicyRepository>();
+});
+
+final createLeagueServiceProvider = Provider<CreateLeagueService>((ref) {
+  return sl<CreateLeagueService>();
+});
+
 final leaguesProvider =
-    AsyncNotifierProvider<LeaguesNotifier, List<League<SimpleMatch>>>(() {
+    AsyncNotifierProvider<LeaguesNotifier, List<League>>(() {
   return LeaguesNotifier();
 });
 
-class LeaguesNotifier extends AsyncNotifier<List<League<SimpleMatch>>> {
-  late final LeagueRepository _repository;
+class LeaguesNotifier extends AsyncNotifier<List<League>> {
+  late final LeagueRepository _leagueRepository;
+  late final CreateLeagueService _createLeagueService;
 
   @override
-  Future<List<League<SimpleMatch>>> build() async {
-    _repository = ref.read(leagueRepositoryProvider);
-    final leagues = await _repository.getAll();
-    // Sort or filter if needed, for now just return all as SimpleMatch leagues
-    return leagues.cast<League<SimpleMatch>>();
+  Future<List<League>> build() async {
+    _leagueRepository = ref.read(leagueRepositoryProvider);
+    _createLeagueService = ref.read(createLeagueServiceProvider);
+    final leagues = await _leagueRepository.getAll();
+    return leagues;
   }
 
   Future<void> addLeague({
@@ -34,30 +48,36 @@ class LeaguesNotifier extends AsyncNotifier<List<League<SimpleMatch>>> {
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final league = League<SimpleMatch>(
+      final rankingPolicy = SimpleRankingPolicy(
+        id: 'simple_$id',
+        name: 'Simple Ranking Policy',
+        leagueId: id,
+        pointsForWin: pointsForWin,
+        pointsForDraw: pointsForDraw,
+        pointsForLoss: pointsForLoss,
+      );
+
+      await _createLeagueService.execute(
         id: id,
         name: name,
-        createdAt: DateTime.now(),
-        rankingPolicy: SimpleRankingPolicy(
-          id: 'simple_$id',
-          name: 'Simple Ranking Policy',
-          pointsForWin: pointsForWin,
-          pointsForDraw: pointsForDraw,
-          pointsForLoss: pointsForLoss,
-        ),
+        rankingPolicy: rankingPolicy,
       );
-      await _repository.put(league);
-      final leagues = await _repository.getAll();
-      return leagues.cast<League<SimpleMatch>>();
+
+      final leagues = await _leagueRepository.getAll();
+      return leagues;
     });
   }
 
   Future<void> deleteLeague(String id) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      await _repository.delete(id);
-      final leagues = await _repository.getAll();
-      return leagues.cast<League<SimpleMatch>>();
+      await _leagueRepository.delete(id);
+      // We might want to delete the ranking policy too, but for now we follow domain logic
+      // Ideally we should delete related entities or have cascading delete.
+      // But let's just delete the league for now as requested.
+
+      final leagues = await _leagueRepository.getAll();
+      return leagues;
     });
   }
 }

@@ -20,25 +20,22 @@ class LeagueHiveModelAdapter extends TypeAdapter<LeagueHiveModel> {
       id: fields[0] as String,
       name: fields[1] as String,
       createdAt: fields[2] as DateTime,
-      isArchived: fields[3] as bool,
-      rankingPolicy: fields[10] as RankingPolicyHiveModel?,
+      isArchived: fields[4] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, LeagueHiveModel obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
       ..write(obj.name)
       ..writeByte(2)
       ..write(obj.createdAt)
-      ..writeByte(3)
-      ..write(obj.isArchived)
-      ..writeByte(10)
-      ..write(obj.rankingPolicy);
+      ..writeByte(4)
+      ..write(obj.isArchived);
   }
 
   @override

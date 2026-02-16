@@ -66,9 +66,9 @@ This project is licensed under the Polyform Noncommercial License 1.0.0 - see th
 
 | Category | Coverage (Lines) |
 |----------|------------------|
-| **Total Project** | 32.1% |
-| **Domain & Providers** | 60.5% |
-| **Data Layer** | 34.0% |
+| **Total Project** | 29.9% |
+| **Domain & Providers** | 61.4% |
+| **Data Layer** | 26.3% |
 
 To generate a full coverage report, run:
 ```bash

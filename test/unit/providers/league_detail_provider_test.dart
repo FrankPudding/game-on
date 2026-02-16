@@ -11,6 +11,7 @@ import 'package:game_on/domain/repositories/league_repository.dart';
 import 'package:game_on/domain/repositories/league_player_repository.dart';
 import 'package:game_on/domain/repositories/user_repository.dart';
 import 'package:game_on/domain/repositories/match/simple_match_repository.dart';
+import 'package:game_on/domain/repositories/ranking_policy_repository.dart';
 import 'package:game_on/providers/league_detail_provider.dart';
 import 'package:game_on/providers/leagues_provider.dart';
 import 'package:game_on/providers/users_provider.dart';
@@ -24,27 +25,31 @@ class MockUserRepository extends Mock implements UserRepository {}
 
 class MockSimpleMatchRepository extends Mock implements SimpleMatchRepository {}
 
+class MockRankingPolicyRepository extends Mock
+    implements RankingPolicyRepository {}
+
 void main() {
   late MockLeagueRepository mockLeagueRepo;
   late MockLeaguePlayerRepository mockPlayerRepo;
   late MockUserRepository mockUserRepo;
   late MockSimpleMatchRepository mockMatchRepo;
+  late MockRankingPolicyRepository mockPolicyRepo;
   late ProviderContainer container;
 
   const tLeagueId = 'l1';
   final tRankingPolicy = SimpleRankingPolicy(
     id: 'rp1',
     name: 'Standard',
+    leagueId: tLeagueId,
     pointsForWin: 3,
     pointsForDraw: 1,
     pointsForLoss: 0,
   );
 
-  final tLeague = League<SimpleMatch>(
+  final tLeague = League(
     id: tLeagueId,
     name: 'Test League',
     createdAt: DateTime.now(),
-    rankingPolicy: tRankingPolicy,
   );
 
   final tPlayer1 = LeaguePlayer(
@@ -65,6 +70,7 @@ void main() {
     mockPlayerRepo = MockLeaguePlayerRepository();
     mockUserRepo = MockUserRepository();
     mockMatchRepo = MockSimpleMatchRepository();
+    mockPolicyRepo = MockRankingPolicyRepository();
 
     container = ProviderContainer(
       overrides: [
@@ -72,6 +78,7 @@ void main() {
         leaguePlayerRepositoryProvider.overrideWithValue(mockPlayerRepo),
         userRepositoryProvider.overrideWithValue(mockUserRepo),
         simpleMatchRepositoryProvider.overrideWithValue(mockMatchRepo),
+        rankingPolicyRepositoryProvider.overrideWithValue(mockPolicyRepo),
       ],
     );
 
@@ -81,6 +88,8 @@ void main() {
         .thenAnswer((_) async => [tPlayer1, tPlayer2]);
     when(() => mockMatchRepo.getByLeague(tLeagueId))
         .thenAnswer((_) async => []);
+    when(() => mockPolicyRepo.getByLeagueId(tLeagueId))
+        .thenAnswer((_) async => tRankingPolicy);
   });
 
   tearDown(() {

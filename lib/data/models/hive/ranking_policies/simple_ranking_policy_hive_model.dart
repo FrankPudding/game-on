@@ -9,6 +9,7 @@ class SimpleRankingPolicyHiveModel extends RankingPolicyHiveModel {
   SimpleRankingPolicyHiveModel({
     required super.id,
     required super.name,
+    required super.leagueId,
     this.pointsForWin = 3,
     this.pointsForDraw = 1,
     this.pointsForLoss = 0,
@@ -18,6 +19,7 @@ class SimpleRankingPolicyHiveModel extends RankingPolicyHiveModel {
     return SimpleRankingPolicyHiveModel(
       id: policy.id,
       name: policy.name,
+      leagueId: policy.leagueId,
       pointsForWin: policy.pointsForWin,
       pointsForDraw: policy.pointsForDraw,
       pointsForLoss: policy.pointsForLoss,
@@ -38,6 +40,7 @@ class SimpleRankingPolicyHiveModel extends RankingPolicyHiveModel {
     return SimpleRankingPolicy(
       id: id,
       name: name,
+      leagueId: leagueId ?? '',
       pointsForWin: pointsForWin,
       pointsForDraw: pointsForDraw,
       pointsForLoss: pointsForLoss,

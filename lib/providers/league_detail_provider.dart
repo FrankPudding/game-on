@@ -9,6 +9,7 @@ import '../domain/repositories/league_repository.dart';
 import '../domain/repositories/league_player_repository.dart';
 import '../domain/repositories/match/simple_match_repository.dart';
 import '../domain/repositories/user_repository.dart';
+import '../domain/repositories/ranking_policy_repository.dart';
 import '../core/injection_container.dart';
 import 'leagues_provider.dart';
 import 'users_provider.dart';
@@ -62,6 +63,7 @@ class LeagueDetailNotifier
   late final LeaguePlayerRepository _playerRepo;
   late final UserRepository _userRepo;
   late final SimpleMatchRepository _matchRepo;
+  late final RankingPolicyRepository _policyRepo;
   late String _leagueId;
   final _uuid = const Uuid();
 
@@ -72,6 +74,7 @@ class LeagueDetailNotifier
     _playerRepo = ref.read(leaguePlayerRepositoryProvider);
     _userRepo = ref.read(userRepositoryProvider);
     _matchRepo = ref.read(simpleMatchRepositoryProvider);
+    _policyRepo = ref.read(rankingPolicyRepositoryProvider);
 
     return _fetchData();
   }
@@ -90,7 +93,7 @@ class LeagueDetailNotifier
       playerStats[player.id] = const PlayerStats(points: 0, matchesPlayed: 0);
     }
 
-    final policy = league.rankingPolicy;
+    final policy = await _policyRepo.getByLeagueId(_leagueId);
     if (policy is SimpleRankingPolicy) {
       for (final match in matches) {
         if (!match.isComplete) continue;

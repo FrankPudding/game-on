@@ -5,6 +5,7 @@ abstract class RankingPolicyHiveModel extends HiveObject {
   RankingPolicyHiveModel({
     required this.id,
     required this.name,
+    required this.leagueId,
   });
 
   @HiveField(0)
@@ -12,6 +13,9 @@ abstract class RankingPolicyHiveModel extends HiveObject {
 
   @HiveField(1)
   final String name;
+
+  @HiveField(5, defaultValue: '')
+  final String? leagueId;
 
   RankingPolicy toDomain();
 }

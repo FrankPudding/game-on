@@ -7,14 +7,18 @@ import '../data/models/hive/ranking_policies/simple_ranking_policy_hive_model.da
 
 import '../data/models/hive/matches/simple_match_hive_model.dart';
 import '../data/models/hive/side_hive_model.dart';
+import '../data/models/hive/ranking_policy_hive_model.dart';
 import '../data/repositories/hive/hive_league_repository.dart';
 import '../data/repositories/hive/hive_league_player_repository.dart';
 import '../data/repositories/hive/matches/hive_simple_match_repository.dart';
 import '../data/repositories/hive/hive_user_repository.dart';
+import '../data/repositories/hive/hive_ranking_policy_repository.dart';
 import '../domain/repositories/league_repository.dart';
 import '../domain/repositories/league_player_repository.dart';
 import '../domain/repositories/match/simple_match_repository.dart';
 import '../domain/repositories/user_repository.dart';
+import '../domain/repositories/ranking_policy_repository.dart';
+import '../application/services/create_league_service.dart';
 import 'config.dart';
 
 final sl = GetIt.instance;
@@ -62,6 +66,8 @@ Future<void> _initHive() async {
       await Hive.openBox<LeaguePlayerHiveModel>('league_players');
   final simpleMatchBox =
       await Hive.openBox<SimpleMatchHiveModel>('simple_matches');
+  final rankingPolicyBox =
+      await Hive.openBox<RankingPolicyHiveModel>('ranking_policies');
 
   // 2. Register Repositories
   if (!sl.isRegistered<LeagueRepository>()) {
@@ -84,5 +90,20 @@ Future<void> _initHive() async {
         () => HiveSimpleMatchRepository(
               simpleMatchBox,
             ));
+  }
+
+  if (!sl.isRegistered<RankingPolicyRepository>()) {
+    sl.registerLazySingleton<RankingPolicyRepository>(
+        () => HiveRankingPolicyRepository(rankingPolicyBox));
+  }
+
+  // 3. Register Services
+  if (!sl.isRegistered<CreateLeagueService>()) {
+    sl.registerLazySingleton<CreateLeagueService>(
+      () => CreateLeagueService(
+        sl<LeagueRepository>(),
+        sl<RankingPolicyRepository>(),
+      ),
+    );
   }
 }

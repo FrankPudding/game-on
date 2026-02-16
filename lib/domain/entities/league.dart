@@ -1,12 +1,8 @@
-import 'package:game_on/domain/entities/match.dart';
-import 'package:game_on/domain/entities/ranking_policy.dart';
-
-class League<M extends Match> {
+class League {
   League({
     required this.id,
     required this.name,
     required this.createdAt,
-    required this.rankingPolicy,
     this.isArchived = false,
   });
 
@@ -14,21 +10,18 @@ class League<M extends Match> {
   final String name;
   final DateTime createdAt;
   final bool isArchived;
-  final RankingPolicy<M> rankingPolicy;
 
-  League<M> copyWith({
+  League copyWith({
     String? id,
     String? name,
     DateTime? createdAt,
     bool? isArchived,
-    RankingPolicy<M>? rankingPolicy,
   }) {
-    return League<M>(
+    return League(
       id: id ?? this.id,
       name: name ?? this.name,
       createdAt: createdAt ?? this.createdAt,
       isArchived: isArchived ?? this.isArchived,
-      rankingPolicy: rankingPolicy ?? this.rankingPolicy,
     );
   }
 }

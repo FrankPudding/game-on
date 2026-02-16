@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/leagues_provider.dart';
 import '../../../domain/entities/league.dart';
-import '../../../domain/entities/matches/simple_match.dart';
+
 import '../../theme/app_theme.dart';
 import '../league/create_league_screen.dart';
 import '../league/league_detail_screen.dart';
@@ -70,7 +70,7 @@ class HomeScreen extends ConsumerWidget {
 
 class _LeagueCard extends StatelessWidget {
   const _LeagueCard({required this.league});
-  final League<SimpleMatch> league;
+  final League league;
 
   @override
   Widget build(BuildContext context) {
