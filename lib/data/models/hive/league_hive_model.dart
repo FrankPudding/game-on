@@ -29,7 +29,7 @@ class LeagueHiveModel extends HiveObject {
   @HiveField(2)
   final DateTime createdAt;
 
-  @HiveField(4)
+  @HiveField(4, defaultValue: false)
   final bool isArchived;
 
   League toDomain() {

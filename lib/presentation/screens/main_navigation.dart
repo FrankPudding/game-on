@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home/home_screen.dart';
-import 'league/create_league_screen.dart';
+import 'league/select_ranking_policy_screen.dart';
 import '../theme/app_theme.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -64,7 +64,7 @@ class _MainNavigationState extends State<MainNavigation> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const CreateLeagueScreen()),
+                      builder: (context) => const SelectRankingPolicyScreen()),
                 );
               },
               backgroundColor: AppTheme.accentRed,

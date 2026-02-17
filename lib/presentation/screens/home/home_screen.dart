@@ -4,7 +4,7 @@ import '../../../providers/leagues_provider.dart';
 import '../../../domain/entities/league.dart';
 
 import '../../theme/app_theme.dart';
-import '../league/create_league_screen.dart';
+import '../league/select_ranking_policy_screen.dart';
 import '../league/league_detail_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -39,7 +39,7 @@ class HomeScreen extends ConsumerWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const CreateLeagueScreen(),
+                        builder: (context) => const SelectRankingPolicyScreen(),
                       ),
                     );
                   },

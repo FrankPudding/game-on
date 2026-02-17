@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/entities/league.dart';
 
-import '../domain/entities/ranking_policies/simple_ranking_policy.dart';
+import '../domain/entities/ranking_policy.dart';
 import '../domain/repositories/league_repository.dart';
 import '../core/injection_container.dart';
 
@@ -42,21 +42,10 @@ class LeaguesNotifier extends AsyncNotifier<List<League>> {
   Future<void> addLeague({
     required String id,
     required String name,
-    required int pointsForWin,
-    required int pointsForDraw,
-    required int pointsForLoss,
+    required RankingPolicy rankingPolicy,
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      final rankingPolicy = SimpleRankingPolicy(
-        id: 'simple_$id',
-        name: 'Simple Ranking Policy',
-        leagueId: id,
-        pointsForWin: pointsForWin,
-        pointsForDraw: pointsForDraw,
-        pointsForLoss: pointsForLoss,
-      );
-
       await _createLeagueService.execute(
         id: id,
         name: name,

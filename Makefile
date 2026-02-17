@@ -1,4 +1,4 @@
-.PHONY: all format lint fix check check-format coverage
+.PHONY: all format lint fix check check-format coverage serve
 
 # Default target
 all: format lint
@@ -27,3 +27,7 @@ coverage:
 
 # Run all checks (for CI or pre-commit)
 check: check-format lint
+
+# Serve the app at localhost:8080
+serve:
+	flutter run -d web-server --web-port 8080 --web-hostname localhost

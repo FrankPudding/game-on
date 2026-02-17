@@ -20,7 +20,7 @@ class LeagueHiveModelAdapter extends TypeAdapter<LeagueHiveModel> {
       id: fields[0] as String,
       name: fields[1] as String,
       createdAt: fields[2] as DateTime,
-      isArchived: fields[4] as bool,
+      isArchived: fields[4] == null ? false : fields[4] as bool,
     );
   }
 
