@@ -263,6 +263,16 @@ void main() {
           captured.sides.firstWhere((s) => s.id == captured.winnerSideId);
       expect(winnerSide.playerIds, contains('p2'));
     });
+
+    test('deleteMatch should call repository and refresh', () async {
+      when(() => mockMatchRepo.delete('m1')).thenAnswer((_) async => {});
+
+      final notifier = container.read(leagueDetailProvider(tLeagueId).notifier);
+      await notifier.deleteMatch('m1');
+
+      verify(() => mockMatchRepo.delete('m1')).called(1);
+    });
+
     group('Ranking Sort', () {
       test('should sort by points DESC, then matchesPlayed ASC', () async {
         // Player 1: 1 match, 3 points

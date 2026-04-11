@@ -240,4 +240,12 @@ class LeagueDetailNotifier
       return _fetchData();
     });
   }
+
+  Future<void> deleteMatch(String matchId) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      await _matchRepo.delete(matchId);
+      return _fetchData();
+    });
+  }
 }

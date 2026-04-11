@@ -118,6 +118,51 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
     }
   }
 
+  Future<void> _deleteMatch() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Match?'),
+        content: const Text(
+            'This will permanently remove this match record. Standings will be recalculated.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorRed),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      setState(() => _isLoading = true);
+      try {
+        await ref
+            .read(leagueDetailProvider(widget.leagueId).notifier)
+            .deleteMatch(widget.match!.id);
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Match deleted')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('Error: $e'), backgroundColor: AppTheme.errorRed),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final stateAsync = ref.watch(leagueDetailProvider(widget.leagueId));
@@ -126,13 +171,12 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
       appBar: AppBar(
         title: Text(widget.match != null ? 'Edit Match' : 'Log Match'),
         actions: [
-          if (!_isLoading)
-            TextButton(
-              onPressed: _submit,
-              child: const Text('SAVE',
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
+          if (widget.match != null && !_isLoading)
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.white),
+              onPressed: _deleteMatch,
             ),
+          const SizedBox(width: 8),
         ],
       ),
       body: stateAsync.when(
