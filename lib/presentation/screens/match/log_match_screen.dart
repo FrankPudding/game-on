@@ -1,54 +1,105 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/entities/league_player.dart';
+import '../../../domain/entities/matches/simple_match.dart';
 import '../../../providers/league_detail_provider.dart';
 import '../../theme/app_theme.dart';
 
 class LogMatchScreen extends ConsumerStatefulWidget {
-  const LogMatchScreen({super.key, required this.leagueId});
+  const LogMatchScreen({super.key, required this.leagueId, this.match});
   final String leagueId;
+  final SimpleMatch? match;
 
   @override
   ConsumerState<LogMatchScreen> createState() => _LogMatchScreenState();
 }
 
 class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
-  String? _winnerId;
-  String? _loserId;
-  bool _isDraw = false;
+  String? _player1Id;
+  String? _player2Id;
+  String? _winnerSelection; // Stores player1Id, player2Id, or 'draw'
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.match != null) {
+      final match = widget.match!;
+      if (match.sides.length >= 2) {
+        _player1Id = match.sides[0].playerIds.first;
+        _player2Id = match.sides[1].playerIds.first;
+
+        if (match.isDraw) {
+          _winnerSelection = 'draw';
+        } else if (match.winnerSideId != null) {
+          final winnerSide = match.sides.firstWhere(
+              (s) => s.id == match.winnerSideId,
+              orElse: () => match.sides[0]);
+          _winnerSelection = winnerSide.playerIds.first;
+        }
+      }
+    }
+  }
+
+  void _onPlayersChanged() {
+    // Reset winner selection if it's no longer valid
+    if (_winnerSelection != 'draw' &&
+        _winnerSelection != _player1Id &&
+        _winnerSelection != _player2Id) {
+      setState(() => _winnerSelection = null);
+    }
+  }
+
   Future<void> _submit() async {
-    if (_winnerId == null || _loserId == null) {
+    if (_player1Id == null || _player2Id == null || _winnerSelection == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select both players')),
+        const SnackBar(content: Text('Please select players and a winner')),
       );
       return;
     }
 
-    if (_winnerId == _loserId) {
+    if (_player1Id == _player2Id) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Winner and Loser cannot be the same')),
+        const SnackBar(content: Text('Please select two different players')),
       );
       return;
     }
+
+    final isDraw = _winnerSelection == 'draw';
+    final winnerId = isDraw ? _player1Id! : _winnerSelection!;
+    final loserId = isDraw
+        ? _player2Id!
+        : (_winnerSelection == _player1Id ? _player2Id! : _player1Id!);
 
     setState(() => _isLoading = true);
 
     try {
-      await ref
-          .read(leagueDetailProvider(widget.leagueId).notifier)
-          .logSimpleMatch(
-            winnerId: _winnerId!,
-            loserId: _loserId!,
-            isDraw: _isDraw,
-          );
+      if (widget.match != null) {
+        await ref
+            .read(leagueDetailProvider(widget.leagueId).notifier)
+            .updateSimpleMatch(
+              matchId: widget.match!.id,
+              winnerId: winnerId,
+              loserId: loserId,
+              isDraw: isDraw,
+            );
+      } else {
+        await ref
+            .read(leagueDetailProvider(widget.leagueId).notifier)
+            .logSimpleMatch(
+              winnerId: winnerId,
+              loserId: loserId,
+              isDraw: isDraw,
+            );
+      }
 
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Match logged successfully!'),
+          SnackBar(
+            content: Text(widget.match != null
+                ? 'Match updated successfully!'
+                : 'Match logged successfully!'),
             backgroundColor: AppTheme.successGreen,
           ),
         );
@@ -73,7 +124,7 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Log Match'),
+        title: Text(widget.match != null ? 'Edit Match' : 'Log Match'),
         actions: [
           if (!_isLoading)
             TextButton(
@@ -94,25 +145,38 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
             );
           }
 
+          // Auto-select players if there are only 2
+          if (state.players.length == 2 &&
+              (_player1Id == null || _player2Id == null)) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _player1Id = state.players[0].id;
+                  _player2Id = state.players[1].id;
+                });
+              }
+            });
+          }
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildModeToggle(),
-                const SizedBox(height: 32),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: _PlayerSelector(
-                        title: _isDraw ? 'Player 1' : 'Winner',
-                        selectedId: _winnerId,
+                        title: 'Player 1',
+                        selectedId: _player1Id,
                         players: state.players,
-                        excludeId: _loserId,
-                        onSelected: (id) => setState(() => _winnerId = id),
-                        color:
-                            _isDraw ? AppTheme.accentRed : AppTheme.accentRed,
+                        excludeId: _player2Id,
+                        onSelected: (id) => setState(() {
+                          _player1Id = id;
+                          _onPlayersChanged();
+                        }),
+                        color: AppTheme.accentRed,
                       ),
                     ),
                     const Padding(
@@ -127,16 +191,70 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
                     ),
                     Expanded(
                       child: _PlayerSelector(
-                        title: _isDraw ? 'Player 2' : 'Loser',
-                        selectedId: _loserId,
+                        title: 'Player 2',
+                        selectedId: _player2Id,
                         players: state.players,
-                        excludeId: _winnerId,
-                        onSelected: (id) => setState(() => _loserId = id),
-                        color: _isDraw ? AppTheme.accentRed : AppTheme.errorRed,
+                        excludeId: _player1Id,
+                        onSelected: (id) => setState(() {
+                          _player2Id = id;
+                          _onPlayersChanged();
+                        }),
+                        color: AppTheme.accentRed,
                       ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 48),
+                if (_player1Id != null && _player2Id != null) ...[
+                  const Text('WINNER',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: AppTheme.textTertiary,
+                          letterSpacing: 1.2,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: _winnerSelection,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: AppTheme.surfaceOffWhite,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 16),
+                    ),
+                    hint: const Text('Select Result'),
+                    items: [
+                      DropdownMenuItem(
+                        value: _player1Id,
+                        child: Text(
+                            state.players
+                                .firstWhere((p) => p.id == _player1Id)
+                                .name,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      DropdownMenuItem(
+                        value: _player2Id,
+                        child: Text(
+                            state.players
+                                .firstWhere((p) => p.id == _player2Id)
+                                .name,
+                            style:
+                                const TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      const DropdownMenuItem(
+                        value: 'draw',
+                        child: Text('Draw',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                    onChanged: (val) => setState(() => _winnerSelection = val),
+                  ),
+                ],
                 const SizedBox(height: 48),
                 if (_isLoading)
                   const Center(
@@ -150,73 +268,17 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
                       backgroundColor: AppTheme.accentRed,
                       foregroundColor: Colors.white,
                     ),
-                    child: const Text('Confirm Match Result',
-                        style: TextStyle(
+                    child: Text(
+                        widget.match != null
+                            ? 'Update Match'
+                            : 'Confirm Match Result',
+                        style: const TextStyle(
                             fontSize: 18, fontWeight: FontWeight.bold)),
                   ),
               ],
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildModeToggle() {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _ToggleItem(
-              label: 'Standard',
-              isSelected: !_isDraw,
-              onTap: () => setState(() => _isDraw = false),
-            ),
-          ),
-          Expanded(
-            child: _ToggleItem(
-              label: 'Draw',
-              isSelected: _isDraw,
-              onTap: () => setState(() => _isDraw = true),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ToggleItem extends StatelessWidget {
-  const _ToggleItem(
-      {required this.label, required this.isSelected, required this.onTap});
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppTheme.accentRed : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: isSelected ? Colors.white : AppTheme.textSecondary,
-            ),
-          ),
-        ),
       ),
     );
   }

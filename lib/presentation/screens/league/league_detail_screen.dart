@@ -127,6 +127,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
               onAddPlayer: _showAddPlayerDialog,
             ),
             _MatchesTab(
+              leagueId: widget.league.id,
               matches: state.matches,
               players: state.players,
             ),
@@ -332,9 +333,11 @@ class _StandingsTab extends StatelessWidget {
 
 class _MatchesTab extends StatelessWidget {
   const _MatchesTab({
+    required this.leagueId,
     required this.matches,
     required this.players,
   });
+  final String leagueId;
   final List<SimpleMatch> matches;
   final List<LeaguePlayer> players;
 
@@ -383,6 +386,17 @@ class _MatchesTab extends StatelessWidget {
 
         return Card(
           child: ListTile(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => LogMatchScreen(
+                    leagueId: leagueId,
+                    match: match,
+                  ),
+                ),
+              );
+            },
             title: Text(
               title,
               style: const TextStyle(fontWeight: FontWeight.bold),

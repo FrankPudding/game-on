@@ -209,4 +209,35 @@ class LeagueDetailNotifier
       return _fetchData();
     });
   }
+
+  Future<void> updateSimpleMatch({
+    required String matchId,
+    required String winnerId,
+    required String loserId,
+    required bool isDraw,
+  }) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final match = await _matchRepo.get(matchId);
+      if (match == null) throw Exception('Match not found');
+
+      final winnerSide = Side(
+        id: _uuid.v4(),
+        playerIds: [winnerId],
+      );
+      final loserSide = Side(
+        id: _uuid.v4(),
+        playerIds: [loserId],
+      );
+
+      final updatedMatch = match.copyWith(
+        isDraw: isDraw,
+        sides: [winnerSide, loserSide],
+        winnerSideId: isDraw ? null : winnerSide.id,
+      );
+
+      await _matchRepo.logSimpleMatch(match: updatedMatch);
+      return _fetchData();
+    });
+  }
 }

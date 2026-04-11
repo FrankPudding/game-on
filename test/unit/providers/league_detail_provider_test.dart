@@ -225,6 +225,44 @@ void main() {
             match: any(named: 'match'),
           )).called(1);
     });
+
+    test('updateSimpleMatch should fetch, update match and sides and refresh',
+        () async {
+      final oldMatch = SimpleMatch(
+          id: 'm1',
+          leagueId: tLeagueId,
+          playedAt: DateTime.now(),
+          isComplete: true,
+          sides: [
+            Side(id: 's1', playerIds: ['p1']),
+            Side(id: 's2', playerIds: ['p2']),
+          ],
+          winnerSideId: 's1');
+
+      when(() => mockMatchRepo.get('m1')).thenAnswer((_) async => oldMatch);
+      when(() => mockMatchRepo.logSimpleMatch(
+            match: any(named: 'match'),
+          )).thenAnswer((_) async => {});
+
+      final notifier = container.read(leagueDetailProvider(tLeagueId).notifier);
+      await notifier.updateSimpleMatch(
+        matchId: 'm1',
+        winnerId: 'p2',
+        loserId: 'p1',
+        isDraw: false,
+      );
+
+      final captured = verify(() => mockMatchRepo.logSimpleMatch(
+            match: captureAny(named: 'match'),
+          )).captured.first as SimpleMatch;
+
+      expect(captured.id, 'm1');
+      expect(captured.winnerSideId, isNotNull);
+      // Winner side should have p2
+      final winnerSide =
+          captured.sides.firstWhere((s) => s.id == captured.winnerSideId);
+      expect(winnerSide.playerIds, contains('p2'));
+    });
     group('Ranking Sort', () {
       test('should sort by points DESC, then matchesPlayed ASC', () async {
         // Player 1: 1 match, 3 points
