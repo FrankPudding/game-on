@@ -1,6 +1,38 @@
 # Contributing to Game On
 
-Thank you for your interest in contributing! This project follows strict testing guidelines to ensure stability and reliability.
+Thank you for your interest in contributing! This project follows strict guidelines to ensure stability and reliability.
+
+## Database Migrations
+
+This project uses **Hive** (NoSQL) for local storage. Since Hive is schemaless, changes to data models must be handled carefully to avoid data loss or corruption.
+
+### When to Create a Migration
+
+You must create a migration whenever you make a **breaking change** to the data model that cannot be handled by simple field addition/removal rules. Examples include:
+- Changing the type of an existing field.
+- Moving data from one box to another.
+- Calculating new field values based on existing data.
+- Renaming classes (that affect `hiveTypeId`).
+
+### How to Create a Migration
+
+1.  **Increment Version**: Open `lib/core/config.dart` and increment `hiveDbVersion`.
+2.  **Add Migration Logic**:
+    - Open `lib/data/services/hive/hive_database_migration_service.dart`.
+    - Add a new entry to the `_migrations` map where the key is the *new* version number.
+    - Implement the migration logic in the values function.
+    
+    ```dart
+    final Map<int, Future<void> Function()> _migrations = {
+      // ... existing migrations
+      2: () async {
+        final box = await Hive.openBox('my_box');
+        // perform data transformation
+      },
+    };
+    ```
+
+3.  **Verify**: creating a test case in `test/data/services/hive/hive_database_migration_service_test.dart` to verify the migration.
 
 ## Running Tests
 

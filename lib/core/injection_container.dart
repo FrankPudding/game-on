@@ -19,6 +19,7 @@ import '../domain/repositories/match/simple_match_repository.dart';
 import '../domain/repositories/user_repository.dart';
 import '../domain/repositories/ranking_policy_repository.dart';
 import '../application/services/create_league_service.dart';
+import '../data/services/hive/hive_database_migration_service.dart';
 import 'config.dart';
 
 final sl = GetIt.instance;
@@ -58,6 +59,10 @@ Future<void> _initHive() async {
   if (!Hive.isAdapterRegistered(9)) {
     Hive.registerAdapter(SimpleRankingPolicyHiveModelAdapter());
   }
+
+  // Run Migrations
+  final migrationService = HiveDatabaseMigrationService();
+  await migrationService.migrate(sl<AppConfig>().hiveDbVersion);
 
   // Open Boxes
   final userBox = await Hive.openBox<UserHiveModel>('users');
@@ -105,5 +110,10 @@ Future<void> _initHive() async {
         sl<RankingPolicyRepository>(),
       ),
     );
+  }
+
+  if (!sl.isRegistered<HiveDatabaseMigrationService>()) {
+    sl.registerLazySingleton<HiveDatabaseMigrationService>(
+        () => HiveDatabaseMigrationService());
   }
 }

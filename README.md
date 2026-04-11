@@ -58,6 +58,14 @@
    flutter run
    ```
 
+## 🤝 Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.
+
+### Database Migrations
+
+For information on how to handle database versioning and migrations with Hive, please refer to the "Database Migrations" section in `CONTRIBUTING.md`.
+
 ## 📄 License
 
 This project is licensed under the Polyform Noncommercial License 1.0.0 - see the [LICENSE](LICENSE) file for details.
