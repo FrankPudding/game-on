@@ -1,10 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/entities/user.dart';
 import '../domain/repositories/user_repository.dart';
+import '../application/services/delete_user_service.dart';
 import '../core/injection_container.dart';
 
 final userRepositoryProvider = Provider<UserRepository>((ref) {
   return sl<UserRepository>();
+});
+
+final deleteUserServiceProvider = Provider<DeleteUserService>((ref) {
+  return sl<DeleteUserService>();
 });
 
 final usersProvider = AsyncNotifierProvider<UsersNotifier, List<User>>(() {
@@ -13,10 +18,12 @@ final usersProvider = AsyncNotifierProvider<UsersNotifier, List<User>>(() {
 
 class UsersNotifier extends AsyncNotifier<List<User>> {
   late final UserRepository _repo;
+  late final DeleteUserService _deleteService;
 
   @override
   Future<List<User>> build() async {
     _repo = ref.read(userRepositoryProvider);
+    _deleteService = ref.read(deleteUserServiceProvider);
     return _repo.getAll();
   }
 
@@ -24,6 +31,14 @@ class UsersNotifier extends AsyncNotifier<List<User>> {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       await _repo.put(user);
+      return _repo.getAll();
+    });
+  }
+
+  Future<void> deleteUser(String userId) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      await _deleteService.execute(userId);
       return _repo.getAll();
     });
   }

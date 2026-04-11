@@ -15,6 +15,7 @@ import 'package:game_on/domain/repositories/ranking_policy_repository.dart';
 import 'package:game_on/providers/league_detail_provider.dart';
 import 'package:game_on/providers/leagues_provider.dart';
 import 'package:game_on/providers/users_provider.dart';
+import 'package:game_on/application/services/delete_user_service.dart';
 
 class MockLeagueRepository extends Mock implements LeagueRepository {}
 
@@ -27,6 +28,13 @@ class MockSimpleMatchRepository extends Mock implements SimpleMatchRepository {}
 
 class MockRankingPolicyRepository extends Mock
     implements RankingPolicyRepository {}
+
+class MockDeleteUserService extends Mock implements DeleteUserService {}
+
+class FakeUsersNotifier extends UsersNotifier {
+  @override
+  Future<List<User>> build() async => [];
+}
 
 void main() {
   late MockLeagueRepository mockLeagueRepo;
@@ -79,6 +87,9 @@ void main() {
         userRepositoryProvider.overrideWithValue(mockUserRepo),
         simpleMatchRepositoryProvider.overrideWithValue(mockMatchRepo),
         rankingPolicyRepositoryProvider.overrideWithValue(mockPolicyRepo),
+        usersProvider.overrideWith(FakeUsersNotifier.new),
+        deleteUserServiceProvider
+            .overrideWith((ref) => MockDeleteUserService()),
       ],
     );
 
@@ -90,6 +101,9 @@ void main() {
         .thenAnswer((_) async => []);
     when(() => mockPolicyRepo.getByLeagueId(tLeagueId))
         .thenAnswer((_) async => tRankingPolicy);
+
+    // Pre-initialize usersProvider to avoid hangs in LeagueDetailNotifier.build
+    container.read(usersProvider);
   });
 
   tearDown(() {

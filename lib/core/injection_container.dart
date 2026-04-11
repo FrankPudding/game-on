@@ -19,6 +19,7 @@ import '../domain/repositories/match/simple_match_repository.dart';
 import '../domain/repositories/user_repository.dart';
 import '../domain/repositories/ranking_policy_repository.dart';
 import '../application/services/create_league_service.dart';
+import '../application/services/delete_user_service.dart';
 import '../data/services/hive/hive_database_migration_service.dart';
 import 'config.dart';
 
@@ -108,6 +109,16 @@ Future<void> _initHive() async {
       () => CreateLeagueService(
         sl<LeagueRepository>(),
         sl<RankingPolicyRepository>(),
+      ),
+    );
+  }
+
+  if (!sl.isRegistered<DeleteUserService>()) {
+    sl.registerLazySingleton<DeleteUserService>(
+      () => DeleteUserService(
+        sl<UserRepository>(),
+        sl<LeaguePlayerRepository>(),
+        sl<SimpleMatchRepository>(),
       ),
     );
   }

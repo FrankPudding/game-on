@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home/home_screen.dart';
 import 'league/select_ranking_policy_screen.dart';
+import 'settings/settings_screen.dart';
 import '../theme/app_theme.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -22,7 +23,7 @@ class _MainNavigationState extends State<MainNavigation> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const Center(child: Text('History')),
-    const Center(child: Text('Settings')),
+    const SettingsScreen(),
   ];
 
   @override

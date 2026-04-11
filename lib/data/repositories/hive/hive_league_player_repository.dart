@@ -36,4 +36,12 @@ class HiveLeaguePlayerRepository implements LeaguePlayerRepository {
         .map((m) => m.toDomain())
         .toList();
   }
+
+  @override
+  Future<List<LeaguePlayer>> getByUserId(String userId) async {
+    return _box.values
+        .where((p) => p.userId == userId)
+        .map((m) => m.toDomain())
+        .toList();
+  }
 }

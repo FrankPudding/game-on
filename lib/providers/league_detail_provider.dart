@@ -59,11 +59,11 @@ final leagueDetailProvider = AsyncNotifierProvider.family<LeagueDetailNotifier,
 
 class LeagueDetailNotifier
     extends FamilyAsyncNotifier<LeagueDetailState, String> {
-  late final LeagueRepository _leagueRepo;
-  late final LeaguePlayerRepository _playerRepo;
-  late final UserRepository _userRepo;
-  late final SimpleMatchRepository _matchRepo;
-  late final RankingPolicyRepository _policyRepo;
+  late LeagueRepository _leagueRepo;
+  late LeaguePlayerRepository _playerRepo;
+  late UserRepository _userRepo;
+  late SimpleMatchRepository _matchRepo;
+  late RankingPolicyRepository _policyRepo;
   late String _leagueId;
   final _uuid = const Uuid();
 
@@ -75,6 +75,9 @@ class LeagueDetailNotifier
     _userRepo = ref.read(userRepositoryProvider);
     _matchRepo = ref.read(simpleMatchRepositoryProvider);
     _policyRepo = ref.read(rankingPolicyRepositoryProvider);
+
+    // Watch usersProvider so we refresh if users are deleted/added
+    ref.watch(usersProvider);
 
     return _fetchData();
   }
