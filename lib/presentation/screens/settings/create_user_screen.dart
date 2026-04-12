@@ -6,15 +6,17 @@ import '../../../providers/users_provider.dart';
 import '../../theme/app_theme.dart';
 
 class CreateUserScreen extends ConsumerStatefulWidget {
-  const CreateUserScreen({super.key});
+  const CreateUserScreen({super.key, this.user});
+
+  final User? user;
 
   @override
   ConsumerState<CreateUserScreen> createState() => _CreateUserScreenState();
 }
 
 class _CreateUserScreenState extends ConsumerState<CreateUserScreen> {
-  final _nameController = TextEditingController();
-  String _selectedIcon = '👤';
+  late final TextEditingController _nameController;
+  late String _selectedIcon;
   bool _isLoading = false;
 
   final List<String> _icons = [
@@ -41,6 +43,13 @@ class _CreateUserScreenState extends ConsumerState<CreateUserScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.user?.name);
+    _selectedIcon = widget.user?.icon ?? '👤';
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     super.dispose();
@@ -58,25 +67,37 @@ class _CreateUserScreenState extends ConsumerState<CreateUserScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final newUser = User(
-        id: const Uuid().v4(),
-        name: name,
-        avatarColorHex: 'AE0C00', // Default brand color
-        icon: _selectedIcon,
-      );
-
-      await ref.read(usersProvider.notifier).addUser(newUser);
+      if (widget.user != null) {
+        final updatedUser = widget.user!.copyWith(
+          name: name,
+          icon: _selectedIcon,
+        );
+        await ref.read(usersProvider.notifier).updateUser(updatedUser);
+      } else {
+        final newUser = User(
+          id: const Uuid().v4(),
+          name: name,
+          avatarColorHex: 'AE0C00', // Default brand color
+          icon: _selectedIcon,
+        );
+        await ref.read(usersProvider.notifier).addUser(newUser);
+      }
 
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('User created successfully')),
+          SnackBar(
+              content: Text(widget.user != null
+                  ? 'User updated successfully'
+                  : 'User created successfully')),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error creating user: $e')),
+          SnackBar(
+              content: Text(
+                  'Error ${widget.user != null ? 'updating' : 'creating'} user: $e')),
         );
       }
     } finally {
@@ -86,18 +107,19 @@ class _CreateUserScreenState extends ConsumerState<CreateUserScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.user != null;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create User'),
+        title: Text(isEditing ? 'Edit User' : 'Create User'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'User Details',
-              style: TextStyle(
+            Text(
+              isEditing ? 'Edit User Details' : 'User Details',
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: AppTheme.textPrimary,
@@ -117,7 +139,7 @@ class _CreateUserScreenState extends ConsumerState<CreateUserScreen> {
                 prefixIcon: Icon(Icons.person_outline),
               ),
               textCapitalization: TextCapitalization.words,
-              autofocus: true,
+              autofocus: !isEditing,
             ),
             const SizedBox(height: 32),
             const Text(
@@ -177,7 +199,7 @@ class _CreateUserScreenState extends ConsumerState<CreateUserScreen> {
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
-              : const Text('Create User'),
+              : Text(isEditing ? 'Save Changes' : 'Create User'),
         ),
       ),
     );

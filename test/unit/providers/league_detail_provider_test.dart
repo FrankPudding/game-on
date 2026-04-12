@@ -16,6 +16,7 @@ import 'package:game_on/providers/league_detail_provider.dart';
 import 'package:game_on/providers/leagues_provider.dart';
 import 'package:game_on/providers/users_provider.dart';
 import 'package:game_on/application/services/delete_user_service.dart';
+import 'package:game_on/application/services/update_user_service.dart';
 
 class MockLeagueRepository extends Mock implements LeagueRepository {}
 
@@ -30,6 +31,8 @@ class MockRankingPolicyRepository extends Mock
     implements RankingPolicyRepository {}
 
 class MockDeleteUserService extends Mock implements DeleteUserService {}
+
+class MockUpdateUserService extends Mock implements UpdateUserService {}
 
 class FakeUsersNotifier extends UsersNotifier {
   @override
@@ -90,6 +93,8 @@ void main() {
         usersProvider.overrideWith(FakeUsersNotifier.new),
         deleteUserServiceProvider
             .overrideWith((ref) => MockDeleteUserService()),
+        updateUserServiceProvider
+            .overrideWith((ref) => MockUpdateUserService()),
       ],
     );
 
@@ -285,6 +290,56 @@ void main() {
       await notifier.deleteMatch('m1');
 
       verify(() => mockMatchRepo.delete('m1')).called(1);
+    });
+
+    test('updatePlayer should update league player but NOT the linked user',
+        () async {
+      final mockUpdateService = container.read(updateUserServiceProvider);
+
+      when(() => mockPlayerRepo.get('p1')).thenAnswer((_) async => tPlayer1);
+      when(() => mockPlayerRepo.put(any())).thenAnswer((_) async => {});
+
+      final notifier = container.read(leagueDetailProvider(tLeagueId).notifier);
+      await notifier.updatePlayer(
+          playerId: 'p1', name: 'Updated Name', icon: '🆕');
+
+      verify(() => mockPlayerRepo.put(any(
+          that: isA<LeaguePlayer>()
+              .having((p) => p.name, 'name', 'Updated Name')
+              .having((p) => p.icon, 'icon', '🆕')))).called(1);
+
+      verifyNever(() => mockUpdateService.execute(any()));
+    });
+
+    test('removePlayer should delete if no match history', () async {
+      when(() => mockMatchRepo.getByLeague(tLeagueId))
+          .thenAnswer((_) async => []);
+      when(() => mockPlayerRepo.delete('p1')).thenAnswer((_) async => {});
+
+      final notifier = container.read(leagueDetailProvider(tLeagueId).notifier);
+      await notifier.removePlayer('p1');
+
+      verify(() => mockPlayerRepo.delete('p1')).called(1);
+    });
+
+    test('removePlayer should throw error if has match history', () async {
+      final m1 = SimpleMatch(
+          id: 'm1',
+          leagueId: tLeagueId,
+          playedAt: DateTime.now(),
+          isComplete: true,
+          sides: [
+            Side(id: 's1', playerIds: ['p1']),
+            Side(id: 's2', playerIds: ['p2']),
+          ]);
+
+      when(() => mockMatchRepo.getByLeague(tLeagueId))
+          .thenAnswer((_) async => [m1]);
+
+      final notifier = container.read(leagueDetailProvider(tLeagueId).notifier);
+
+      expect(notifier.removePlayer('p1'), throwsException);
+      verifyNever(() => mockPlayerRepo.delete('p1'));
     });
 
     group('Ranking Sort', () {

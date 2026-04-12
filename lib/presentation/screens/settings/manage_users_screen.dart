@@ -99,7 +99,12 @@ class ManageUsersScreen extends ConsumerWidget {
                   },
                 ),
                 onTap: () {
-                  // TODO: Implement user editing
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CreateUserScreen(user: user),
+                    ),
+                  );
                 },
               );
             },

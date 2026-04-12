@@ -4,11 +4,14 @@ import 'package:mocktail/mocktail.dart';
 import 'package:game_on/domain/entities/user.dart';
 import 'package:game_on/domain/repositories/user_repository.dart';
 import 'package:game_on/application/services/delete_user_service.dart';
+import 'package:game_on/application/services/update_user_service.dart';
 import 'package:game_on/providers/users_provider.dart';
 
 class MockUserRepository extends Mock implements UserRepository {}
 
 class MockDeleteUserService extends Mock implements DeleteUserService {}
+
+class MockUpdateUserService extends Mock implements UpdateUserService {}
 
 void main() {
   late MockUserRepository mockUserRepo;
@@ -25,6 +28,8 @@ void main() {
       overrides: [
         userRepositoryProvider.overrideWithValue(mockUserRepo),
         deleteUserServiceProvider.overrideWithValue(mockDeleteService),
+        updateUserServiceProvider
+            .overrideWith((ref) => MockUpdateUserService()),
       ],
     );
 
@@ -86,6 +91,29 @@ void main() {
       final state = container.read(usersProvider).value;
       expect(state, [tUser2]);
       verify(() => mockDeleteService.execute('u1')).called(1);
+    });
+
+    test('updateUser should call service and update state', () async {
+      final mockUpdateService = container.read(updateUserServiceProvider);
+      when(() => mockUserRepo.getAll())
+          .thenAnswer((_) async => [tUser1, tUser2]);
+      when(() => mockUpdateService.execute(any())).thenAnswer((_) async => {});
+
+      final notifier = container.read(usersProvider.notifier);
+
+      // Initial build
+      await container.read(usersProvider.future);
+
+      // Update user
+      final updatedUser = tUser1.copyWith(name: 'Updated Name', icon: '🆕');
+      when(() => mockUserRepo.getAll())
+          .thenAnswer((_) async => [updatedUser, tUser2]);
+
+      await notifier.updateUser(updatedUser);
+
+      final state = container.read(usersProvider).value;
+      expect(state, [updatedUser, tUser2]);
+      verify(() => mockUpdateService.execute(updatedUser)).called(1);
     });
   });
 }

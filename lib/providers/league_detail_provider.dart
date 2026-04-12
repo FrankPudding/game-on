@@ -251,4 +251,48 @@ class LeagueDetailNotifier
       return _fetchData();
     });
   }
+
+  Future<void> updatePlayer({
+    required String playerId,
+    required String name,
+    String? icon,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      final player = await _playerRepo.get(playerId);
+      if (player == null) throw Exception('Player not found');
+
+      final updatedPlayer = player.copyWith(
+        name: name,
+        icon: icon,
+      );
+      await _playerRepo.put(updatedPlayer);
+
+      state = AsyncValue.data(await _fetchData());
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
+  Future<void> removePlayer(String playerId) async {
+    state = const AsyncValue.loading();
+    try {
+      // Don't allow removing if they have played matches
+      final matches = await _matchRepo.getByLeague(_leagueId);
+      final hasPlayed = matches
+          .any((m) => m.sides.any((s) => s.playerIds.contains(playerId)));
+
+      if (hasPlayed) {
+        throw Exception(
+            'Cannot remove player with match history. Delete their matches first.');
+      }
+
+      await _playerRepo.delete(playerId);
+      state = AsyncValue.data(await _fetchData());
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
 }

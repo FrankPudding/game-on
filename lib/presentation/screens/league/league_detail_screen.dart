@@ -78,6 +78,14 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
     );
   }
 
+  void _showEditPlayerDialog(LeaguePlayer player) {
+    showDialog(
+      context: context,
+      builder: (context) =>
+          _EditPlayerDialog(leagueId: widget.league.id, player: player),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final leagueDetailAsync = ref.watch(leagueDetailProvider(widget.league.id));
@@ -125,6 +133,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
               players: state.players,
               playerStats: state.playerStats,
               onAddPlayer: _showAddPlayerDialog,
+              onEditPlayer: _showEditPlayerDialog,
             ),
             _MatchesTab(
               leagueId: widget.league.id,
@@ -157,10 +166,12 @@ class _StandingsTab extends StatelessWidget {
     required this.players,
     required this.playerStats,
     required this.onAddPlayer,
+    required this.onEditPlayer,
   });
   final List<LeaguePlayer> players;
   final Map<String, PlayerStats> playerStats;
   final VoidCallback onAddPlayer;
+  final Function(LeaguePlayer) onEditPlayer;
 
   @override
   Widget build(BuildContext context) {
@@ -218,86 +229,90 @@ class _StandingsTab extends StatelessWidget {
                   const PlayerStats(points: 0, matchesPlayed: 0);
               final isTop3 = index < 3;
 
-              return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 32,
-                      child: Text(
-                        '${index + 1}',
-                        style: TextStyle(
-                          fontWeight:
-                              isTop3 ? FontWeight.bold : FontWeight.normal,
-                          color: isTop3
-                              ? AppTheme.accentRed
-                              : AppTheme.textSecondary,
-                          fontSize: 16,
+              return InkWell(
+                onTap: () => onEditPlayer(player),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 32,
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            fontWeight:
+                                isTop3 ? FontWeight.bold : FontWeight.normal,
+                            color: isTop3
+                                ? AppTheme.accentRed
+                                : AppTheme.textSecondary,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
-                    ),
-                    Expanded(
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 14,
-                            backgroundColor:
-                                AppTheme.accentRed.withValues(alpha: 0.1),
-                            child: player.icon != null
-                                ? Text(player.icon!,
-                                    style: const TextStyle(fontSize: 14))
-                                : Text(
-                                    player.name.isNotEmpty
-                                        ? player.name[0].toUpperCase()
-                                        : '?',
-                                    style: const TextStyle(
-                                        color: AppTheme.accentRed,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              player.name,
-                              style: TextStyle(
-                                fontWeight:
-                                    isTop3 ? FontWeight.bold : FontWeight.w500,
-                                color: AppTheme.textPrimary,
-                                fontSize: 16,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 14,
+                              backgroundColor:
+                                  AppTheme.accentRed.withValues(alpha: 0.1),
+                              child: player.icon != null
+                                  ? Text(player.icon!,
+                                      style: const TextStyle(fontSize: 14))
+                                  : Text(
+                                      player.name.isNotEmpty
+                                          ? player.name[0].toUpperCase()
+                                          : '?',
+                                      style: const TextStyle(
+                                          color: AppTheme.accentRed,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold),
+                                    ),
                             ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                player.name,
+                                style: TextStyle(
+                                  fontWeight: isTop3
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                  color: AppTheme.textPrimary,
+                                  fontSize: 16,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(
+                        width: 40,
+                        child: Text(
+                          '${stats.matchesPlayed}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontWeight: FontWeight.w500,
                           ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(
-                      width: 40,
-                      child: Text(
-                        '${stats.matchesPlayed}',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    SizedBox(
-                      width: 60,
-                      child: Text(
-                        '${stats.points}',
-                        textAlign: TextAlign.right,
-                        style: const TextStyle(
-                          color: AppTheme.accentRed,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      const SizedBox(width: 16),
+                      SizedBox(
+                        width: 60,
+                        child: Text(
+                          '${stats.points}',
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                            color: AppTheme.accentRed,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             },
@@ -593,6 +608,208 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
               ? const SizedBox(
                   width: 16, height: 16, child: CircularProgressIndicator())
               : const Text('Add to League'),
+        ),
+      ],
+    );
+  }
+}
+
+class _EditPlayerDialog extends ConsumerStatefulWidget {
+  const _EditPlayerDialog({
+    required this.leagueId,
+    required this.player,
+  });
+  final String leagueId;
+  final LeaguePlayer player;
+
+  @override
+  ConsumerState<_EditPlayerDialog> createState() => _EditPlayerDialogState();
+}
+
+class _EditPlayerDialogState extends ConsumerState<_EditPlayerDialog> {
+  late final TextEditingController _nameController;
+  String? _selectedIcon;
+  bool _isLoading = false;
+
+  final List<String> _icons = [
+    '👤',
+    '🎮',
+    '⚽',
+    '🏀',
+    '🎾',
+    '🎳',
+    '🎯',
+    '🏎️',
+    '🧙',
+    '🥷',
+    '🐯',
+    '🦊',
+    '🦉',
+    '🐢',
+    '🦖',
+    '🤖',
+    '👻',
+    '🍦',
+    '🍕',
+    '🎲'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.player.name);
+    _selectedIcon = widget.player.icon ?? '👤';
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await ref
+          .read(leagueDetailProvider(widget.leagueId).notifier)
+          .updatePlayer(
+            playerId: widget.player.id,
+            name: name,
+            icon: _selectedIcon,
+          );
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating player: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _removePlayer() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove Player?'),
+        content: Text(
+            'Are you sure you want to remove ${widget.player.name} from this league? This only works if they have no match history.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorRed),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      setState(() => _isLoading = true);
+      try {
+        await ref
+            .read(leagueDetailProvider(widget.leagueId).notifier)
+            .removePlayer(widget.player.id);
+        if (mounted) {
+          Navigator.pop(context); // Close edit dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Player removed from league')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error removing player: $e')),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit Player'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: 'Player Name',
+                border: OutlineInputBorder(),
+              ),
+              textCapitalization: TextCapitalization.words,
+            ),
+            const SizedBox(height: 16),
+            const Text('Choose Icon',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _icons.map((icon) {
+                return InkWell(
+                  onTap: () => setState(() => _selectedIcon = icon),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: _selectedIcon == icon
+                          ? AppTheme.accentRed.withValues(alpha: 0.2)
+                          : Colors.transparent,
+                      border: Border.all(
+                        color: _selectedIcon == icon
+                            ? AppTheme.accentRed
+                            : Colors.grey.withValues(alpha: 0.3),
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(icon, style: const TextStyle(fontSize: 24)),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton.icon(
+                onPressed: _isLoading ? null : _removePlayer,
+                icon: const Icon(Icons.person_remove_outlined,
+                    color: AppTheme.errorRed),
+                label: const Text('Remove from League',
+                    style: TextStyle(color: AppTheme.errorRed)),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _submit,
+          child: _isLoading
+              ? const SizedBox(
+                  width: 16, height: 16, child: CircularProgressIndicator())
+              : const Text('Save Changes'),
         ),
       ],
     );
