@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home/home_screen.dart';
-import 'league/select_ranking_policy_screen.dart';
+import 'history/history_screen.dart';
 import 'settings/settings_screen.dart';
-import '../theme/app_theme.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -14,33 +13,46 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
-  final List<String> _titles = [
-    'My Leagues',
-    'Match History',
-    'Settings',
+  final List<GlobalKey<NavigatorState>> _navigatorKeys = [
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
   ];
 
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const Center(child: Text('History')),
-    const SettingsScreen(),
-  ];
+  void _onDestinationSelected(int index) {
+    if (_currentIndex == index) {
+      // If the current tab is selected again, pop to the root of that tab
+      _navigatorKeys[index].currentState?.popUntil((route) => route.isFirst);
+    } else {
+      setState(() {
+        _currentIndex = index;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_titles[_currentIndex]),
-        centerTitle: false,
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          _TabNavigator(
+            navigatorKey: _navigatorKeys[0],
+            root: const HomeScreen(),
+          ),
+          _TabNavigator(
+            navigatorKey: _navigatorKeys[1],
+            root: const HistoryScreen(),
+          ),
+          _TabNavigator(
+            navigatorKey: _navigatorKeys[2],
+            root: const SettingsScreen(),
+          ),
+        ],
       ),
-      body: _screens[_currentIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onDestinationSelected: _onDestinationSelected,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
@@ -59,19 +71,29 @@ class _MainNavigationState extends State<MainNavigation> {
           ),
         ],
       ),
-      floatingActionButton: _currentIndex == 0
-          ? FloatingActionButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const SelectRankingPolicyScreen()),
-                );
-              },
-              backgroundColor: AppTheme.accentRed,
-              child: const Icon(Icons.add, color: Colors.white),
-            )
-          : null,
+    );
+  }
+}
+
+class _TabNavigator extends StatelessWidget {
+  const _TabNavigator({
+    required this.navigatorKey,
+    required this.root,
+  });
+
+  final GlobalKey<NavigatorState> navigatorKey;
+  final Widget root;
+
+  @override
+  Widget build(BuildContext context) {
+    return Navigator(
+      key: navigatorKey,
+      onGenerateRoute: (settings) {
+        return MaterialPageRoute(
+          builder: (context) => root,
+          settings: settings,
+        );
+      },
     );
   }
 }

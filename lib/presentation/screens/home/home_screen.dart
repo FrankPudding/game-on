@@ -14,55 +14,74 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final leaguesAsync = ref.watch(leaguesProvider);
 
-    return leaguesAsync.when(
-      data: (leagues) {
-        if (leagues.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.emoji_events_outlined,
-                  size: 80,
-                  color: AppTheme.textTertiary.withValues(alpha: 0.2),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No leagues yet',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppTheme.textSecondary,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const SelectRankingPolicyScreen(),
-                      ),
-                    );
-                  },
-                  child: const Text('Create First League'),
-                ),
-              ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Leagues'),
+        centerTitle: false,
+      ),
+      body: leaguesAsync.when(
+        data: (leagues) {
+          if (leagues.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.emoji_events_outlined,
+                    size: 80,
+                    color: AppTheme.textTertiary.withValues(alpha: 0.2),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No leagues yet',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppTheme.textSecondary,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const SelectRankingPolicyScreen(),
+                        ),
+                      );
+                    },
+                    child: const Text('Create First League'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: leagues.length,
+            itemBuilder: (context, index) {
+              final league = leagues[index];
+              return _LeagueCard(league: league);
+            },
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(
+          child: Text('Error: $err',
+              style: const TextStyle(color: AppTheme.errorRed)),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SelectRankingPolicyScreen(),
             ),
           );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: leagues.length,
-          itemBuilder: (context, index) {
-            final league = leagues[index];
-            return _LeagueCard(league: league);
-          },
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(
-        child: Text('Error: $err',
-            style: const TextStyle(color: AppTheme.errorRed)),
+        },
+        backgroundColor: AppTheme.accentRed,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
