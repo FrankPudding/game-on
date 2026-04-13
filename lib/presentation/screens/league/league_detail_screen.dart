@@ -377,7 +377,7 @@ class _MatchesTab extends StatelessWidget {
       itemCount: matches.length,
       itemBuilder: (context, index) {
         final match = matches[index];
-        final playedAt = DateFormat('MMM d, h:mm a').format(match.playedAt);
+        final playedAt = DateFormat('MMM d, yyyy').format(match.playedAt);
 
         String title = 'Match';
         String subtitle = playedAt;

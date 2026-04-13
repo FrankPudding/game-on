@@ -186,6 +186,7 @@ class LeagueDetailNotifier
     required String winnerId,
     required String loserId,
     required bool isDraw,
+    DateTime? playedAt,
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -198,10 +199,11 @@ class LeagueDetailNotifier
         playerIds: [loserId],
       );
 
+      final now = DateTime.now();
       final match = SimpleMatch(
         id: _uuid.v4(),
         leagueId: _leagueId,
-        playedAt: DateTime.now(),
+        playedAt: playedAt ?? DateTime(now.year, now.month, now.day),
         isComplete: true,
         isDraw: isDraw,
         sides: [winnerSide, loserSide],
@@ -218,6 +220,7 @@ class LeagueDetailNotifier
     required String winnerId,
     required String loserId,
     required bool isDraw,
+    DateTime? playedAt,
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -237,6 +240,7 @@ class LeagueDetailNotifier
         isDraw: isDraw,
         sides: [winnerSide, loserSide],
         winnerSideId: isDraw ? null : winnerSide.id,
+        playedAt: playedAt,
       );
 
       await _matchRepo.logSimpleMatch(match: updatedMatch);

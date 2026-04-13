@@ -245,6 +245,27 @@ void main() {
           )).called(1);
     });
 
+    test('logSimpleMatch should support custom playedAt', () async {
+      final customDate = DateTime(2023, 1, 1);
+      when(() => mockMatchRepo.logSimpleMatch(
+            match: any(named: 'match'),
+          )).thenAnswer((_) async => {});
+
+      final notifier = container.read(leagueDetailProvider(tLeagueId).notifier);
+      await notifier.logSimpleMatch(
+        winnerId: 'p1',
+        loserId: 'p2',
+        isDraw: false,
+        playedAt: customDate,
+      );
+
+      final captured = verify(() => mockMatchRepo.logSimpleMatch(
+            match: captureAny(named: 'match'),
+          )).captured.first as SimpleMatch;
+
+      expect(captured.playedAt, customDate);
+    });
+
     test('updateSimpleMatch should fetch, update match and sides and refresh',
         () async {
       final oldMatch = SimpleMatch(
@@ -281,6 +302,41 @@ void main() {
       final winnerSide =
           captured.sides.firstWhere((s) => s.id == captured.winnerSideId);
       expect(winnerSide.playerIds, contains('p2'));
+    });
+
+    test('updateSimpleMatch should support custom playedAt', () async {
+      final oldDate = DateTime(2023, 1, 1);
+      final newDate = DateTime(2023, 2, 2);
+      final oldMatch = SimpleMatch(
+          id: 'm1',
+          leagueId: tLeagueId,
+          playedAt: oldDate,
+          isComplete: true,
+          sides: [
+            Side(id: 's1', playerIds: ['p1']),
+            Side(id: 's2', playerIds: ['p2']),
+          ],
+          winnerSideId: 's1');
+
+      when(() => mockMatchRepo.get('m1')).thenAnswer((_) async => oldMatch);
+      when(() => mockMatchRepo.logSimpleMatch(
+            match: any(named: 'match'),
+          )).thenAnswer((_) async => {});
+
+      final notifier = container.read(leagueDetailProvider(tLeagueId).notifier);
+      await notifier.updateSimpleMatch(
+        matchId: 'm1',
+        winnerId: 'p1',
+        loserId: 'p2',
+        isDraw: false,
+        playedAt: newDate,
+      );
+
+      final captured = verify(() => mockMatchRepo.logSimpleMatch(
+            match: captureAny(named: 'match'),
+          )).captured.first as SimpleMatch;
+
+      expect(captured.playedAt, newDate);
     });
 
     test('deleteMatch should call repository and refresh', () async {

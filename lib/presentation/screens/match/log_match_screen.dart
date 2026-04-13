@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../domain/entities/league_player.dart';
 import '../../../domain/entities/matches/simple_match.dart';
 import '../../../providers/league_detail_provider.dart';
@@ -19,12 +20,17 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
   String? _player2Id;
   String? _winnerSelection; // Stores player1Id, player2Id, or 'draw'
   bool _isLoading = false;
+  late DateTime _selectedDate;
+  final _dateController = TextEditingController();
+  final _dateFormat = DateFormat('yyyy-MM-dd');
 
   @override
   void initState() {
     super.initState();
     if (widget.match != null) {
       final match = widget.match!;
+      final date = match.playedAt;
+      _selectedDate = DateTime(date.year, date.month, date.day);
       if (match.sides.length >= 2) {
         _player1Id = match.sides[0].playerIds.first;
         _player2Id = match.sides[1].playerIds.first;
@@ -38,7 +44,11 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
           _winnerSelection = winnerSide.playerIds.first;
         }
       }
+    } else {
+      final now = DateTime.now();
+      _selectedDate = DateTime(now.year, now.month, now.day);
     }
+    _dateController.text = _dateFormat.format(_selectedDate);
   }
 
   void _onPlayersChanged() {
@@ -47,6 +57,32 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
         _winnerSelection != _player1Id &&
         _winnerSelection != _player2Id) {
       setState(() => _winnerSelection = null);
+    }
+  }
+
+  Future<void> _selectDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = DateTime(picked.year, picked.month, picked.day);
+        _dateController.text = _dateFormat.format(_selectedDate);
+      });
+    }
+  }
+
+  void _onDateTextChanged(String value) {
+    try {
+      final date = _dateFormat.parseStrict(value);
+      setState(() {
+        _selectedDate = date;
+      });
+    } catch (_) {
+      // Keep existing _selectedDate if format is invalid
     }
   }
 
@@ -82,6 +118,7 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
               winnerId: winnerId,
               loserId: loserId,
               isDraw: isDraw,
+              playedAt: _selectedDate,
             );
       } else {
         await ref
@@ -90,6 +127,7 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
               winnerId: winnerId,
               loserId: loserId,
               isDraw: isDraw,
+              playedAt: _selectedDate,
             );
       }
 
@@ -247,6 +285,36 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 32),
+                const Text('MATCH DATE',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: AppTheme.textTertiary,
+                        letterSpacing: 1.2,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _dateController,
+                  onChanged: _onDateTextChanged,
+                  decoration: InputDecoration(
+                    hintText: 'YYYY-MM-DD',
+                    filled: true,
+                    fillColor: AppTheme.surfaceOffWhite,
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.calendar_today,
+                          color: AppTheme.accentRed),
+                      onPressed: _selectDate,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 16),
+                  ),
+                  keyboardType: TextInputType.datetime,
                 ),
                 const SizedBox(height: 48),
                 if (_player1Id != null && _player2Id != null) ...[
