@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../providers/users_provider.dart';
 import '../../theme/app_theme.dart';
-import 'create_user_screen.dart';
+import 'user_detail_screen.dart';
+import '../../widgets/user_edit_dialog.dart';
 
 class ManageUsersScreen extends ConsumerWidget {
   const ManageUsersScreen({super.key});
@@ -66,43 +67,53 @@ class ManageUsersScreen extends ConsumerWidget {
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 subtitle: const Text('Global User'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline,
-                      color: AppTheme.errorRed),
-                  onPressed: () async {
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Delete User?'),
-                        content: Text(
-                            'Are you sure you want to delete ${user.name}? This will remove them from all leagues and delete all their associated match records.'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Cancel'),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined,
+                          color: AppTheme.textSecondary),
+                      onPressed: () => UserEditDialog.show(context, user: user),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline,
+                          color: AppTheme.errorRed),
+                      onPressed: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Delete User?'),
+                            content: Text(
+                                'Are you sure you want to delete ${user.name}? This will remove them from all leagues and delete all their associated match records.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Cancel'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.errorRed),
+                                child: const Text('Delete'),
+                              ),
+                            ],
                           ),
-                          ElevatedButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.errorRed),
-                            child: const Text('Delete'),
-                          ),
-                        ],
-                      ),
-                    );
+                        );
 
-                    if (confirmed == true) {
-                      await ref
-                          .read(usersProvider.notifier)
-                          .deleteUser(user.id);
-                    }
-                  },
+                        if (confirmed == true) {
+                          await ref
+                              .read(usersProvider.notifier)
+                              .deleteUser(user.id);
+                        }
+                      },
+                    ),
+                  ],
                 ),
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => CreateUserScreen(user: user),
+                      builder: (context) => UserDetailScreen(userId: user.id),
                     ),
                   );
                 },
@@ -114,12 +125,7 @@ class ManageUsersScreen extends ConsumerWidget {
         error: (err, stack) => Center(child: Text('Error: $err')),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const CreateUserScreen()),
-          );
-        },
+        onPressed: () => UserEditDialog.show(context),
         label: const Text('Add User'),
         icon: const Icon(Icons.add),
       ),
