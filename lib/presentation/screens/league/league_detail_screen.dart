@@ -379,24 +379,88 @@ class _MatchesTab extends StatelessWidget {
         final match = matches[index];
         final playedAt = DateFormat('MMM d, yyyy').format(match.playedAt);
 
-        String title = 'Match';
+        Widget titleWidget =
+            const Text('Match', style: TextStyle(fontWeight: FontWeight.bold));
         String subtitle = playedAt;
 
         if (match.isDraw) {
-          title = 'Draw';
+          final p1Id =
+              match.sides.isNotEmpty && match.sides[0].playerIds.isNotEmpty
+                  ? match.sides[0].playerIds.first
+                  : null;
+          final p2Id =
+              match.sides.length > 1 && match.sides[1].playerIds.isNotEmpty
+                  ? match.sides[1].playerIds.first
+                  : null;
+
+          final p1 = players.firstWhere((p) => p.id == p1Id,
+              orElse: () => _unknownPlayer());
+          final p2 = players.firstWhere((p) => p.id == p2Id,
+              orElse: () => _unknownPlayer());
+
+          titleWidget = Text.rich(
+            TextSpan(
+              style: const TextStyle(color: AppTheme.textPrimary),
+              children: [
+                TextSpan(
+                  text: p1.icon != null ? '${p1.icon} ${p1.name}' : p1.name,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const TextSpan(text: ' vs '),
+                TextSpan(
+                  text: p2.icon != null ? '${p2.icon} ${p2.name}' : p2.name,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          );
         } else if (match.winnerSideId != null) {
           final winnerSide = match.sides.firstWhere(
             (s) => s.id == match.winnerSideId,
             orElse: () => Side(id: '', playerIds: []),
           );
-          if (winnerSide.playerIds.isNotEmpty) {
-            final winnerId = winnerSide.playerIds.first;
-            final winner = players.firstWhere(
-              (p) => p.id == winnerId,
-              orElse: () => _unknownPlayer(),
-            );
-            title = 'Winner: ${winner.icon ?? ""} ${winner.name}';
-          }
+          final loserSide = match.sides.firstWhere(
+            (s) => s.id != match.winnerSideId,
+            orElse: () => Side(id: '', playerIds: []),
+          );
+
+          final winnerId = winnerSide.playerIds.isNotEmpty
+              ? winnerSide.playerIds.first
+              : null;
+          final loserId =
+              loserSide.playerIds.isNotEmpty ? loserSide.playerIds.first : null;
+
+          final winner = players.firstWhere((p) => p.id == winnerId,
+              orElse: () => _unknownPlayer());
+          final loser = players.firstWhere((p) => p.id == loserId,
+              orElse: () => _unknownPlayer());
+
+          titleWidget = Text.rich(
+            TextSpan(
+              style: const TextStyle(color: AppTheme.textPrimary),
+              children: [
+                TextSpan(
+                  text: winner.icon != null
+                      ? '${winner.icon} ${winner.name}'
+                      : winner.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.successGreen,
+                  ),
+                ),
+                const TextSpan(text: ' vs '),
+                TextSpan(
+                  text: loser.icon != null
+                      ? '${loser.icon} ${loser.name}'
+                      : loser.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.errorRed,
+                  ),
+                ),
+              ],
+            ),
+          );
         }
 
         return Card(
@@ -412,10 +476,7 @@ class _MatchesTab extends StatelessWidget {
                 ),
               );
             },
-            title: Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
+            title: titleWidget,
             subtitle: Text(subtitle),
             trailing: const Icon(Icons.chevron_right),
           ),

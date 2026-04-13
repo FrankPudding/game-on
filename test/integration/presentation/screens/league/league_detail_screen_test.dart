@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:game_on/domain/entities/league.dart';
 import 'package:game_on/domain/entities/league_player.dart';
+import 'package:game_on/domain/entities/matches/simple_match.dart';
+import 'package:game_on/domain/entities/side.dart';
 
 import 'package:game_on/providers/league_detail_provider.dart';
 import 'package:game_on/presentation/screens/league/league_detail_screen.dart';
@@ -109,6 +111,57 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('No matches played yet'), findsOneWidget);
+    });
+
+    testWidgets('should show match results in correct format', (tester) async {
+      final p1 = tState.players.first.copyWith(icon: '🥇');
+      final p2 = LeaguePlayer(
+          id: 'p2',
+          userId: 'u2',
+          leagueId: 'l1',
+          name: 'Player 2',
+          icon: '🥈',
+          avatarColorHex: '00FF00');
+
+      final matchWin = SimpleMatch(
+        id: 'm1',
+        leagueId: 'l1',
+        playedAt: DateTime.now(),
+        isComplete: true,
+        sides: [
+          Side(id: 's1', playerIds: ['p1']),
+          Side(id: 's2', playerIds: ['p2']),
+        ],
+        winnerSideId: 's1',
+      );
+
+      final matchDraw = SimpleMatch(
+        id: 'm2',
+        leagueId: 'l1',
+        playedAt: DateTime.now(),
+        isComplete: true,
+        sides: [
+          Side(id: 's4', playerIds: ['p2']),
+          Side(id: 's3', playerIds: ['p1']),
+        ],
+        isDraw: true,
+      );
+
+      final stateWithMatches = LeagueDetailState(
+        players: [p1, p2],
+        matches: [matchWin, matchDraw],
+        playerStats: tState.playerStats,
+      );
+
+      await tester
+          .pumpWidget(createWidgetWithValue(AsyncValue.data(stateWithMatches)));
+      await tester.pump();
+
+      await tester.tap(find.text('Matches'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('🥇 Player 1 vs 🥈 Player 2'), findsOneWidget);
+      expect(find.text('🥈 Player 2 vs 🥇 Player 1'), findsOneWidget);
     });
   });
 }
