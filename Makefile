@@ -28,6 +28,6 @@ coverage:
 # Run all checks (for CI or pre-commit)
 check: check-format lint
 
-# Serve the app at localhost:8080
+# Serve the app at 0.0.0.0:6066
 serve:
-	flutter run -d web-server --web-port 8080 --web-hostname localhost
+	flutter run -d web-server --web-port 6066 --web-hostname 0.0.0.0
