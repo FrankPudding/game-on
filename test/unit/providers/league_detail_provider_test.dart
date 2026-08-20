@@ -6,6 +6,7 @@ import 'package:game_on/domain/entities/league_player.dart';
 import 'package:game_on/domain/entities/matches/simple_match.dart';
 import 'package:game_on/domain/entities/side.dart';
 import 'package:game_on/domain/entities/ranking_policies/simple_ranking_policy.dart';
+import 'package:game_on/domain/entities/ranking_policies/goal_difference_ranking_policy.dart';
 import 'package:game_on/domain/entities/user.dart';
 import 'package:game_on/domain/repositories/league_repository.dart';
 import 'package:game_on/domain/repositories/league_player_repository.dart';
@@ -266,6 +267,28 @@ void main() {
       expect(captured.playedAt, customDate);
     });
 
+    test('logSimpleMatch should store scores on sides', () async {
+      when(() => mockMatchRepo.logSimpleMatch(
+            match: any(named: 'match'),
+          )).thenAnswer((_) async => {});
+
+      final notifier = container.read(leagueDetailProvider(tLeagueId).notifier);
+      await notifier.logSimpleMatch(
+        winnerId: 'p1',
+        loserId: 'p2',
+        isDraw: false,
+        winnerScore: 4,
+        loserScore: 2,
+      );
+
+      final captured = verify(() => mockMatchRepo.logSimpleMatch(
+            match: captureAny(named: 'match'),
+          )).captured.first as SimpleMatch;
+
+      expect(captured.sides[0].score, 4);
+      expect(captured.sides[1].score, 2);
+    });
+
     test('updateSimpleMatch should fetch, update match and sides and refresh',
         () async {
       final oldMatch = SimpleMatch(
@@ -398,6 +421,128 @@ void main() {
       verifyNever(() => mockPlayerRepo.delete('p1'));
     });
 
+    group('PlayerStats', () {
+      test('copyWith should update provided fields', () {
+        const stats = PlayerStats(points: 3, matchesPlayed: 1);
+
+        final updated = stats.copyWith(points: 5);
+
+        expect(updated.points, 5);
+        expect(updated.matchesPlayed, 1);
+      });
+
+      test('copyWith without args should preserve values', () {
+        const stats = PlayerStats(points: 3, matchesPlayed: 1);
+
+        final updated = stats.copyWith();
+
+        expect(updated.points, 3);
+        expect(updated.matchesPlayed, 1);
+      });
+
+      test('goal stats and goal difference should update correctly', () {
+        const stats = PlayerStats(
+          points: 3,
+          matchesPlayed: 1,
+          goalsFor: 4,
+          goalsAgainst: 1,
+        );
+
+        expect(stats.goalDifference, 3);
+
+        final updated = stats.copyWith(goalsFor: 6, goalsAgainst: 2);
+        expect(updated.goalsFor, 6);
+        expect(updated.goalsAgainst, 2);
+        expect(updated.goalDifference, 4);
+      });
+    });
+
+    group('Error paths', () {
+      test('refresh should reload data', () async {
+        await container.read(leagueDetailProvider(tLeagueId).future);
+
+        when(() => mockLeagueRepo.get(tLeagueId))
+            .thenAnswer((_) async => tLeague);
+        final notifier =
+            container.read(leagueDetailProvider(tLeagueId).notifier);
+        await notifier.refresh();
+
+        final state = container.read(leagueDetailProvider(tLeagueId)).value;
+        expect(state?.players.length, 2);
+      });
+
+      test('should throw when league does not exist', () async {
+        when(() => mockLeagueRepo.get(tLeagueId)).thenAnswer((_) async => null);
+
+        final notifier =
+            container.read(leagueDetailProvider(tLeagueId).notifier);
+
+        await notifier.refresh();
+
+        expect(
+            container.read(leagueDetailProvider(tLeagueId)).hasError, isTrue);
+      });
+
+      test('addPlayer with existing userId should reuse user info', () async {
+        final existingUser = User(
+            id: 'u9', name: 'Existing', avatarColorHex: '123456', icon: '🎯');
+        when(() => mockUserRepo.get('u9'))
+            .thenAnswer((_) async => existingUser);
+        when(() => mockPlayerRepo.put(any())).thenAnswer((_) async => {});
+
+        final notifier =
+            container.read(leagueDetailProvider(tLeagueId).notifier);
+        await notifier.addPlayer(name: '', userId: 'u9');
+
+        verify(() => mockUserRepo.get('u9')).called(1);
+        verify(() => mockPlayerRepo.put(any(
+            that: isA<LeaguePlayer>()
+                .having((p) => p.name, 'name', 'Existing')
+                .having((p) => p.icon, 'icon', '🎯')))).called(1);
+        verifyNever(() => mockUserRepo.put(any()));
+      });
+
+      test('updateSimpleMatch should set error state when match not found',
+          () async {
+        when(() => mockMatchRepo.get('missing')).thenAnswer((_) async => null);
+
+        final notifier =
+            container.read(leagueDetailProvider(tLeagueId).notifier);
+
+        await notifier.updateSimpleMatch(
+          matchId: 'missing',
+          winnerId: 'p1',
+          loserId: 'p2',
+          isDraw: false,
+        );
+
+        expect(
+            container.read(leagueDetailProvider(tLeagueId)).hasError, isTrue);
+      });
+
+      test('updatePlayer should throw when player not found', () async {
+        when(() => mockPlayerRepo.get('missing')).thenAnswer((_) async => null);
+
+        final notifier =
+            container.read(leagueDetailProvider(tLeagueId).notifier);
+
+        expect(notifier.updatePlayer(playerId: 'missing', name: 'Nope'),
+            throwsException);
+      });
+
+      test('removePlayer should surface repository errors', () async {
+        when(() => mockMatchRepo.getByLeague(tLeagueId))
+            .thenAnswer((_) async => []);
+        when(() => mockPlayerRepo.delete('p1'))
+            .thenThrow(Exception('delete failed'));
+
+        final notifier =
+            container.read(leagueDetailProvider(tLeagueId).notifier);
+
+        expect(notifier.removePlayer('p1'), throwsException);
+      });
+    });
+
     group('Ranking Sort', () {
       test('should sort by points DESC, then matchesPlayed ASC', () async {
         // Player 1: 1 match, 3 points
@@ -437,6 +582,117 @@ void main() {
 
         expect(
             state.players.first.id, 'p1'); // P1 should be first (less matches)
+      });
+    });
+
+    group('Goal Difference Ranking', () {
+      setUp(() {
+        when(() => mockPolicyRepo.getByLeagueId(tLeagueId))
+            .thenAnswer((_) async => GoalDifferenceRankingPolicy(
+                  id: 'rp-gd',
+                  name: 'GD',
+                  leagueId: tLeagueId,
+                  pointsForWin: 3,
+                  pointsForDraw: 1,
+                  pointsForLoss: 0,
+                ));
+      });
+
+      test('should compute goals for, against and goal difference', () async {
+        when(() => mockMatchRepo.getByLeague(tLeagueId))
+            .thenAnswer((_) async => [
+                  SimpleMatch(
+                    id: 'm1',
+                    leagueId: tLeagueId,
+                    playedAt: DateTime.now(),
+                    isComplete: true,
+                    sides: [
+                      Side(id: 's1', playerIds: ['p1'], score: 3),
+                      Side(id: 's2', playerIds: ['p2'], score: 1),
+                    ],
+                    winnerSideId: 's1',
+                  ),
+                ]);
+
+        await container.read(leagueDetailProvider(tLeagueId).future);
+        final state = container.read(leagueDetailProvider(tLeagueId)).value!;
+
+        expect(state.isGoalDifference, isTrue);
+        expect(state.playerStats['p1']?.points, 3);
+        expect(state.playerStats['p1']?.goalsFor, 3);
+        expect(state.playerStats['p1']?.goalsAgainst, 1);
+        expect(state.playerStats['p1']?.goalDifference, 2);
+        expect(state.playerStats['p2']?.points, 0);
+        expect(state.playerStats['p2']?.goalsFor, 1);
+        expect(state.playerStats['p2']?.goalsAgainst, 3);
+        expect(state.playerStats['p2']?.goalDifference, -2);
+      });
+
+      test('should rank by points, then goal difference, then goals for',
+          () async {
+        when(() => mockPlayerRepo.getByLeague(tLeagueId))
+            .thenAnswer((_) async => [
+                  tPlayer1,
+                  tPlayer2,
+                  LeaguePlayer(
+                      id: 'p3',
+                      userId: 'u3',
+                      leagueId: tLeagueId,
+                      name: 'Player 3',
+                      avatarColorHex: '0000FF'),
+                  LeaguePlayer(
+                      id: 'p4',
+                      userId: 'u4',
+                      leagueId: tLeagueId,
+                      name: 'Player 4',
+                      avatarColorHex: '00FFFF'),
+                ]);
+        when(() => mockMatchRepo.getByLeague(tLeagueId))
+            .thenAnswer((_) async => [
+                  // p1: 3pts, GD +3, GF 4
+                  SimpleMatch(
+                    id: 'm1',
+                    leagueId: tLeagueId,
+                    playedAt: DateTime.now(),
+                    isComplete: true,
+                    sides: [
+                      Side(id: 's1', playerIds: ['p1'], score: 4),
+                      Side(id: 's2', playerIds: ['p4'], score: 1),
+                    ],
+                    winnerSideId: 's1',
+                  ),
+                  // p2: 3pts, GD +3, GF 3
+                  SimpleMatch(
+                    id: 'm2',
+                    leagueId: tLeagueId,
+                    playedAt: DateTime.now(),
+                    isComplete: true,
+                    sides: [
+                      Side(id: 's3', playerIds: ['p2'], score: 3),
+                      Side(id: 's4', playerIds: ['p4'], score: 0),
+                    ],
+                    winnerSideId: 's3',
+                  ),
+                  // p3: 3pts, GD +2, GF 2
+                  SimpleMatch(
+                    id: 'm3',
+                    leagueId: tLeagueId,
+                    playedAt: DateTime.now(),
+                    isComplete: true,
+                    sides: [
+                      Side(id: 's5', playerIds: ['p3'], score: 2),
+                      Side(id: 's6', playerIds: ['p4'], score: 0),
+                    ],
+                    winnerSideId: 's5',
+                  ),
+                ]);
+
+        await container.read(leagueDetailProvider(tLeagueId).future);
+        final state = container.read(leagueDetailProvider(tLeagueId)).value!;
+
+        // p1 and p2 tied on points & GD, p1 ahead on goals for
+        expect(
+            state.players.map((p) => p.id).toList(), ['p1', 'p2', 'p3', 'p4']);
       });
     });
   });

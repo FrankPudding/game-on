@@ -23,10 +23,14 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
   late DateTime _selectedDate;
   final _dateController = TextEditingController();
   final _dateFormat = DateFormat('yyyy-MM-dd');
+  late final TextEditingController _score1Controller;
+  late final TextEditingController _score2Controller;
 
   @override
   void initState() {
     super.initState();
+    _score1Controller = TextEditingController();
+    _score2Controller = TextEditingController();
     if (widget.match != null) {
       final match = widget.match!;
       final date = match.playedAt;
@@ -34,6 +38,8 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
       if (match.sides.length >= 2) {
         _player1Id = match.sides[0].playerIds.first;
         _player2Id = match.sides[1].playerIds.first;
+        _score1Controller.text = match.sides[0].score?.toString() ?? '';
+        _score2Controller.text = match.sides[1].score?.toString() ?? '';
 
         if (match.isDraw) {
           _winnerSelection = 'draw';
@@ -49,6 +55,14 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
       _selectedDate = DateTime(now.year, now.month, now.day);
     }
     _dateController.text = _dateFormat.format(_selectedDate);
+  }
+
+  @override
+  void dispose() {
+    _dateController.dispose();
+    _score1Controller.dispose();
+    _score2Controller.dispose();
+    super.dispose();
   }
 
   void _onPlayersChanged() {
@@ -87,7 +101,10 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
   }
 
   Future<void> _submit() async {
-    if (_player1Id == null || _player2Id == null || _winnerSelection == null) {
+    final state = ref.read(leagueDetailProvider(widget.leagueId)).value;
+    final isGoalDifference = state?.isGoalDifference ?? false;
+
+    if (_player1Id == null || _player2Id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select players and a winner')),
       );
@@ -101,34 +118,96 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
       return;
     }
 
-    final isDraw = _winnerSelection == 'draw';
-    final winnerId = isDraw ? _player1Id! : _winnerSelection!;
-    final loserId = isDraw
-        ? _player2Id!
-        : (_winnerSelection == _player1Id ? _player2Id! : _player1Id!);
+    final bool isDraw;
+    final String winnerId;
+    final String loserId;
+    int? winnerScore;
+    int? loserScore;
+
+    if (isGoalDifference) {
+      final s1 = int.tryParse(_score1Controller.text.trim());
+      final s2 = int.tryParse(_score2Controller.text.trim());
+      if (s1 == null || s2 == null || s1 < 0 || s2 < 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter a valid score for each player'),
+          ),
+        );
+        return;
+      }
+      isDraw = s1 == s2;
+      if (s1 > s2) {
+        winnerId = _player1Id!;
+        loserId = _player2Id!;
+        winnerScore = s1;
+        loserScore = s2;
+      } else if (s2 > s1) {
+        winnerId = _player2Id!;
+        loserId = _player1Id!;
+        winnerScore = s2;
+        loserScore = s1;
+      } else {
+        winnerId = _player1Id!;
+        loserId = _player2Id!;
+        winnerScore = s1;
+        loserScore = s2;
+      }
+    } else {
+      if (_winnerSelection == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select players and a winner')),
+        );
+        return;
+      }
+      isDraw = _winnerSelection == 'draw';
+      winnerId = isDraw ? _player1Id! : _winnerSelection!;
+      loserId = isDraw
+          ? _player2Id!
+          : (_winnerSelection == _player1Id ? _player2Id! : _player1Id!);
+    }
 
     setState(() => _isLoading = true);
 
     try {
+      final notifier = ref.read(leagueDetailProvider(widget.leagueId).notifier);
       if (widget.match != null) {
-        await ref
-            .read(leagueDetailProvider(widget.leagueId).notifier)
-            .updateSimpleMatch(
-              matchId: widget.match!.id,
-              winnerId: winnerId,
-              loserId: loserId,
-              isDraw: isDraw,
-              playedAt: _selectedDate,
-            );
+        if (isGoalDifference) {
+          await notifier.updateSimpleMatch(
+            matchId: widget.match!.id,
+            winnerId: winnerId,
+            loserId: loserId,
+            isDraw: isDraw,
+            playedAt: _selectedDate,
+            winnerScore: winnerScore,
+            loserScore: loserScore,
+          );
+        } else {
+          await notifier.updateSimpleMatch(
+            matchId: widget.match!.id,
+            winnerId: winnerId,
+            loserId: loserId,
+            isDraw: isDraw,
+            playedAt: _selectedDate,
+          );
+        }
       } else {
-        await ref
-            .read(leagueDetailProvider(widget.leagueId).notifier)
-            .logSimpleMatch(
-              winnerId: winnerId,
-              loserId: loserId,
-              isDraw: isDraw,
-              playedAt: _selectedDate,
-            );
+        if (isGoalDifference) {
+          await notifier.logSimpleMatch(
+            winnerId: winnerId,
+            loserId: loserId,
+            isDraw: isDraw,
+            playedAt: _selectedDate,
+            winnerScore: winnerScore,
+            loserScore: loserScore,
+          );
+        } else {
+          await notifier.logSimpleMatch(
+            winnerId: winnerId,
+            loserId: loserId,
+            isDraw: isDraw,
+            playedAt: _selectedDate,
+          );
+        }
       }
 
       if (mounted) {
@@ -318,54 +397,10 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
                 ),
                 const SizedBox(height: 48),
                 if (_player1Id != null && _player2Id != null) ...[
-                  const Text('WINNER',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          color: AppTheme.textTertiary,
-                          letterSpacing: 1.2,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: _winnerSelection,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: AppTheme.surfaceOffWhite,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 16),
-                    ),
-                    hint: const Text('Select Result'),
-                    items: [
-                      DropdownMenuItem(
-                        value: _player1Id,
-                        child: Text(
-                            state.players
-                                .firstWhere((p) => p.id == _player1Id)
-                                .name,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                      DropdownMenuItem(
-                        value: _player2Id,
-                        child: Text(
-                            state.players
-                                .firstWhere((p) => p.id == _player2Id)
-                                .name,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                      const DropdownMenuItem(
-                        value: 'draw',
-                        child: Text('Draw',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                    ],
-                    onChanged: (val) => setState(() => _winnerSelection = val),
-                  ),
+                  if (state.isGoalDifference)
+                    _buildScoreSection(state)
+                  else
+                    _buildWinnerSection(state),
                 ],
                 const SizedBox(height: 48),
                 if (_isLoading)
@@ -392,6 +427,111 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildWinnerSection(LeagueDetailState state) {
+    return Column(
+      children: [
+        const Text('WINNER',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                color: AppTheme.textTertiary,
+                letterSpacing: 1.2,
+                fontSize: 12,
+                fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          initialValue: _winnerSelection,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: AppTheme.surfaceOffWhite,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          ),
+          hint: const Text('Select Result'),
+          items: [
+            DropdownMenuItem(
+              value: _player1Id,
+              child: Text(
+                  state.players.firstWhere((p) => p.id == _player1Id).name,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            DropdownMenuItem(
+              value: _player2Id,
+              child: Text(
+                  state.players.firstWhere((p) => p.id == _player2Id).name,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            const DropdownMenuItem(
+              value: 'draw',
+              child:
+                  Text('Draw', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+          onChanged: (val) => setState(() => _winnerSelection = val),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScoreSection(LeagueDetailState state) {
+    return Column(
+      children: [
+        const Text('SCORE',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                color: AppTheme.textTertiary,
+                letterSpacing: 1.2,
+                fontSize: 12,
+                fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _score1Controller,
+                decoration: InputDecoration(
+                  labelText:
+                      state.players.firstWhere((p) => p.id == _player1Id).name,
+                  filled: true,
+                  fillColor: AppTheme.surfaceOffWhite,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: TextFormField(
+                controller: _score2Controller,
+                decoration: InputDecoration(
+                  labelText:
+                      state.players.firstWhere((p) => p.id == _player2Id).name,
+                  filled: true,
+                  fillColor: AppTheme.surfaceOffWhite,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

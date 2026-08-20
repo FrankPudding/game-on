@@ -132,6 +132,7 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
             _StandingsTab(
               players: state.players,
               playerStats: state.playerStats,
+              isGoalDifference: state.isGoalDifference,
               onAddPlayer: _showAddPlayerDialog,
               onEditPlayer: _showEditPlayerDialog,
             ),
@@ -167,11 +168,13 @@ class _StandingsTab extends StatelessWidget {
     required this.playerStats,
     required this.onAddPlayer,
     required this.onEditPlayer,
+    this.isGoalDifference = false,
   });
   final List<LeaguePlayer> players;
   final Map<String, PlayerStats> playerStats;
   final VoidCallback onAddPlayer;
   final Function(LeaguePlayer) onEditPlayer;
+  final bool isGoalDifference;
 
   @override
   Widget build(BuildContext context) {
@@ -209,9 +212,14 @@ class _StandingsTab extends StatelessWidget {
               const SizedBox(width: 32, child: Text('#', style: _headerStyle)),
               const Expanded(child: Text('PLAYER', style: _headerStyle)),
               _buildHeaderCell('P', 'Matches Played'),
-              const SizedBox(width: 16),
+              if (isGoalDifference) ...[
+                _buildHeaderCell('GF', 'Goals For'),
+                _buildHeaderCell('GA', 'Goals Against'),
+                _buildHeaderCell('GD', 'Goal Difference'),
+              ],
+              const SizedBox(width: 4),
               _buildHeaderCell('Pts', 'Total Points',
-                  width: 60, align: TextAlign.right),
+                  width: 40, align: TextAlign.center),
             ],
           ),
         ),
@@ -298,12 +306,47 @@ class _StandingsTab extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      if (isGoalDifference) ...[
+                        SizedBox(
+                          width: 40,
+                          child: Text(
+                            '${stats.goalsFor}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 40,
+                          child: Text(
+                            '${stats.goalsAgainst}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 40,
+                          child: Text(
+                            _formatGoalDifference(stats.goalDifference),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(width: 4),
                       SizedBox(
-                        width: 60,
+                        width: 40,
                         child: Text(
                           '${stats.points}',
-                          textAlign: TextAlign.right,
+                          textAlign: TextAlign.center,
                           style: const TextStyle(
                             color: AppTheme.accentRed,
                             fontWeight: FontWeight.bold,
@@ -344,6 +387,8 @@ class _StandingsTab extends StatelessWidget {
       ),
     );
   }
+
+  String _formatGoalDifference(int gd) => gd > 0 ? '+$gd' : '$gd';
 }
 
 class _MatchesTab extends StatelessWidget {

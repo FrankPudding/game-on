@@ -8,12 +8,14 @@ class SideHiveModel {
   SideHiveModel({
     required this.id,
     this.playerIds,
+    this.score,
   });
 
   factory SideHiveModel.fromDomain(Side side) {
     return SideHiveModel(
       id: side.id,
       playerIds: side.playerIds,
+      score: side.score,
     );
   }
 
@@ -23,10 +25,14 @@ class SideHiveModel {
   @HiveField(2)
   final List<String>? playerIds;
 
+  @HiveField(3)
+  final int? score;
+
   Side toDomain() {
     return Side(
       id: id,
       playerIds: playerIds ?? [],
+      score: score,
     );
   }
 }

@@ -81,5 +81,22 @@ void main() {
               that: isA<LeagueHiveModel>()
                   .having((m) => m.isArchived, 'isArchived', true)))).called(1);
     });
+
+    test('archiveLeague should do nothing if league does not exist', () async {
+      when(() => mockLeagueBox.get('missing')).thenReturn(null);
+
+      await repository.archiveLeague('missing');
+
+      verify(() => mockLeagueBox.get('missing')).called(1);
+      verifyNever(() => mockLeagueBox.put(any(), any()));
+    });
+
+    test('delete should call box.delete', () async {
+      when(() => mockLeagueBox.delete('1')).thenAnswer((_) async => {});
+
+      await repository.delete('1');
+
+      verify(() => mockLeagueBox.delete('1')).called(1);
+    });
   });
 }

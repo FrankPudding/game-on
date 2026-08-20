@@ -4,6 +4,8 @@ import '../domain/entities/league_player.dart';
 import '../domain/entities/side.dart';
 import '../domain/entities/matches/simple_match.dart';
 import '../domain/entities/ranking_policies/simple_ranking_policy.dart';
+import '../domain/entities/ranking_policies/goal_difference_ranking_policy.dart';
+import '../domain/entities/ranking_policy.dart';
 import '../domain/entities/user.dart';
 import '../domain/repositories/league_repository.dart';
 import '../domain/repositories/league_player_repository.dart';
@@ -28,14 +30,27 @@ class PlayerStats {
   const PlayerStats({
     required this.points,
     required this.matchesPlayed,
+    this.goalsFor = 0,
+    this.goalsAgainst = 0,
   });
   final int points;
   final int matchesPlayed;
+  final int goalsFor;
+  final int goalsAgainst;
 
-  PlayerStats copyWith({int? points, int? matchesPlayed}) {
+  int get goalDifference => goalsFor - goalsAgainst;
+
+  PlayerStats copyWith({
+    int? points,
+    int? matchesPlayed,
+    int? goalsFor,
+    int? goalsAgainst,
+  }) {
     return PlayerStats(
       points: points ?? this.points,
       matchesPlayed: matchesPlayed ?? this.matchesPlayed,
+      goalsFor: goalsFor ?? this.goalsFor,
+      goalsAgainst: goalsAgainst ?? this.goalsAgainst,
     );
   }
 }
@@ -45,10 +60,14 @@ class LeagueDetailState {
     required this.players,
     required this.matches,
     required this.playerStats,
+    this.rankingPolicy,
   });
   final List<LeaguePlayer> players;
   final List<SimpleMatch> matches;
   final Map<String, PlayerStats> playerStats;
+  final RankingPolicy? rankingPolicy;
+
+  bool get isGoalDifference => rankingPolicy is GoalDifferenceRankingPolicy;
 }
 
 // Notifier
@@ -97,7 +116,36 @@ class LeagueDetailNotifier
     }
 
     final policy = await _policyRepo.getByLeagueId(_leagueId);
-    if (policy is SimpleRankingPolicy) {
+
+    if (policy is GoalDifferenceRankingPolicy) {
+      for (final match in matches) {
+        if (!match.isComplete) continue;
+
+        for (final side in match.sides) {
+          final otherSide = match.sides.firstWhere(
+            (s) => s.id != side.id,
+            orElse: () => side,
+          );
+          final isWinner = !match.isDraw && match.winnerSideId == side.id;
+          final points = match.isDraw
+              ? policy.pointsForDraw
+              : (isWinner ? policy.pointsForWin : policy.pointsForLoss);
+          final goalsFor = side.score ?? 0;
+          final goalsAgainst = otherSide.score ?? 0;
+
+          for (final playerId in side.playerIds) {
+            final current = playerStats[playerId] ??
+                const PlayerStats(points: 0, matchesPlayed: 0);
+            playerStats[playerId] = current.copyWith(
+              points: current.points + points,
+              matchesPlayed: current.matchesPlayed + 1,
+              goalsFor: current.goalsFor + goalsFor,
+              goalsAgainst: current.goalsAgainst + goalsAgainst,
+            );
+          }
+        }
+      }
+    } else if (policy is SimpleRankingPolicy) {
       for (final match in matches) {
         if (!match.isComplete) continue;
 
@@ -119,18 +167,27 @@ class LeagueDetailNotifier
       }
     }
 
-    // Sort players by points (descending)
+    // Sort players: by points, then goal difference, then goals for (GD leagues)
     final sortedPlayers = List<LeaguePlayer>.from(rawPlayers)
       ..sort((a, b) {
-        final ptsA = playerStats[a.id]?.points ?? 0;
-        final ptsB = playerStats[b.id]?.points ?? 0;
-        return ptsB.compareTo(ptsA);
+        final statsA = playerStats[a.id];
+        final statsB = playerStats[b.id];
+        var result = (statsB?.points ?? 0).compareTo(statsA?.points ?? 0);
+        if (result == 0 && policy is GoalDifferenceRankingPolicy) {
+          result = (statsB?.goalDifference ?? 0)
+              .compareTo(statsA?.goalDifference ?? 0);
+        }
+        if (result == 0 && policy is GoalDifferenceRankingPolicy) {
+          result = (statsB?.goalsFor ?? 0).compareTo(statsA?.goalsFor ?? 0);
+        }
+        return result;
       });
 
     return LeagueDetailState(
       players: sortedPlayers,
       matches: matches,
       playerStats: playerStats,
+      rankingPolicy: policy,
     );
   }
 
@@ -187,16 +244,20 @@ class LeagueDetailNotifier
     required String loserId,
     required bool isDraw,
     DateTime? playedAt,
+    int? winnerScore,
+    int? loserScore,
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final winnerSide = Side(
         id: _uuid.v4(),
         playerIds: [winnerId],
+        score: winnerScore,
       );
       final loserSide = Side(
         id: _uuid.v4(),
         playerIds: [loserId],
+        score: loserScore,
       );
 
       final now = DateTime.now();
@@ -221,6 +282,8 @@ class LeagueDetailNotifier
     required String loserId,
     required bool isDraw,
     DateTime? playedAt,
+    int? winnerScore,
+    int? loserScore,
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -230,10 +293,12 @@ class LeagueDetailNotifier
       final winnerSide = Side(
         id: _uuid.v4(),
         playerIds: [winnerId],
+        score: winnerScore,
       );
       final loserSide = Side(
         id: _uuid.v4(),
         playerIds: [loserId],
+        score: loserScore,
       );
 
       final updatedMatch = match.copyWith(
