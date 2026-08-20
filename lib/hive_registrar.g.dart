@@ -6,12 +6,14 @@ import 'package:hive_ce/hive.dart';
 import 'package:game_on/data/models/hive/league_hive_model.dart';
 import 'package:game_on/data/models/hive/league_player_hive_model.dart';
 import 'package:game_on/data/models/hive/matches/simple_match_hive_model.dart';
+import 'package:game_on/data/models/hive/ranking_policies/goal_difference_ranking_policy_hive_model.dart';
 import 'package:game_on/data/models/hive/ranking_policies/simple_ranking_policy_hive_model.dart';
 import 'package:game_on/data/models/hive/side_hive_model.dart';
 import 'package:game_on/data/models/hive/user_hive_model.dart';
 
 extension HiveRegistrar on HiveInterface {
   void registerAdapters() {
+    registerAdapter(GoalDifferenceRankingPolicyHiveModelAdapter());
     registerAdapter(LeagueHiveModelAdapter());
     registerAdapter(LeaguePlayerHiveModelAdapter());
     registerAdapter(SideHiveModelAdapter());
@@ -23,6 +25,7 @@ extension HiveRegistrar on HiveInterface {
 
 extension IsolatedHiveRegistrar on IsolatedHiveInterface {
   void registerAdapters() {
+    registerAdapter(GoalDifferenceRankingPolicyHiveModelAdapter());
     registerAdapter(LeagueHiveModelAdapter());
     registerAdapter(LeaguePlayerHiveModelAdapter());
     registerAdapter(SideHiveModelAdapter());

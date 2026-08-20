@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../../domain/entities/ranking_policy_type.dart';
 import 'create_simple_league_screen.dart';
+import 'create_goal_difference_league_screen.dart';
 
 class SelectRankingPolicyScreen extends StatelessWidget {
   const SelectRankingPolicyScreen({super.key});
@@ -20,13 +21,24 @@ class SelectRankingPolicyScreen extends StatelessWidget {
             margin: EdgeInsets.zero,
             child: InkWell(
               onTap: () {
-                if (policyType == RankingPolicyType.simple) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const CreateSimpleLeagueScreen(),
-                    ),
-                  );
+                switch (policyType) {
+                  case RankingPolicyType.simple:
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CreateSimpleLeagueScreen(),
+                      ),
+                    );
+                    break;
+                  case RankingPolicyType.goalDifference:
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const CreateGoalDifferenceLeagueScreen(),
+                      ),
+                    );
+                    break;
                 }
               },
               borderRadius: BorderRadius.circular(16),

@@ -19,17 +19,20 @@ class SideHiveModelAdapter extends TypeAdapter<SideHiveModel> {
     return SideHiveModel(
       id: fields[0] as String,
       playerIds: (fields[2] as List?)?.cast<String>(),
+      score: (fields[3] as num?)?.toInt(),
     );
   }
 
   @override
   void write(BinaryWriter writer, SideHiveModel obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(3)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(2)
-      ..write(obj.playerIds);
+      ..write(obj.playerIds)
+      ..writeByte(3)
+      ..write(obj.score);
   }
 
   @override

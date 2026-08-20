@@ -4,6 +4,7 @@ import '../data/models/hive/user_hive_model.dart';
 import '../data/models/hive/league_hive_model.dart';
 import '../data/models/hive/league_player_hive_model.dart';
 import '../data/models/hive/ranking_policies/simple_ranking_policy_hive_model.dart';
+import '../data/models/hive/ranking_policies/goal_difference_ranking_policy_hive_model.dart';
 
 import '../data/models/hive/matches/simple_match_hive_model.dart';
 import '../data/models/hive/side_hive_model.dart';
@@ -60,6 +61,9 @@ Future<void> _initHive() async {
   }
   if (!Hive.isAdapterRegistered(9)) {
     Hive.registerAdapter(SimpleRankingPolicyHiveModelAdapter());
+  }
+  if (!Hive.isAdapterRegistered(10)) {
+    Hive.registerAdapter(GoalDifferenceRankingPolicyHiveModelAdapter());
   }
 
   // Run Migrations

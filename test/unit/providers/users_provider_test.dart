@@ -115,5 +115,19 @@ void main() {
       expect(state, [updatedUser, tUser2]);
       verify(() => mockUpdateService.execute(updatedUser)).called(1);
     });
+
+    test('refresh should reload users from repository', () async {
+      when(() => mockUserRepo.getAll())
+          .thenAnswer((_) async => [tUser1, tUser2]);
+
+      await container.read(usersProvider.future);
+
+      when(() => mockUserRepo.getAll()).thenAnswer((_) async => [tUser1]);
+
+      await container.read(usersProvider.notifier).refresh();
+
+      final state = container.read(usersProvider).value;
+      expect(state, [tUser1]);
+    });
   });
 }

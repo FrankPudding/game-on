@@ -40,10 +40,52 @@ void main() {
       expect(result?.name, tPlayer.name);
     });
 
+    test('get should return null when player does not exist', () async {
+      when(() => mockPlayerBox.get('missing')).thenReturn(null);
+
+      final result = await repository.get('missing');
+
+      expect(result, isNull);
+    });
+
     test('getByLeague should return players for specific league', () async {
-      when(() => mockPlayerBox.values).thenReturn([tModel]);
+      final otherPlayer = LeaguePlayer(
+        id: 'p2',
+        userId: 'u2',
+        leagueId: 'l2',
+        name: 'Player 2',
+        avatarColorHex: '00FF00',
+      );
+      final otherModel = LeaguePlayerHiveModel.fromDomain(otherPlayer);
+      when(() => mockPlayerBox.values).thenReturn([tModel, otherModel]);
 
       final result = await repository.getByLeague('l1');
+
+      expect(result.length, 1);
+      expect(result.first.id, tPlayer.id);
+    });
+
+    test('getByUserId should return players for specific user', () async {
+      final otherPlayer = LeaguePlayer(
+        id: 'p2',
+        userId: 'u2',
+        leagueId: 'l1',
+        name: 'Player 2',
+        avatarColorHex: '00FF00',
+      );
+      final otherModel = LeaguePlayerHiveModel.fromDomain(otherPlayer);
+      when(() => mockPlayerBox.values).thenReturn([tModel, otherModel]);
+
+      final result = await repository.getByUserId('u1');
+
+      expect(result.length, 1);
+      expect(result.first.id, tPlayer.id);
+    });
+
+    test('getAll should return all players', () async {
+      when(() => mockPlayerBox.values).thenReturn([tModel]);
+
+      final result = await repository.getAll();
 
       expect(result.length, 1);
       expect(result.first.id, tPlayer.id);
@@ -55,6 +97,14 @@ void main() {
       await repository.put(tPlayer);
 
       verify(() => mockPlayerBox.put(tPlayer.id, any())).called(1);
+    });
+
+    test('delete should call box.delete', () async {
+      when(() => mockPlayerBox.delete('p1')).thenAnswer((_) async => {});
+
+      await repository.delete('p1');
+
+      verify(() => mockPlayerBox.delete('p1')).called(1);
     });
   });
 }

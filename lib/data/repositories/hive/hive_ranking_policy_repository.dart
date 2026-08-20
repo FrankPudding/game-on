@@ -1,9 +1,11 @@
 import 'package:hive_ce/hive_ce.dart';
 import '../../../../domain/entities/ranking_policy.dart';
 import '../../../../domain/entities/ranking_policies/simple_ranking_policy.dart';
+import '../../../../domain/entities/ranking_policies/goal_difference_ranking_policy.dart';
 import '../../../../domain/repositories/ranking_policy_repository.dart';
 import '../../models/hive/ranking_policy_hive_model.dart';
 import '../../models/hive/ranking_policies/simple_ranking_policy_hive_model.dart';
+import '../../models/hive/ranking_policies/goal_difference_ranking_policy_hive_model.dart';
 
 class HiveRankingPolicyRepository implements RankingPolicyRepository {
   HiveRankingPolicyRepository(this._box);
@@ -46,6 +48,9 @@ class HiveRankingPolicyRepository implements RankingPolicyRepository {
   RankingPolicyHiveModel _convertToHiveModel(RankingPolicy policy) {
     if (policy is SimpleRankingPolicy) {
       return SimpleRankingPolicyHiveModel.fromDomain(policy);
+    }
+    if (policy is GoalDifferenceRankingPolicy) {
+      return GoalDifferenceRankingPolicyHiveModel.fromDomain(policy);
     }
     throw UnimplementedError(
         'Ranking policy type not supported: ${policy.runtimeType}');
