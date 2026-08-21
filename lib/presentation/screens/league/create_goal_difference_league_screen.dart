@@ -62,7 +62,7 @@ class _CreateGoalDifferenceLeagueScreenState
       );
 
       if (mounted) {
-        Navigator.pop(context);
+        Navigator.of(context).popUntil((route) => route.isFirst);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('League created successfully!'),
