@@ -10,6 +10,7 @@ import '../../../providers/leagues_provider.dart';
 import '../../../providers/users_provider.dart';
 import '../../theme/app_theme.dart';
 import '../match/log_match_screen.dart';
+import '../settings/create_user_screen.dart';
 
 class LeagueDetailScreen extends ConsumerStatefulWidget {
   const LeagueDetailScreen({
@@ -629,6 +630,65 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
             ),
             const SizedBox(height: 16),
 
+            if (_isNewUser) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CreateUserScreen(),
+                        ),
+                      );
+                      if (mounted) {
+                        setState(() => _isNewUser = false);
+                      }
+                    },
+                    icon: const Icon(Icons.person_add),
+                    label: const Text('Create New User'),
+                  ),
+                ),
+              ),
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Player Name',
+                  border: OutlineInputBorder(),
+                ),
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 16),
+              const Text('Choose Icon',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: _icons.map((icon) {
+                  return InkWell(
+                    onTap: () => setState(() => _selectedIcon = icon),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _selectedIcon == icon
+                            ? AppTheme.accentRed.withValues(alpha: 0.2)
+                            : Colors.transparent,
+                        border: Border.all(
+                          color: _selectedIcon == icon
+                              ? AppTheme.accentRed
+                              : Colors.grey.withValues(alpha: 0.3),
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(icon, style: const TextStyle(fontSize: 24)),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+
             if (!_isNewUser)
               usersAsync.when(
                 data: (users) => Padding(
@@ -662,44 +722,46 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
                 error: (e, _) => Text('Error loading users: $e'),
               ),
 
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: _isNewUser ? 'Player Name' : 'Nickname (Optional)',
-                hintText: _isNewUser ? 'Enter name' : 'Defaults to user name',
-                border: const OutlineInputBorder(),
+            if (!_isNewUser)
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nickname (Optional)',
+                  hintText: 'Defaults to user name',
+                  border: OutlineInputBorder(),
+                ),
+                textCapitalization: TextCapitalization.words,
               ),
-              textCapitalization: TextCapitalization.words,
-              autofocus: _isNewUser,
-            ),
 
-            const SizedBox(height: 16),
-            const Text('Choose Icon',
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: _icons.map((icon) {
-                return InkWell(
-                  onTap: () => setState(() => _selectedIcon = icon),
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: _selectedIcon == icon
-                          ? AppTheme.accentRed.withValues(alpha: 0.2)
-                          : Colors.transparent,
-                      border: Border.all(
+            if (!_isNewUser) ...[
+              const SizedBox(height: 16),
+              const Text('Choose Icon',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: _icons.map((icon) {
+                  return InkWell(
+                    onTap: () => setState(() => _selectedIcon = icon),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
                         color: _selectedIcon == icon
-                            ? AppTheme.accentRed
-                            : Colors.grey.withValues(alpha: 0.3),
+                            ? AppTheme.accentRed.withValues(alpha: 0.2)
+                            : Colors.transparent,
+                        border: Border.all(
+                          color: _selectedIcon == icon
+                              ? AppTheme.accentRed
+                              : Colors.grey.withValues(alpha: 0.3),
+                        ),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      borderRadius: BorderRadius.circular(8),
+                      child: Text(icon, style: const TextStyle(fontSize: 24)),
                     ),
-                    child: Text(icon, style: const TextStyle(fontSize: 24)),
-                  ),
-                );
-              }).toList(),
-            ),
+                  );
+                }).toList(),
+              ),
+            ],
           ],
         ),
       ),
