@@ -369,6 +369,66 @@ void main() {
           )).called(1);
     });
 
+    testWidgets('should select icon when adding a new player',
+        (tester) async {
+      when(() => notifier.addPlayer(
+            name: any(named: 'name'),
+            userId: any(named: 'userId'),
+            icon: any(named: 'icon'),
+          )).thenAnswer((_) async => {});
+
+      await openScreen(
+        tester,
+        AsyncValue.data(tState),
+        extraOverrides: [
+          usersProvider.overrideWith(() => FakeUsersNotifier([])),
+        ],
+      );
+      await tester.pump();
+
+      await tester.tap(find.byIcon(Icons.person_add));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'Gamer');
+      await tester.tap(find.text('🎮'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Add to League'));
+      await tester.pumpAndSettle();
+
+      verify(() => notifier.addPlayer(
+            name: 'Gamer',
+            userId: null,
+            icon: '🎮',
+          )).called(1);
+    });
+
+    testWidgets('should cancel add player dialog', (tester) async {
+      await openScreen(
+        tester,
+        AsyncValue.data(tState),
+        extraOverrides: [
+          usersProvider.overrideWith(() => FakeUsersNotifier([])),
+        ],
+      );
+      await tester.pump();
+
+      await tester.tap(find.byIcon(Icons.person_add));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add Player'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add Player'), findsNothing);
+      verifyNever(() => notifier.addPlayer(
+            name: any(named: 'name'),
+            userId: any(named: 'userId'),
+            icon: any(named: 'icon'),
+          ));
+    });
+
     testWidgets('should add an existing user via dialog', (tester) async {
       when(() => notifier.addPlayer(
             name: any(named: 'name'),

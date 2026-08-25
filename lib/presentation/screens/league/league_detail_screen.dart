@@ -630,7 +630,7 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
             ),
             const SizedBox(height: 16),
 
-            if (_isNewUser)
+            if (_isNewUser) ...[
               Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: SizedBox(
@@ -652,6 +652,42 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
                   ),
                 ),
               ),
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Player Name',
+                  border: OutlineInputBorder(),
+                ),
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 16),
+              const Text('Choose Icon',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: _icons.map((icon) {
+                  return InkWell(
+                    onTap: () => setState(() => _selectedIcon = icon),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _selectedIcon == icon
+                            ? AppTheme.accentRed.withValues(alpha: 0.2)
+                            : Colors.transparent,
+                        border: Border.all(
+                          color: _selectedIcon == icon
+                              ? AppTheme.accentRed
+                              : Colors.grey.withValues(alpha: 0.3),
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(icon, style: const TextStyle(fontSize: 24)),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
 
             if (!_isNewUser)
               usersAsync.when(
@@ -734,14 +770,13 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
-        if (!_isNewUser)
-          ElevatedButton(
-            onPressed: _isLoading ? null : _submit,
-            child: _isLoading
-                ? const SizedBox(
-                    width: 16, height: 16, child: CircularProgressIndicator())
-                : const Text('Add to League'),
-          ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _submit,
+          child: _isLoading
+              ? const SizedBox(
+                  width: 16, height: 16, child: CircularProgressIndicator())
+              : const Text('Add to League'),
+        ),
       ],
     );
   }
