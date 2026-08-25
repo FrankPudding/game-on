@@ -369,8 +369,7 @@ void main() {
           )).called(1);
     });
 
-    testWidgets('should select icon when adding a new player',
-        (tester) async {
+    testWidgets('should select icon when adding a new player', (tester) async {
       when(() => notifier.addPlayer(
             name: any(named: 'name'),
             userId: any(named: 'userId'),
