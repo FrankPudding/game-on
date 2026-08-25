@@ -1,7 +1,7 @@
 .PHONY: all format lint fix check check-format coverage serve
 
-# Default target
-all: format lint
+# Default target - fix, format, lint, then coverage
+all: fix format lint coverage
 
 # Format code (like black)
 format:
