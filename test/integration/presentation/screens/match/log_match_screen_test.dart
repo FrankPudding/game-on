@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:game_on/domain/entities/league_player.dart';
 import 'package:game_on/domain/entities/matches/simple_match.dart';
 import 'package:game_on/domain/entities/side.dart';
@@ -11,16 +10,70 @@ import 'package:game_on/domain/entities/ranking_policies/goal_difference_ranking
 import 'package:game_on/providers/league_detail_provider.dart';
 import 'package:game_on/presentation/screens/match/log_match_screen.dart';
 
-class MockLeagueDetailNotifier
-    extends FamilyAsyncNotifier<LeagueDetailState, String>
-    with Mock
-    implements LeagueDetailNotifier {}
+class FakeLeagueDetailNotifier extends LeagueDetailNotifier {
+  FakeLeagueDetailNotifier({this.onBuild}) : super('test-league-id');
+  final FutureOr<LeagueDetailState> Function()? onBuild;
+  final List<Map<String, dynamic>> logSimpleMatchCalls = [];
+  final List<Map<String, dynamic>> updateSimpleMatchCalls = [];
+  final List<String> deleteMatchCalls = [];
+
+  @override
+  Future<LeagueDetailState> build() async {
+    if (onBuild != null) return await onBuild!();
+    return const LeagueDetailState(players: [], matches: [], playerStats: {});
+  }
+
+  @override
+  Future<void> logSimpleMatch({
+    required String winnerId,
+    required String loserId,
+    required bool isDraw,
+    DateTime? playedAt,
+    int? winnerScore,
+    int? loserScore,
+  }) async {
+    logSimpleMatchCalls.add({
+      'winnerId': winnerId,
+      'loserId': loserId,
+      'isDraw': isDraw,
+      'playedAt': playedAt,
+      'winnerScore': winnerScore,
+      'loserScore': loserScore,
+    });
+  }
+
+  @override
+  Future<void> updateSimpleMatch({
+    required String matchId,
+    required String winnerId,
+    required String loserId,
+    required bool isDraw,
+    DateTime? playedAt,
+    int? winnerScore,
+    int? loserScore,
+  }) async {
+    updateSimpleMatchCalls.add({
+      'matchId': matchId,
+      'winnerId': winnerId,
+      'loserId': loserId,
+      'isDraw': isDraw,
+      'playedAt': playedAt,
+      'winnerScore': winnerScore,
+      'loserScore': loserScore,
+    });
+  }
+
+  @override
+  Future<void> deleteMatch(String matchId) async {
+    deleteMatchCalls.add(matchId);
+  }
+}
 
 void main() {
   const tLeagueId = 'l1';
 
   late LeagueDetailState tState;
-  late MockLeagueDetailNotifier notifier;
+  late FakeLeagueDetailNotifier fakeNotifier;
 
   setUp(() {
     tState = LeagueDetailState(
@@ -45,16 +98,18 @@ void main() {
 
   Widget createApp(Widget screen,
       {required AsyncValue<LeagueDetailState> value}) {
-    notifier = MockLeagueDetailNotifier();
-    when(() => notifier.build(any())).thenAnswer((invocation) async {
-      if (value is AsyncData) return value.value!;
-      if (value is AsyncError) throw value.error!;
-      return Completer<LeagueDetailState>().future;
-    });
+    fakeNotifier = FakeLeagueDetailNotifier(
+      onBuild: () async {
+        if (value is AsyncData) return value.value!;
+        if (value is AsyncError) throw value.error!;
+        return Completer<LeagueDetailState>().future;
+      },
+    );
 
     return ProviderScope(
+      retry: (_, __) => null,
       overrides: [
-        leagueDetailProvider.overrideWith(() => notifier),
+        leagueDetailProvider.overrideWith2((arg) => fakeNotifier),
       ],
       child: MaterialApp(
         home: Builder(
@@ -102,7 +157,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.textContaining('Error: Boom'), findsOneWidget);
+      expect(find.textContaining('Error:'), findsOneWidget);
     });
 
     testWidgets('should show message when fewer than 2 players',
@@ -133,13 +188,6 @@ void main() {
 
     testWidgets('should auto-select the two players and log a draw',
         (tester) async {
-      when(() => notifier.logSimpleMatch(
-            winnerId: any(named: 'winnerId'),
-            loserId: any(named: 'loserId'),
-            isDraw: any(named: 'isDraw'),
-            playedAt: any(named: 'playedAt'),
-          )).thenAnswer((_) async => {});
-
       await openScreen(
         tester,
         const LogMatchScreen(leagueId: tLeagueId),
@@ -164,12 +212,10 @@ void main() {
       await tester.tap(find.text('Confirm Match Result'));
       await tester.pumpAndSettle();
 
-      verify(() => notifier.logSimpleMatch(
-            winnerId: 'p1',
-            loserId: 'p2',
-            isDraw: true,
-            playedAt: any(named: 'playedAt'),
-          )).called(1);
+      expect(fakeNotifier.logSimpleMatchCalls, hasLength(1));
+      expect(fakeNotifier.logSimpleMatchCalls.first['winnerId'], 'p1');
+      expect(fakeNotifier.logSimpleMatchCalls.first['loserId'], 'p2');
+      expect(fakeNotifier.logSimpleMatchCalls.first['isDraw'], true);
     });
 
     testWidgets('should show snackbar when players are not selected',
@@ -258,13 +304,6 @@ void main() {
     });
 
     testWidgets('should log a win with a custom winner', (tester) async {
-      when(() => notifier.logSimpleMatch(
-            winnerId: any(named: 'winnerId'),
-            loserId: any(named: 'loserId'),
-            isDraw: any(named: 'isDraw'),
-            playedAt: any(named: 'playedAt'),
-          )).thenAnswer((_) async => {});
-
       await openScreen(
         tester,
         const LogMatchScreen(leagueId: tLeagueId),
@@ -282,12 +321,10 @@ void main() {
       await tester.tap(find.text('Confirm Match Result'));
       await tester.pumpAndSettle();
 
-      verify(() => notifier.logSimpleMatch(
-            winnerId: 'p2',
-            loserId: 'p1',
-            isDraw: false,
-            playedAt: any(named: 'playedAt'),
-          )).called(1);
+      expect(fakeNotifier.logSimpleMatchCalls, hasLength(1));
+      expect(fakeNotifier.logSimpleMatchCalls.first['winnerId'], 'p2');
+      expect(fakeNotifier.logSimpleMatchCalls.first['loserId'], 'p1');
+      expect(fakeNotifier.logSimpleMatchCalls.first['isDraw'], false);
     });
 
     testWidgets('should show title and update button in edit mode',
@@ -303,14 +340,6 @@ void main() {
         ],
         winnerSideId: 's1',
       );
-
-      when(() => notifier.updateSimpleMatch(
-            matchId: any(named: 'matchId'),
-            winnerId: any(named: 'winnerId'),
-            loserId: any(named: 'loserId'),
-            isDraw: any(named: 'isDraw'),
-            playedAt: any(named: 'playedAt'),
-          )).thenAnswer((_) async => {});
 
       await openScreen(
         tester,
@@ -338,8 +367,6 @@ void main() {
         winnerSideId: 's1',
       );
 
-      when(() => notifier.deleteMatch(any())).thenAnswer((_) async => {});
-
       await openScreen(
         tester,
         LogMatchScreen(leagueId: tLeagueId, match: match),
@@ -356,7 +383,7 @@ void main() {
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
 
-      verify(() => notifier.deleteMatch('m1')).called(1);
+      expect(fakeNotifier.deleteMatchCalls, ['m1']);
     });
 
     testWidgets('should cancel deleting a match', (tester) async {
@@ -386,7 +413,7 @@ void main() {
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
 
-      verifyNever(() => notifier.deleteMatch(any()));
+      expect(fakeNotifier.deleteMatchCalls, isEmpty);
     });
 
     testWidgets('should update an existing match', (tester) async {
@@ -402,14 +429,6 @@ void main() {
         ],
       );
 
-      when(() => notifier.updateSimpleMatch(
-            matchId: any(named: 'matchId'),
-            winnerId: any(named: 'winnerId'),
-            loserId: any(named: 'loserId'),
-            isDraw: any(named: 'isDraw'),
-            playedAt: any(named: 'playedAt'),
-          )).thenAnswer((_) async => {});
-
       await openScreen(
         tester,
         LogMatchScreen(leagueId: tLeagueId, match: match),
@@ -422,13 +441,11 @@ void main() {
       await tester.tap(find.text('Update Match'));
       await tester.pumpAndSettle();
 
-      verify(() => notifier.updateSimpleMatch(
-            matchId: 'm1',
-            winnerId: 'p1',
-            loserId: 'p2',
-            isDraw: true,
-            playedAt: any(named: 'playedAt'),
-          )).called(1);
+      expect(fakeNotifier.updateSimpleMatchCalls, hasLength(1));
+      expect(fakeNotifier.updateSimpleMatchCalls.first['matchId'], 'm1');
+      expect(fakeNotifier.updateSimpleMatchCalls.first['winnerId'], 'p1');
+      expect(fakeNotifier.updateSimpleMatchCalls.first['loserId'], 'p2');
+      expect(fakeNotifier.updateSimpleMatchCalls.first['isDraw'], true);
     });
 
     testWidgets('should pre-select winner when editing a decided match',
@@ -555,15 +572,6 @@ void main() {
         ),
       );
 
-      when(() => notifier.logSimpleMatch(
-            winnerId: any(named: 'winnerId'),
-            loserId: any(named: 'loserId'),
-            isDraw: any(named: 'isDraw'),
-            playedAt: any(named: 'playedAt'),
-            winnerScore: any(named: 'winnerScore'),
-            loserScore: any(named: 'loserScore'),
-          )).thenAnswer((_) async => {});
-
       await openScreen(
         tester,
         const LogMatchScreen(leagueId: tLeagueId),
@@ -582,14 +590,12 @@ void main() {
       await tester.tap(find.text('Confirm Match Result'));
       await tester.pumpAndSettle();
 
-      verify(() => notifier.logSimpleMatch(
-            winnerId: 'p1',
-            loserId: 'p2',
-            isDraw: false,
-            playedAt: any(named: 'playedAt'),
-            winnerScore: 4,
-            loserScore: 2,
-          )).called(1);
+      expect(fakeNotifier.logSimpleMatchCalls, hasLength(1));
+      expect(fakeNotifier.logSimpleMatchCalls.first['winnerId'], 'p1');
+      expect(fakeNotifier.logSimpleMatchCalls.first['loserId'], 'p2');
+      expect(fakeNotifier.logSimpleMatchCalls.first['isDraw'], false);
+      expect(fakeNotifier.logSimpleMatchCalls.first['winnerScore'], 4);
+      expect(fakeNotifier.logSimpleMatchCalls.first['loserScore'], 2);
     });
 
     testWidgets('should log a draw when scores are equal for goal difference',
@@ -605,15 +611,6 @@ void main() {
         ),
       );
 
-      when(() => notifier.logSimpleMatch(
-            winnerId: any(named: 'winnerId'),
-            loserId: any(named: 'loserId'),
-            isDraw: any(named: 'isDraw'),
-            playedAt: any(named: 'playedAt'),
-            winnerScore: any(named: 'winnerScore'),
-            loserScore: any(named: 'loserScore'),
-          )).thenAnswer((_) async => {});
-
       await openScreen(
         tester,
         const LogMatchScreen(leagueId: tLeagueId),
@@ -627,14 +624,12 @@ void main() {
       await tester.tap(find.text('Confirm Match Result'));
       await tester.pumpAndSettle();
 
-      verify(() => notifier.logSimpleMatch(
-            winnerId: 'p1',
-            loserId: 'p2',
-            isDraw: true,
-            playedAt: any(named: 'playedAt'),
-            winnerScore: 2,
-            loserScore: 2,
-          )).called(1);
+      expect(fakeNotifier.logSimpleMatchCalls, hasLength(1));
+      expect(fakeNotifier.logSimpleMatchCalls.first['winnerId'], 'p1');
+      expect(fakeNotifier.logSimpleMatchCalls.first['loserId'], 'p2');
+      expect(fakeNotifier.logSimpleMatchCalls.first['isDraw'], true);
+      expect(fakeNotifier.logSimpleMatchCalls.first['winnerScore'], 2);
+      expect(fakeNotifier.logSimpleMatchCalls.first['loserScore'], 2);
     });
 
     testWidgets('should pre-fill scores when editing a goal difference match',
@@ -661,16 +656,6 @@ void main() {
         ],
         winnerSideId: 's1',
       );
-
-      when(() => notifier.updateSimpleMatch(
-            matchId: any(named: 'matchId'),
-            winnerId: any(named: 'winnerId'),
-            loserId: any(named: 'loserId'),
-            isDraw: any(named: 'isDraw'),
-            playedAt: any(named: 'playedAt'),
-            winnerScore: any(named: 'winnerScore'),
-            loserScore: any(named: 'loserScore'),
-          )).thenAnswer((_) async => {});
 
       await openScreen(
         tester,

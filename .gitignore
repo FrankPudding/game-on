@@ -48,3 +48,7 @@ app.*.map.json
 
 # Agent
 .agent/
+opencode.json
+*/AGENTS.md
+AGENTS.md
+.opencode/
