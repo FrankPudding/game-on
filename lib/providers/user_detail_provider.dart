@@ -21,20 +21,17 @@ class UserLeagueInfo {
 }
 
 final userDetailProvider = AsyncNotifierProvider.family<UserDetailNotifier,
-    List<UserLeagueInfo>, String>(() {
-  return UserDetailNotifier();
-});
+    List<UserLeagueInfo>, String>(UserDetailNotifier.new);
 
-class UserDetailNotifier
-    extends FamilyAsyncNotifier<List<UserLeagueInfo>, String> {
+class UserDetailNotifier extends AsyncNotifier<List<UserLeagueInfo>> {
+  UserDetailNotifier(this._userId);
+  final String _userId;
   late LeagueRepository _leagueRepo;
   late LeaguePlayerRepository _playerRepo;
   late SimpleMatchRepository _matchRepo;
-  late String _userId;
 
   @override
-  Future<List<UserLeagueInfo>> build(String arg) async {
-    _userId = arg;
+  Future<List<UserLeagueInfo>> build() async {
     _leagueRepo = ref.watch(leagueRepositoryProvider);
     _playerRepo = ref.watch(leaguePlayerRepositoryProvider);
     _matchRepo = ref.watch(simpleMatchRepositoryProvider);

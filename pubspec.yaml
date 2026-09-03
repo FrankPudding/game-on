@@ -1,7 +1,7 @@
 name: game_on
 description: "Track competitive games and leagues with friends"
 publish_to: 'none'
-version: 1.0.0+1
+version: 0.1.0-rc.2
 
 environment:
   sdk: ^3.5.4
@@ -12,7 +12,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   
   # State Management
-  flutter_riverpod: ^2.6.1
+  flutter_riverpod: ^3.4.2
   
   # Local Database
   hive_ce: ^2.19.0
@@ -31,11 +31,10 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  hive_ce_generator: 1.9.5
-  build_runner: ^2.4.9
-  json_serializable: 6.11.2
+  hive_ce_generator: ^1.11.2
+  build_runner: ^2.15.1
+  json_serializable: ^6.11.2
   mocktail: ^1.0.4
-  riverpod_test: ^0.1.9
   path_provider_platform_interface: ^2.1.2
 
 # For information on the generic Dart part of this file, see the

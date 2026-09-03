@@ -72,23 +72,20 @@ class LeagueDetailState {
 
 // Notifier
 final leagueDetailProvider = AsyncNotifierProvider.family<LeagueDetailNotifier,
-    LeagueDetailState, String>(() {
-  return LeagueDetailNotifier();
-});
+    LeagueDetailState, String>(LeagueDetailNotifier.new);
 
-class LeagueDetailNotifier
-    extends FamilyAsyncNotifier<LeagueDetailState, String> {
+class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
+  LeagueDetailNotifier(this._leagueId);
+  final String _leagueId;
   late LeagueRepository _leagueRepo;
   late LeaguePlayerRepository _playerRepo;
   late UserRepository _userRepo;
   late SimpleMatchRepository _matchRepo;
   late RankingPolicyRepository _policyRepo;
-  late String _leagueId;
   final _uuid = const Uuid();
 
   @override
-  Future<LeagueDetailState> build(String arg) async {
-    _leagueId = arg;
+  Future<LeagueDetailState> build() async {
     _leagueRepo = ref.read(leagueRepositoryProvider);
     _playerRepo = ref.read(leaguePlayerRepositoryProvider);
     _userRepo = ref.read(userRepositoryProvider);
