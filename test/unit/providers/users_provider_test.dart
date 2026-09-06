@@ -2,19 +2,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:game_on/domain/entities/user.dart';
+import 'package:game_on/domain/entities/league_player.dart';
 import 'package:game_on/domain/repositories/user_repository.dart';
+import 'package:game_on/domain/repositories/league_player_repository.dart';
 import 'package:game_on/application/services/delete_user_service.dart';
 import 'package:game_on/application/services/update_user_service.dart';
 import 'package:game_on/providers/users_provider.dart';
+import 'package:game_on/providers/league_detail_provider.dart';
 
 class MockUserRepository extends Mock implements UserRepository {}
+
+class MockLeaguePlayerRepository extends Mock implements LeaguePlayerRepository {}
 
 class MockDeleteUserService extends Mock implements DeleteUserService {}
 
 class MockUpdateUserService extends Mock implements UpdateUserService {}
 
+class FakeUsersNotifier extends UsersNotifier {
+  @override
+  Future<List<User>> build() async => [];
+}
+
 void main() {
   late MockUserRepository mockUserRepo;
+  late MockLeaguePlayerRepository mockPlayerRepo;
   late MockDeleteUserService mockDeleteService;
   late ProviderContainer container;
 
@@ -23,10 +34,12 @@ void main() {
 
   setUp(() {
     mockUserRepo = MockUserRepository();
+    mockPlayerRepo = MockLeaguePlayerRepository();
     mockDeleteService = MockDeleteUserService();
     container = ProviderContainer(
       overrides: [
         userRepositoryProvider.overrideWithValue(mockUserRepo),
+        leaguePlayerRepositoryProvider.overrideWithValue(mockPlayerRepo),
         deleteUserServiceProvider.overrideWithValue(mockDeleteService),
         updateUserServiceProvider
             .overrideWith((ref) => MockUpdateUserService()),
@@ -35,6 +48,8 @@ void main() {
 
     registerFallbackValue(
         User(id: '', name: '', avatarColorHex: '', icon: null));
+    registerFallbackValue(LeaguePlayer(
+        id: '', userId: '', leagueId: '', name: '', avatarColorHex: ''));
   });
 
   tearDown(() {
@@ -45,6 +60,8 @@ void main() {
     test('initial state should fetch users from repository', () async {
       when(() => mockUserRepo.getAll())
           .thenAnswer((_) async => [tUser1, tUser2]);
+      when(() => mockPlayerRepo.getByUserId(any()))
+          .thenAnswer((_) async => []);
 
       final users = await container.read(usersProvider.future);
 
@@ -55,6 +72,8 @@ void main() {
     test('addUser should call repository and update state', () async {
       when(() => mockUserRepo.getAll()).thenAnswer((_) async => [tUser1]);
       when(() => mockUserRepo.put(any())).thenAnswer((_) async => {});
+      when(() => mockPlayerRepo.getByUserId(any()))
+          .thenAnswer((_) async => []);
 
       final notifier = container.read(usersProvider.notifier);
 
@@ -76,7 +95,10 @@ void main() {
     test('deleteUser should call service and update state', () async {
       when(() => mockUserRepo.getAll())
           .thenAnswer((_) async => [tUser1, tUser2]);
-      when(() => mockDeleteService.execute(any())).thenAnswer((_) async => {});
+      when(() => mockPlayerRepo.getByUserId(any()))
+          .thenAnswer((_) async => []);
+      when(() => mockDeleteService.execute(any()))
+          .thenAnswer((_) async => DeleteUserResult(affectedLeagueIds: {}));
 
       final notifier = container.read(usersProvider.notifier);
 
@@ -97,6 +119,8 @@ void main() {
       final mockUpdateService = container.read(updateUserServiceProvider);
       when(() => mockUserRepo.getAll())
           .thenAnswer((_) async => [tUser1, tUser2]);
+      when(() => mockPlayerRepo.getByUserId(any()))
+          .thenAnswer((_) async => []);
       when(() => mockUpdateService.execute(any())).thenAnswer((_) async => {});
 
       final notifier = container.read(usersProvider.notifier);
@@ -119,6 +143,8 @@ void main() {
     test('refresh should reload users from repository', () async {
       when(() => mockUserRepo.getAll())
           .thenAnswer((_) async => [tUser1, tUser2]);
+      when(() => mockPlayerRepo.getByUserId(any()))
+          .thenAnswer((_) async => []);
 
       await container.read(usersProvider.future);
 
