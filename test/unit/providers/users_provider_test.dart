@@ -12,7 +12,8 @@ import 'package:game_on/providers/league_detail_provider.dart';
 
 class MockUserRepository extends Mock implements UserRepository {}
 
-class MockLeaguePlayerRepository extends Mock implements LeaguePlayerRepository {}
+class MockLeaguePlayerRepository extends Mock
+    implements LeaguePlayerRepository {}
 
 class MockDeleteUserService extends Mock implements DeleteUserService {}
 
@@ -60,8 +61,7 @@ void main() {
     test('initial state should fetch users from repository', () async {
       when(() => mockUserRepo.getAll())
           .thenAnswer((_) async => [tUser1, tUser2]);
-      when(() => mockPlayerRepo.getByUserId(any()))
-          .thenAnswer((_) async => []);
+      when(() => mockPlayerRepo.getByUserId(any())).thenAnswer((_) async => []);
 
       final users = await container.read(usersProvider.future);
 
@@ -72,8 +72,7 @@ void main() {
     test('addUser should call repository and update state', () async {
       when(() => mockUserRepo.getAll()).thenAnswer((_) async => [tUser1]);
       when(() => mockUserRepo.put(any())).thenAnswer((_) async => {});
-      when(() => mockPlayerRepo.getByUserId(any()))
-          .thenAnswer((_) async => []);
+      when(() => mockPlayerRepo.getByUserId(any())).thenAnswer((_) async => []);
 
       final notifier = container.read(usersProvider.notifier);
 
@@ -95,8 +94,7 @@ void main() {
     test('deleteUser should call service and update state', () async {
       when(() => mockUserRepo.getAll())
           .thenAnswer((_) async => [tUser1, tUser2]);
-      when(() => mockPlayerRepo.getByUserId(any()))
-          .thenAnswer((_) async => []);
+      when(() => mockPlayerRepo.getByUserId(any())).thenAnswer((_) async => []);
       when(() => mockDeleteService.execute(any()))
           .thenAnswer((_) async => DeleteUserResult(affectedLeagueIds: {}));
 
@@ -119,8 +117,7 @@ void main() {
       final mockUpdateService = container.read(updateUserServiceProvider);
       when(() => mockUserRepo.getAll())
           .thenAnswer((_) async => [tUser1, tUser2]);
-      when(() => mockPlayerRepo.getByUserId(any()))
-          .thenAnswer((_) async => []);
+      when(() => mockPlayerRepo.getByUserId(any())).thenAnswer((_) async => []);
       when(() => mockUpdateService.execute(any())).thenAnswer((_) async => {});
 
       final notifier = container.read(usersProvider.notifier);
@@ -143,8 +140,7 @@ void main() {
     test('refresh should reload users from repository', () async {
       when(() => mockUserRepo.getAll())
           .thenAnswer((_) async => [tUser1, tUser2]);
-      when(() => mockPlayerRepo.getByUserId(any()))
-          .thenAnswer((_) async => []);
+      when(() => mockPlayerRepo.getByUserId(any())).thenAnswer((_) async => []);
 
       await container.read(usersProvider.future);
 

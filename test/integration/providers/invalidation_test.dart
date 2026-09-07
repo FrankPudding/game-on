@@ -149,7 +149,8 @@ void main() {
 
     // Default mocks
     when(() => mockLeagueRepo.get(tLeagueId)).thenAnswer((_) async => tLeague);
-    when(() => mockLeagueRepo.get(tLeagueId2)).thenAnswer((_) async => tLeague2);
+    when(() => mockLeagueRepo.get(tLeagueId2))
+        .thenAnswer((_) async => tLeague2);
     when(() => mockLeagueRepo.getAll())
         .thenAnswer((_) async => [tLeague, tLeague2]);
     when(() => mockPlayerRepo.getByLeague(tLeagueId))
@@ -160,8 +161,7 @@ void main() {
         .thenAnswer((_) async => [tPlayer1, tPlayer3]);
     when(() => mockPlayerRepo.getByUserId('u2'))
         .thenAnswer((_) async => [tPlayer2]);
-    when(() => mockPlayerRepo.getByUserId('u3'))
-        .thenAnswer((_) async => []);
+    when(() => mockPlayerRepo.getByUserId('u3')).thenAnswer((_) async => []);
     when(() => mockPlayerRepo.get('p1')).thenAnswer((_) async => tPlayer1);
     when(() => mockPlayerRepo.get('p2')).thenAnswer((_) async => tPlayer2);
     when(() => mockPlayerRepo.get('p3')).thenAnswer((_) async => tPlayer3);
@@ -202,29 +202,30 @@ void main() {
       expect(container.read(leaguesProvider).value?.length, 2);
 
       // Add new league
-      final newLeague = League(
-          id: 'l3', name: 'League 3', createdAt: DateTime.now());
-      final newPolicy = SimpleRankingPolicy(
-          id: 'rp3', name: 'Standard', leagueId: 'l3');
+      final newLeague =
+          League(id: 'l3', name: 'League 3', createdAt: DateTime.now());
+      final newPolicy =
+          SimpleRankingPolicy(id: 'rp3', name: 'Standard', leagueId: 'l3');
       when(() => mockLeagueRepo.getAll())
           .thenAnswer((_) async => [tLeague, tLeague2, newLeague]);
 
       final notifier = container.read(leaguesProvider.notifier);
-      await notifier.addLeague(id: 'l3', name: 'League 3', rankingPolicy: newPolicy);
+      await notifier.addLeague(
+          id: 'l3', name: 'League 3', rankingPolicy: newPolicy);
 
       // Verify state updated via explicit fetch
       expect(container.read(leaguesProvider).value?.length, 3);
     });
 
-    test('deleteLeague invalidates leagueDetailProvider for that league', () async {
+    test('deleteLeague invalidates leagueDetailProvider for that league',
+        () async {
       // Load league detail first
       await container.read(leagueDetailProvider(tLeagueId).future);
       expect(container.read(leagueDetailProvider(tLeagueId)).hasValue, isTrue);
 
       // Delete the league
       when(() => mockLeagueRepo.delete(tLeagueId)).thenAnswer((_) async => {});
-      when(() => mockLeagueRepo.getAll())
-          .thenAnswer((_) async => [tLeague2]);
+      when(() => mockLeagueRepo.getAll()).thenAnswer((_) async => [tLeague2]);
 
       final leaguesNotifier = container.read(leaguesProvider.notifier);
       await leaguesNotifier.deleteLeague(tLeagueId);
@@ -235,55 +236,87 @@ void main() {
       expect(leagueDetailState.isLoading || leagueDetailState.hasError, isTrue);
     });
 
-    test('addPlayer in league updates leagueDetailProvider via explicit fetch', () async {
+    test('addPlayer in league updates leagueDetailProvider via explicit fetch',
+        () async {
       // Load league detail
       await container.read(leagueDetailProvider(tLeagueId).future);
-      expect(container.read(leagueDetailProvider(tLeagueId)).value?.players.length, 2);
+      expect(
+          container.read(leagueDetailProvider(tLeagueId)).value?.players.length,
+          2);
 
       // Add player with new user (creates new user)
       when(() => mockUserRepo.put(any())).thenAnswer((_) async => {});
       when(() => mockPlayerRepo.put(any())).thenAnswer((_) async => {});
       // New user u4 will be created
-      final newUser = User(id: 'u4', name: 'New Player', avatarColorHex: 'AAAAAA');
+      final newUser =
+          User(id: 'u4', name: 'New Player', avatarColorHex: 'AAAAAA');
       when(() => mockUserRepo.get('u4')).thenAnswer((_) async => newUser);
       when(() => mockPlayerRepo.getByLeague(tLeagueId))
-          .thenAnswer((_) async => [tPlayer1, tPlayer2, LeaguePlayer(
-                id: 'p4', userId: 'u4', leagueId: tLeagueId, name: 'New Player',
-                avatarColorHex: 'AAAAAA')]);
+          .thenAnswer((_) async => [
+                tPlayer1,
+                tPlayer2,
+                LeaguePlayer(
+                    id: 'p4',
+                    userId: 'u4',
+                    leagueId: tLeagueId,
+                    name: 'New Player',
+                    avatarColorHex: 'AAAAAA')
+              ]);
       when(() => mockUserRepo.getAll())
           .thenAnswer((_) async => [tUser1, tUser2, tUser3, newUser]);
 
-      final leagueNotifier = container.read(leagueDetailProvider(tLeagueId).notifier);
+      final leagueNotifier =
+          container.read(leagueDetailProvider(tLeagueId).notifier);
       await leagueNotifier.addPlayer(name: 'New Player');
 
       // League detail should be updated (explicit fetch)
-      expect(container.read(leagueDetailProvider(tLeagueId)).value?.players.length, 3);
+      expect(
+          container.read(leagueDetailProvider(tLeagueId)).value?.players.length,
+          3);
     });
 
-    test('addPlayer with existing userId updates leagueDetailProvider', () async {
+    test('addPlayer with existing userId updates leagueDetailProvider',
+        () async {
       await container.read(leagueDetailProvider(tLeagueId).future);
 
       // Add player linked to existing user u2
       when(() => mockPlayerRepo.put(any())).thenAnswer((_) async => {});
       when(() => mockPlayerRepo.getByLeague(tLeagueId))
-          .thenAnswer((_) async => [tPlayer1, tPlayer2, LeaguePlayer(
-                id: 'p4', userId: 'u2', leagueId: tLeagueId, name: 'Player 3',
-                avatarColorHex: '00FF00')]);
+          .thenAnswer((_) async => [
+                tPlayer1,
+                tPlayer2,
+                LeaguePlayer(
+                    id: 'p4',
+                    userId: 'u2',
+                    leagueId: tLeagueId,
+                    name: 'Player 3',
+                    avatarColorHex: '00FF00')
+              ]);
 
-      final leagueNotifier = container.read(leagueDetailProvider(tLeagueId).notifier);
+      final leagueNotifier =
+          container.read(leagueDetailProvider(tLeagueId).notifier);
       await leagueNotifier.addPlayer(name: '', userId: 'u2');
 
       // League detail updated
-      expect(container.read(leagueDetailProvider(tLeagueId)).value?.players.length, 3);
+      expect(
+          container.read(leagueDetailProvider(tLeagueId)).value?.players.length,
+          3);
     });
 
-    test('logSimpleMatch updates leagueDetailProvider via explicit fetch', () async {
+    test('logSimpleMatch updates leagueDetailProvider via explicit fetch',
+        () async {
       await container.read(leagueDetailProvider(tLeagueId).future);
 
       final newMatch = SimpleMatch(
-        id: 'm1', leagueId: tLeagueId, playedAt: DateTime.now(),
-        isComplete: true, isDraw: false,
-        sides: [Side(id: 's1', playerIds: ['p1']), Side(id: 's2', playerIds: ['p2'])],
+        id: 'm1',
+        leagueId: tLeagueId,
+        playedAt: DateTime.now(),
+        isComplete: true,
+        isDraw: false,
+        sides: [
+          Side(id: 's1', playerIds: ['p1']),
+          Side(id: 's2', playerIds: ['p2'])
+        ],
         winnerSideId: 's1',
       );
       when(() => mockMatchRepo.logSimpleMatch(match: any(named: 'match')))
@@ -291,28 +324,46 @@ void main() {
       when(() => mockMatchRepo.getByLeague(tLeagueId))
           .thenAnswer((_) async => [newMatch]);
 
-      final leagueNotifier = container.read(leagueDetailProvider(tLeagueId).notifier);
-      await leagueNotifier.logSimpleMatch(winnerId: 'p1', loserId: 'p2', isDraw: false);
+      final leagueNotifier =
+          container.read(leagueDetailProvider(tLeagueId).notifier);
+      await leagueNotifier.logSimpleMatch(
+          winnerId: 'p1', loserId: 'p2', isDraw: false);
 
       // League detail updated
-      expect(container.read(leagueDetailProvider(tLeagueId)).value?.matches.length, 1);
+      expect(
+          container.read(leagueDetailProvider(tLeagueId)).value?.matches.length,
+          1);
     });
 
-    test('updateSimpleMatch updates leagueDetailProvider via explicit fetch', () async {
+    test('updateSimpleMatch updates leagueDetailProvider via explicit fetch',
+        () async {
       // Setup existing match
       final existingMatch = SimpleMatch(
-        id: 'm1', leagueId: tLeagueId, playedAt: DateTime.now(),
-        isComplete: true, isDraw: false,
-        sides: [Side(id: 's1', playerIds: ['p1']), Side(id: 's2', playerIds: ['p2'])],
+        id: 'm1',
+        leagueId: tLeagueId,
+        playedAt: DateTime.now(),
+        isComplete: true,
+        isDraw: false,
+        sides: [
+          Side(id: 's1', playerIds: ['p1']),
+          Side(id: 's2', playerIds: ['p2'])
+        ],
         winnerSideId: 's1',
       );
       final updatedMatch = SimpleMatch(
-        id: 'm1', leagueId: tLeagueId, playedAt: DateTime.now(),
-        isComplete: true, isDraw: false,
-        sides: [Side(id: 's1', playerIds: ['p2']), Side(id: 's2', playerIds: ['p1'])],
+        id: 'm1',
+        leagueId: tLeagueId,
+        playedAt: DateTime.now(),
+        isComplete: true,
+        isDraw: false,
+        sides: [
+          Side(id: 's1', playerIds: ['p2']),
+          Side(id: 's2', playerIds: ['p1'])
+        ],
         winnerSideId: 's1',
       );
-      when(() => mockMatchRepo.get('m1')).thenAnswer((_) async => existingMatch);
+      when(() => mockMatchRepo.get('m1'))
+          .thenAnswer((_) async => existingMatch);
       when(() => mockMatchRepo.logSimpleMatch(match: any(named: 'match')))
           .thenAnswer((_) async => {});
       when(() => mockMatchRepo.getByLeague(tLeagueId))
@@ -320,70 +371,98 @@ void main() {
 
       await container.read(leagueDetailProvider(tLeagueId).future);
 
-      final leagueNotifier = container.read(leagueDetailProvider(tLeagueId).notifier);
+      final leagueNotifier =
+          container.read(leagueDetailProvider(tLeagueId).notifier);
       await leagueNotifier.updateSimpleMatch(
-        matchId: 'm1', winnerId: 'p2', loserId: 'p1', isDraw: false);
+          matchId: 'm1', winnerId: 'p2', loserId: 'p1', isDraw: false);
 
       // League detail updated
-      expect(container.read(leagueDetailProvider(tLeagueId)).value?.matches.length, 1);
+      expect(
+          container.read(leagueDetailProvider(tLeagueId)).value?.matches.length,
+          1);
     });
 
-    test('deleteMatch updates leagueDetailProvider via explicit fetch', () async {
+    test('deleteMatch updates leagueDetailProvider via explicit fetch',
+        () async {
       final existingMatch = SimpleMatch(
-        id: 'm1', leagueId: tLeagueId, playedAt: DateTime.now(),
-        isComplete: true, isDraw: false,
-        sides: [Side(id: 's1', playerIds: ['p1']), Side(id: 's2', playerIds: ['p2'])],
+        id: 'm1',
+        leagueId: tLeagueId,
+        playedAt: DateTime.now(),
+        isComplete: true,
+        isDraw: false,
+        sides: [
+          Side(id: 's1', playerIds: ['p1']),
+          Side(id: 's2', playerIds: ['p2'])
+        ],
         winnerSideId: 's1',
       );
-      when(() => mockMatchRepo.get('m1')).thenAnswer((_) async => existingMatch);
+      when(() => mockMatchRepo.get('m1'))
+          .thenAnswer((_) async => existingMatch);
       when(() => mockMatchRepo.delete('m1')).thenAnswer((_) async => {});
       when(() => mockMatchRepo.getByLeague(tLeagueId))
           .thenAnswer((_) async => []);
 
       await container.read(leagueDetailProvider(tLeagueId).future);
 
-      final leagueNotifier = container.read(leagueDetailProvider(tLeagueId).notifier);
+      final leagueNotifier =
+          container.read(leagueDetailProvider(tLeagueId).notifier);
       await leagueNotifier.deleteMatch('m1');
 
       // League detail updated (empty matches)
-      expect(container.read(leagueDetailProvider(tLeagueId)).value?.matches.length, 0);
+      expect(
+          container.read(leagueDetailProvider(tLeagueId)).value?.matches.length,
+          0);
     });
 
-    test('updatePlayer updates leagueDetailProvider via explicit fetch', () async {
+    test('updatePlayer updates leagueDetailProvider via explicit fetch',
+        () async {
       await container.read(leagueDetailProvider(tLeagueId).future);
 
       when(() => mockPlayerRepo.put(any())).thenAnswer((_) async => {});
-      when(() => mockPlayerRepo.getByLeague(tLeagueId))
-          .thenAnswer((_) async => [tPlayer1.copyWith(name: 'Updated Name'), tPlayer2]);
+      when(() => mockPlayerRepo.getByLeague(tLeagueId)).thenAnswer(
+          (_) async => [tPlayer1.copyWith(name: 'Updated Name'), tPlayer2]);
 
-      final leagueNotifier = container.read(leagueDetailProvider(tLeagueId).notifier);
+      final leagueNotifier =
+          container.read(leagueDetailProvider(tLeagueId).notifier);
       await leagueNotifier.updatePlayer(playerId: 'p1', name: 'Updated Name');
 
       // League detail updated
-      expect(container.read(leagueDetailProvider(tLeagueId)).value?.players.first.name, 'Updated Name');
+      expect(
+          container
+              .read(leagueDetailProvider(tLeagueId))
+              .value
+              ?.players
+              .first
+              .name,
+          'Updated Name');
     });
 
-    test('removePlayer updates leagueDetailProvider via explicit fetch', () async {
+    test('removePlayer updates leagueDetailProvider via explicit fetch',
+        () async {
       await container.read(leagueDetailProvider(tLeagueId).future);
 
-      when(() => mockMatchRepo.getByLeague(tLeagueId)).thenAnswer((_) async => []);
+      when(() => mockMatchRepo.getByLeague(tLeagueId))
+          .thenAnswer((_) async => []);
       when(() => mockPlayerRepo.delete('p1')).thenAnswer((_) async => {});
       when(() => mockPlayerRepo.getByLeague(tLeagueId))
           .thenAnswer((_) async => [tPlayer2]);
 
-      final leagueNotifier = container.read(leagueDetailProvider(tLeagueId).notifier);
+      final leagueNotifier =
+          container.read(leagueDetailProvider(tLeagueId).notifier);
       await leagueNotifier.removePlayer('p1');
 
       // League detail updated
-      expect(container.read(leagueDetailProvider(tLeagueId)).value?.players.length, 1);
+      expect(
+          container.read(leagueDetailProvider(tLeagueId)).value?.players.length,
+          1);
     });
 
     test('deleteUser invalidates dependent providers', () async {
       // Setup: user u1 has players in l1 and l2
       when(() => mockPlayerRepo.getByUserId('u1'))
           .thenAnswer((_) async => [tPlayer1, tPlayer3]);
-      when(() => mockDeleteService.execute('u1'))
-          .thenAnswer((_) async => DeleteUserResult(affectedLeagueIds: {tLeagueId, tLeagueId2}));
+      when(() => mockDeleteService.execute('u1')).thenAnswer((_) async =>
+          DeleteUserResult(affectedLeagueIds: {tLeagueId, tLeagueId2}));
 
       await container.read(usersProvider.future);
       await container.read(leaguesProvider.future);
@@ -395,7 +474,8 @@ void main() {
       expect(container.read(usersProvider).value?.length, 3);
 
       // Delete user - set up the mock for the updated state BEFORE calling
-      when(() => mockUserRepo.getAll()).thenAnswer((_) async => [tUser2, tUser3]);
+      when(() => mockUserRepo.getAll())
+          .thenAnswer((_) async => [tUser2, tUser3]);
       final usersNotifier = container.read(usersProvider.notifier);
       await usersNotifier.deleteUser('u1');
 
@@ -407,8 +487,8 @@ void main() {
       when(() => mockPlayerRepo.getByUserId('u1'))
           .thenAnswer((_) async => [tPlayer1, tPlayer3]);
       when(() => mockUpdateService.execute(any())).thenAnswer((_) async => {});
-      when(() => mockUserRepo.getAll())
-          .thenAnswer((_) async => [tUser1.copyWith(name: 'Updated'), tUser2, tUser3]);
+      when(() => mockUserRepo.getAll()).thenAnswer(
+          (_) async => [tUser1.copyWith(name: 'Updated'), tUser2, tUser3]);
 
       await container.read(usersProvider.future);
       await container.read(userDetailProvider('u1').future);

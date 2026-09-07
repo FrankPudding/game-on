@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../theme/app_theme.dart';
 import 'manage_users_screen.dart';
 
@@ -12,49 +13,58 @@ class SettingsScreen extends StatelessWidget {
         title: const Text('Settings'),
         centerTitle: false,
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        children: [
-          _buildSectionHeader('Profile & Accounts'),
-          _buildListTile(
-            context,
-            icon: Icons.people_outline,
-            title: 'Manage Users',
-            subtitle: 'Create and edit global app users',
-            onTap: () {
-              Navigator.push(
+      body: FutureBuilder<PackageInfo>(
+        future: PackageInfo.fromPlatform(),
+        builder: (context, snapshot) {
+          final version = snapshot.data?.version ?? 'Unknown';
+          final buildNumber = snapshot.data?.buildNumber ?? '';
+          final versionString = buildNumber.isNotEmpty ? '$version ($buildNumber)' : version;
+
+          return ListView(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            children: [
+              _buildSectionHeader('Profile & Accounts'),
+              _buildListTile(
                 context,
-                MaterialPageRoute(
-                    builder: (context) => const ManageUsersScreen()),
-              );
-            },
-          ),
-          const Divider(height: 32, indent: 16, endIndent: 16),
-          _buildSectionHeader('General'),
-          _buildListTile(
-            context,
-            icon: Icons.color_lens_outlined,
-            title: 'Appearance',
-            subtitle: 'Theme customization (Coming soon)',
-            enabled: false,
-          ),
-          _buildListTile(
-            context,
-            icon: Icons.notifications_none_outlined,
-            title: 'Notifications',
-            subtitle: 'Alerts and sounds (Coming soon)',
-            enabled: false,
-          ),
-          const Divider(height: 32, indent: 16, endIndent: 16),
-          _buildSectionHeader('About'),
-          _buildListTile(
-            context,
-            icon: Icons.info_outline,
-            title: 'App Version',
-            subtitle: '1.0.0',
-            enabled: false,
-          ),
-        ],
+                icon: Icons.people_outline,
+                title: 'Manage Users',
+                subtitle: 'Create and edit global app users',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const ManageUsersScreen()),
+                  );
+                },
+              ),
+              const Divider(height: 32, indent: 16, endIndent: 16),
+              _buildSectionHeader('General'),
+              _buildListTile(
+                context,
+                icon: Icons.color_lens_outlined,
+                title: 'Appearance',
+                subtitle: 'Theme customization (Coming soon)',
+                enabled: false,
+              ),
+              _buildListTile(
+                context,
+                icon: Icons.notifications_none_outlined,
+                title: 'Notifications',
+                subtitle: 'Alerts and sounds (Coming soon)',
+                enabled: false,
+              ),
+              const Divider(height: 32, indent: 16, endIndent: 16),
+              _buildSectionHeader('About'),
+              _buildListTile(
+                context,
+                icon: Icons.info_outline,
+                title: 'App Version',
+                subtitle: versionString,
+                enabled: false,
+              ),
+            ],
+          );
+        },
       ),
     );
   }
