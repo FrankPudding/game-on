@@ -32,44 +32,67 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          _TabNavigator(
-            navigatorKey: _navigatorKeys[0],
-            root: const HomeScreen(),
-          ),
-          _TabNavigator(
-            navigatorKey: _navigatorKeys[1],
-            root: const HistoryScreen(),
-          ),
-          _TabNavigator(
-            navigatorKey: _navigatorKeys[2],
-            root: const SettingsScreen(),
-          ),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: _onDestinationSelected,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Leagues',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history),
-            label: 'History',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+
+        // Priority 1: Check if a dialog or bottom sheet is open via root navigator
+        final rootNavigator = Navigator.of(context, rootNavigator: true);
+        if (rootNavigator.canPop()) {
+          rootNavigator.pop();
+          return;
+        }
+
+        // Priority 2: Check if the current tab navigator can pop
+        final currentTabNavigator = _navigatorKeys[_currentIndex].currentState;
+        if (currentTabNavigator != null && currentTabNavigator.canPop()) {
+          currentTabNavigator.pop();
+          return;
+        }
+
+        // Priority 3: Consume back press (allow app to exit by not calling Navigator.pop)
+        // In onPopInvokedWithResult, we just return without popping to consume the event
+      },
+      child: Scaffold(
+        body: IndexedStack(
+          index: _currentIndex,
+          children: [
+            _TabNavigator(
+              navigatorKey: _navigatorKeys[0],
+              root: const HomeScreen(),
+            ),
+            _TabNavigator(
+              navigatorKey: _navigatorKeys[1],
+              root: const HistoryScreen(),
+            ),
+            _TabNavigator(
+              navigatorKey: _navigatorKeys[2],
+              root: const SettingsScreen(),
+            ),
+          ],
+        ),
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _currentIndex,
+          onDestinationSelected: _onDestinationSelected,
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.dashboard_outlined),
+              selectedIcon: Icon(Icons.dashboard),
+              label: 'Leagues',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.history_outlined),
+              selectedIcon: Icon(Icons.history),
+              label: 'History',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.settings_outlined),
+              selectedIcon: Icon(Icons.settings),
+              label: 'Settings',
+            ),
+          ],
+        ),
       ),
     );
   }
