@@ -217,13 +217,15 @@ void main() {
     Future<void> navigateToLeagueDetail(WidgetTester tester) async {
       // Ensure the HomeScreen is visible and list is rendered
       await tester.pumpAndSettle();
-      
+
       // Find the league card and tap it - use a more specific finder
       await tester.tap(find.widgetWithText(Card, 'Test League').first);
       await tester.pumpAndSettle();
     }
 
-    testWidgets('1. Dialog dismissal - back button dismisses edit player dialog', (tester) async {
+    testWidgets(
+        '1. Dialog dismissal - back button dismisses edit player dialog',
+        (tester) async {
       await tester.pumpWidget(createTestApp(
         leagueState: leagueState,
         leagues: [testLeague],
@@ -247,7 +249,8 @@ void main() {
       expect(find.byType(LeagueDetailScreen), findsOneWidget);
     });
 
-    testWidgets('2. Dialog dismissal - back button dismisses add player dialog', (tester) async {
+    testWidgets('2. Dialog dismissal - back button dismisses add player dialog',
+        (tester) async {
       await tester.pumpWidget(createTestApp(
         leagueState: leagueState,
         leagues: [testLeague],
@@ -271,7 +274,9 @@ void main() {
       expect(find.byType(LeagueDetailScreen), findsOneWidget);
     });
 
-    testWidgets('3. Dialog dismissal - back button dismisses delete confirmation dialog', (tester) async {
+    testWidgets(
+        '3. Dialog dismissal - back button dismisses delete confirmation dialog',
+        (tester) async {
       await tester.pumpWidget(createTestApp(
         leagueState: leagueState,
         leagues: [testLeague],
@@ -298,7 +303,9 @@ void main() {
       expect(find.byType(LeagueDetailScreen), findsOneWidget);
     });
 
-    testWidgets('4. Bottom sheet dismissal - back button dismisses player picker', (tester) async {
+    testWidgets(
+        '4. Bottom sheet dismissal - back button dismisses player picker',
+        (tester) async {
       await tester.pumpWidget(createTestApp(
         leagueState: leagueStateThreePlayers,
         leagues: [testLeague],
@@ -329,7 +336,8 @@ void main() {
       expect(find.byType(LogMatchScreen), findsOneWidget);
     });
 
-    testWidgets('5. Bottom sheet dismissal - back button dismisses date picker', (tester) async {
+    testWidgets('5. Bottom sheet dismissal - back button dismisses date picker',
+        (tester) async {
       await tester.pumpWidget(createTestApp(
         leagueState: leagueState,
         leagues: [testLeague],
@@ -355,7 +363,9 @@ void main() {
       expect(find.byType(LogMatchScreen), findsOneWidget);
     });
 
-    testWidgets('6. Tab navigation stack - back from LeagueDetailScreen returns to HomeScreen', (tester) async {
+    testWidgets(
+        '6. Tab navigation stack - back from LeagueDetailScreen returns to HomeScreen',
+        (tester) async {
       await tester.pumpWidget(createTestApp(
         leagueState: leagueState,
         leagues: [testLeague],
@@ -374,7 +384,9 @@ void main() {
       expect(find.text('My Leagues'), findsOneWidget);
     });
 
-    testWidgets('7. Tab navigation stack - back from LogMatchScreen returns to LeagueDetailScreen', (tester) async {
+    testWidgets(
+        '7. Tab navigation stack - back from LogMatchScreen returns to LeagueDetailScreen',
+        (tester) async {
       await tester.pumpWidget(createTestApp(
         leagueState: leagueState,
         leagues: [testLeague],
@@ -396,7 +408,9 @@ void main() {
       expect(find.text('Test League'), findsOneWidget);
     });
 
-    testWidgets('8. App behavior at root - back press on HomeScreen is consumed (app stays open)', (tester) async {
+    testWidgets(
+        '8. App behavior at root - back press on HomeScreen is consumed (app stays open)',
+        (tester) async {
       await tester.pumpWidget(createTestApp(
         leagueState: leagueState,
         leagues: [testLeague],
@@ -416,7 +430,9 @@ void main() {
       expect(find.text('My Leagues'), findsOneWidget);
     });
 
-    testWidgets('9. App behavior at root - back press on Settings tab root is consumed', (tester) async {
+    testWidgets(
+        '9. App behavior at root - back press on Settings tab root is consumed',
+        (tester) async {
       await tester.pumpWidget(createTestApp(
         leagueState: leagueState,
         leagues: [testLeague],
@@ -435,7 +451,9 @@ void main() {
       expect(find.byType(SettingsScreen), findsOneWidget);
     });
 
-    testWidgets('10. Tab independence - switching tabs preserves navigation stack', (tester) async {
+    testWidgets(
+        '10. Tab independence - switching tabs preserves navigation stack',
+        (tester) async {
       await tester.pumpWidget(createTestApp(
         leagueState: leagueState,
         leagues: [testLeague],
@@ -459,7 +477,9 @@ void main() {
       expect(find.text('Test League'), findsOneWidget);
     });
 
-    testWidgets('11. Tab independence - each tab has independent navigation stack', (tester) async {
+    testWidgets(
+        '11. Tab independence - each tab has independent navigation stack',
+        (tester) async {
       await tester.pumpWidget(createTestApp(
         leagueState: leagueState,
         leagues: [testLeague],
@@ -487,7 +507,8 @@ void main() {
       expect(find.byType(LeagueDetailScreen), findsOneWidget);
     });
 
-    testWidgets('12. Re-selecting current tab pops to root of that tab', (tester) async {
+    testWidgets('12. Re-selecting current tab pops to root of that tab',
+        (tester) async {
       await tester.pumpWidget(createTestApp(
         leagueState: leagueState,
         leagues: [testLeague],
@@ -512,7 +533,9 @@ void main() {
       expect(find.byType(LogMatchScreen), findsNothing);
     });
 
-    testWidgets('13. Priority: dialog takes precedence over tab navigation stack', (tester) async {
+    testWidgets(
+        '13. Priority: dialog takes precedence over tab navigation stack',
+        (tester) async {
       await tester.pumpWidget(createTestApp(
         leagueState: leagueState,
         leagues: [testLeague],
@@ -539,7 +562,9 @@ void main() {
       expect(find.byType(HomeScreen), findsOneWidget);
     });
 
-    testWidgets('14. Priority: bottom sheet takes precedence over tab navigation stack', (tester) async {
+    testWidgets(
+        '14. Priority: bottom sheet takes precedence over tab navigation stack',
+        (tester) async {
       await tester.pumpWidget(createTestApp(
         leagueState: leagueStateThreePlayers,
         leagues: [testLeague],

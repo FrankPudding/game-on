@@ -18,7 +18,8 @@ class SettingsScreen extends StatelessWidget {
         builder: (context, snapshot) {
           final version = snapshot.data?.version ?? 'Unknown';
           final buildNumber = snapshot.data?.buildNumber ?? '';
-          final versionString = buildNumber.isNotEmpty ? '$version ($buildNumber)' : version;
+          final versionString =
+              buildNumber.isNotEmpty ? '$version ($buildNumber)' : version;
 
           return ListView(
             padding: const EdgeInsets.symmetric(vertical: 16),
