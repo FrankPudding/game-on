@@ -49,6 +49,9 @@ class UsersNotifier extends AsyncNotifier<List<User>> {
 
       return _repo.getAll();
     });
+    if (state.hasError && state.error != null) {
+      throw state.error!;
+    }
   }
 
   Future<void> deleteUser(String userId) async {
@@ -86,6 +89,9 @@ class UsersNotifier extends AsyncNotifier<List<User>> {
 
       return _repo.getAll();
     });
+    if (state.hasError && state.error != null) {
+      throw state.error!;
+    }
   }
 
   Future<void> refresh() async {

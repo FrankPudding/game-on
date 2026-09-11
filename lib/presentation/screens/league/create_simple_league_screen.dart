@@ -40,28 +40,36 @@ class _CreateSimpleLeagueScreenState
 
     setState(() => _isLoading = true);
 
-    try {
-      final notifier = ref.read(leaguesProvider.notifier);
-      final name = _nameController.text.trim();
+    final notifier = ref.read(leaguesProvider.notifier);
+    final name = _nameController.text.trim();
 
-      final leagueId = _uuid.v4();
+    final leagueId = _uuid.v4();
 
-      RankingPolicy rankingPolicy = SimpleRankingPolicy(
-        id: 'simple_$leagueId',
-        name: 'Simple Ranking Policy',
-        leagueId: leagueId,
-        pointsForWin: int.parse(_winPointsController.text),
-        pointsForDraw: int.parse(_drawPointsController.text),
-        pointsForLoss: int.parse(_lossPointsController.text),
-      );
+    RankingPolicy rankingPolicy = SimpleRankingPolicy(
+      id: 'simple_$leagueId',
+      name: 'Simple Ranking Policy',
+      leagueId: leagueId,
+      pointsForWin: int.parse(_winPointsController.text),
+      pointsForDraw: int.parse(_drawPointsController.text),
+      pointsForLoss: int.parse(_lossPointsController.text),
+    );
 
-      await notifier.addLeague(
-        id: leagueId,
-        name: name,
-        rankingPolicy: rankingPolicy,
-      );
+    await notifier.addLeague(
+      id: leagueId,
+      name: name,
+      rankingPolicy: rankingPolicy,
+    );
 
-      if (mounted) {
+    if (mounted) {
+      final state = ref.read(leaguesProvider);
+      if (state.hasError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${state.error}'),
+            backgroundColor: AppTheme.errorRed,
+          ),
+        );
+      } else {
         Navigator.of(context).popUntil((route) => route.isFirst);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -70,17 +78,7 @@ class _CreateSimpleLeagueScreenState
           ),
         );
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppTheme.errorRed,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
     }
   }
 

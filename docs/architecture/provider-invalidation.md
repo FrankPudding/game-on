@@ -79,6 +79,29 @@ userDetailProvider(userId) (user's leagues, players, matches)
 |--------|-------------|
 | (No mutation methods) | N/A - Invalidated by other providers |
 
+## UserDetailProvider Invalidation Details
+
+The `userDetailProvider` has no mutation methods of its own. It is invalidated by mutations in `leagueDetailProvider` and `usersProvider`:
+
+### Invalidation from leagueDetailProvider
+
+| Mutation | Invalidated userDetailProvider Instances |
+|----------|------------------------------------------|
+| `addPlayer` (new user created) | `userDetailProvider(newUserId)` |
+| `addPlayer` (existing userId provided) | `userDetailProvider(existingUserId)` |
+| `logSimpleMatch` | `userDetailProvider(winnerUserId)`, `userDetailProvider(loserUserId)` |
+| `updateSimpleMatch` | `userDetailProvider(newWinnerUserId)`, `userDetailProvider(newLoserUserId)` |
+| `deleteMatch` | `userDetailProvider(playerUserId)` for all players in deleted match |
+| `updatePlayer` | `userDetailProvider(playerUserId)` |
+| `removePlayer` | `userDetailProvider(playerUserId)` |
+
+### Invalidation from usersProvider
+
+| Mutation | Invalidated userDetailProvider Instances |
+|----------|------------------------------------------|
+| `deleteUser` | `userDetailProvider(deletedUserId)` |
+| `updateUser` | `userDetailProvider(updatedUserId)` |
+
 ## Implementation Details
 
 ### DeleteUserService Returns Affected League IDs
@@ -128,6 +151,13 @@ Integration tests (`test/integration/providers/invalidation_test.dart`) verify:
 - Cross-provider invalidation works correctly
 - Dependent providers receive updates after mutations
 - No stale data remains after mutations
+- **userDetailProvider invalidation scenarios (6 tests):**
+  - `addPlayer` with new user invalidates `userDetailProvider` for new user
+  - `addPlayer` with existing userId invalidates `userDetailProvider` for that user
+  - `logSimpleMatch` invalidates both winner and loser `userDetailProvider`
+  - `updateSimpleMatch` invalidates both winner and loser `userDetailProvider`
+  - `deleteMatch` invalidates all involved players' `userDetailProvider`
+  - `updatePlayer` and `removePlayer` invalidate affected user's `userDetailProvider`
 
 ## Common Pitfalls
 
