@@ -20,19 +20,19 @@ class UserDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-title: userAsync.when(
-        data: (users) {
-          final user = users.where((u) => u.id == userId).firstOrNull;
-          if (user == null) {
-            return const Text('User Detail');
-          }
-          final title =
-              "${user.name}${user.name.toLowerCase().endsWith('s') ? "'" : "'s"} Leagues";
-          return Text(title);
-        },
-        loading: () => const Text('Loading...'),
-        error: (_, __) => const Text('User Detail'),
-      ),
+        title: userAsync.when(
+          data: (users) {
+            final user = users.where((u) => u.id == userId).firstOrNull;
+            if (user == null) {
+              return const Text('User Detail');
+            }
+            final title =
+                "${user.name}${user.name.toLowerCase().endsWith('s') ? "'" : "'s"} Leagues";
+            return Text(title);
+          },
+          loading: () => const Text('Loading...'),
+          error: (_, __) => const Text('User Detail'),
+        ),
         actions: [
           userAsync.when(
             data: (users) {

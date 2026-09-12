@@ -10,13 +10,16 @@ import 'package:game_on/domain/repositories/league_player_repository.dart';
 import 'package:game_on/application/services/delete_user_service.dart';
 import 'package:game_on/application/services/update_user_service.dart';
 import 'package:game_on/providers/users_provider.dart';
-import 'package:game_on/providers/leagues_provider.dart';
 import 'package:game_on/providers/league_detail_provider.dart';
 import 'package:game_on/presentation/screens/settings/create_user_screen.dart';
 
 class MockUserRepository extends Mock implements UserRepository {}
-class MockLeaguePlayerRepository extends Mock implements LeaguePlayerRepository {}
+
+class MockLeaguePlayerRepository extends Mock
+    implements LeaguePlayerRepository {}
+
 class MockDeleteUserService extends Mock implements DeleteUserService {}
+
 class MockUpdateUserService extends Mock implements UpdateUserService {}
 
 class FakeUsersNotifier extends UsersNotifier {
@@ -63,7 +66,8 @@ void main() {
   );
 
   setUpAll(() {
-    registerFallbackValue(User(id: '', name: '', avatarColorHex: '', icon: null));
+    registerFallbackValue(
+        User(id: '', name: '', avatarColorHex: '', icon: null));
     registerFallbackValue(DeleteUserResult(affectedLeagueIds: {}));
   });
 
@@ -87,7 +91,8 @@ void main() {
     when(() => mockUserRepo.getAll()).thenAnswer((_) async => [tUser]);
     when(() => mockUserRepo.put(any())).thenAnswer((_) async => {});
     when(() => mockPlayerRepo.getByUserId(any())).thenAnswer((_) async => []);
-    when(() => mockDeleteService.execute(any())).thenAnswer((_) async => DeleteUserResult(affectedLeagueIds: {}));
+    when(() => mockDeleteService.execute(any()))
+        .thenAnswer((_) async => DeleteUserResult(affectedLeagueIds: {}));
     when(() => mockUpdateService.execute(any())).thenAnswer((_) async => {});
   });
 
@@ -96,7 +101,6 @@ void main() {
   });
 
   Widget createWidget({User? user, List<User>? users}) {
-    final notifier = users != null ? FakeUsersNotifier(users) : fakeUsersNotifier;
     return UncontrolledProviderScope(
       container: container,
       child: MaterialApp(
@@ -157,29 +161,36 @@ void main() {
     );
   }
 
-  Future<void> openScreen(WidgetTester tester, {User? user, List<User>? users}) async {
+  Future<void> openScreen(WidgetTester tester,
+      {User? user, List<User>? users}) async {
     await tester.pumpWidget(createWidget(user: user, users: users));
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
   }
 
-  Future<void> openScreenWithRealNotifier(WidgetTester tester, {User? user}) async {
+  Future<void> openScreenWithRealNotifier(WidgetTester tester,
+      {User? user}) async {
     await tester.pumpWidget(createWidgetWithRealNotifier(user: user));
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
   }
 
   group('CreateUserScreen', () {
-    testWidgets('should show create user screen with empty form when creating new user', (tester) async {
+    testWidgets(
+        'should show create user screen with empty form when creating new user',
+        (tester) async {
       await openScreen(tester);
 
-      expect(find.text('Create User'), findsNWidgets(2)); // AppBar title + Button
+      expect(
+          find.text('Create User'), findsNWidgets(2)); // AppBar title + Button
       expect(find.text('User Details'), findsOneWidget);
       expect(find.byType(TextField), findsOneWidget);
       expect(find.text('Choose Avatar Icon'), findsOneWidget);
     });
 
-    testWidgets('should show edit user screen with pre-filled data when editing', (tester) async {
+    testWidgets(
+        'should show edit user screen with pre-filled data when editing',
+        (tester) async {
       await openScreen(tester, user: tUser);
 
       expect(find.text('Edit User'), findsOneWidget);
@@ -187,10 +198,12 @@ void main() {
       final textField = tester.widget<TextField>(find.byType(TextField));
       expect(textField.controller?.text, 'Test User');
       // Check selected icon
-      expect(find.text('🎮'), findsWidgets); // At least one for the selected icon
+      expect(
+          find.text('🎮'), findsWidgets); // At least one for the selected icon
     });
 
-    testWidgets('should create user successfully on valid input', (tester) async {
+    testWidgets('should create user successfully on valid input',
+        (tester) async {
       await openScreen(tester);
       await tester.pump();
 
@@ -215,7 +228,8 @@ void main() {
       expect(find.text('User created successfully'), findsOneWidget);
     });
 
-    testWidgets('should update user successfully on valid input in edit mode', (tester) async {
+    testWidgets('should update user successfully on valid input in edit mode',
+        (tester) async {
       await openScreen(tester, user: tUser);
       await tester.pump();
 
@@ -241,7 +255,8 @@ void main() {
       expect(find.text('User updated successfully'), findsOneWidget);
     });
 
-    testWidgets('should show error SnackBar when name is empty', (tester) async {
+    testWidgets('should show error SnackBar when name is empty',
+        (tester) async {
       await openScreen(tester);
       await tester.pump();
 
@@ -256,7 +271,8 @@ void main() {
       expect(find.text('Please enter a name'), findsOneWidget);
     });
 
-    testWidgets('should show error SnackBar when repository throws on create', (tester) async {
+    testWidgets('should show error SnackBar when repository throws on create',
+        (tester) async {
       when(() => mockUserRepo.put(any())).thenThrow(Exception('DB Error'));
 
       await openScreenWithRealNotifier(tester);
@@ -273,8 +289,10 @@ void main() {
       expect(find.textContaining('DB Error'), findsOneWidget);
     });
 
-    testWidgets('should show error SnackBar when service throws on update', (tester) async {
-      when(() => mockUpdateService.execute(any())).thenThrow(Exception('DB Error'));
+    testWidgets('should show error SnackBar when service throws on update',
+        (tester) async {
+      when(() => mockUpdateService.execute(any()))
+          .thenThrow(Exception('DB Error'));
 
       await openScreenWithRealNotifier(tester, user: tUser);
       await tester.pump();
@@ -290,7 +308,8 @@ void main() {
       expect(find.textContaining('DB Error'), findsOneWidget);
     });
 
-    testWidgets('should show loading indicator while submitting', (tester) async {
+    testWidgets('should show loading indicator while submitting',
+        (tester) async {
       // Use a completer to delay the repository call
       final completer = Completer<void>();
       when(() => mockUserRepo.put(any())).thenAnswer((_) => completer.future);
@@ -329,7 +348,8 @@ void main() {
       expect(find.text('🎯'), findsWidgets);
     });
 
-    testWidgets('should cancel and pop without saving when using back button', (tester) async {
+    testWidgets('should cancel and pop without saving when using back button',
+        (tester) async {
       await openScreen(tester);
       await tester.pump();
 

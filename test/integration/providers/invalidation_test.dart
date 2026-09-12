@@ -512,8 +512,7 @@ void main() {
       final newUser = User(
           id: 'u4', name: 'New Player', avatarColorHex: 'AAAAAA', icon: '🎮');
       when(() => mockUserRepo.get('u4')).thenAnswer((_) async => newUser);
-      when(() => mockPlayerRepo.getByUserId('u4'))
-          .thenAnswer((_) async => []);
+      when(() => mockPlayerRepo.getByUserId('u4')).thenAnswer((_) async => []);
 
       await container.read(userDetailProvider('u4').future);
       expect(container.read(userDetailProvider('u4')).value, isEmpty);
@@ -545,7 +544,8 @@ void main() {
       expect(userDetailState.isLoading || userDetailState.hasValue, isTrue);
     });
 
-    test('addPlayer with existing userId invalidates userDetailProvider for that user',
+    test(
+        'addPlayer with existing userId invalidates userDetailProvider for that user',
         () async {
       // Load user detail for existing user u2
       when(() => mockPlayerRepo.getByUserId('u2'))
@@ -608,7 +608,8 @@ void main() {
 
       final leagueNotifier =
           container.read(leagueDetailProvider(tLeagueId).notifier);
-      await leagueNotifier.logSimpleMatch(winnerId: 'p1', loserId: 'p2', isDraw: false);
+      await leagueNotifier.logSimpleMatch(
+          winnerId: 'p1', loserId: 'p2', isDraw: false);
 
       // Both userDetailProviders should be invalidated
       final userDetailState1 = container.read(userDetailProvider('u1'));
@@ -617,7 +618,8 @@ void main() {
       expect(userDetailState2.isLoading || userDetailState2.hasValue, isTrue);
     });
 
-    test('updateSimpleMatch invalidates both winner and loser userDetailProvider',
+    test(
+        'updateSimpleMatch invalidates both winner and loser userDetailProvider',
         () async {
       // Setup existing match
       final existingMatch = SimpleMatch(
@@ -700,8 +702,12 @@ void main() {
           .thenAnswer((_) async => [tPlayer2]);
       await container.read(userDetailProvider('u1').future);
       await container.read(userDetailProvider('u2').future);
-      expect(container.read(userDetailProvider('u1')).value?.first.matches.length, 1);
-      expect(container.read(userDetailProvider('u2')).value?.first.matches.length, 1);
+      expect(
+          container.read(userDetailProvider('u1')).value?.first.matches.length,
+          1);
+      expect(
+          container.read(userDetailProvider('u2')).value?.first.matches.length,
+          1);
 
       final leagueNotifier =
           container.read(leagueDetailProvider(tLeagueId).notifier);
@@ -713,26 +719,33 @@ void main() {
       // After invalidation, the provider should be in a valid state (loading, data, or error)
       // The cached value may still be present (hasValue), or it may be rebuilding (isLoading),
       // or the rebuild may have failed due to test mock setup (hasError)
-      expect(userDetailState1.isLoading || userDetailState1.hasValue || userDetailState1.hasError, isTrue);
-      expect(userDetailState2.isLoading || userDetailState2.hasValue || userDetailState2.hasError, isTrue);
+      expect(
+          userDetailState1.isLoading ||
+              userDetailState1.hasValue ||
+              userDetailState1.hasError,
+          isTrue);
+      expect(
+          userDetailState2.isLoading ||
+              userDetailState2.hasValue ||
+              userDetailState2.hasError,
+          isTrue);
     });
 
-    test('updatePlayer and removePlayer invalidate affected user userDetailProvider',
+    test(
+        'updatePlayer and removePlayer invalidate affected user userDetailProvider',
         () async {
       // Load user detail for u1
       when(() => mockPlayerRepo.getByUserId('u1'))
           .thenAnswer((_) async => [tPlayer1]);
       await container.read(userDetailProvider('u1').future);
-      expect(container.read(userDetailProvider('u1')).value?.first.player.name, 'Player 1');
+      expect(container.read(userDetailProvider('u1')).value?.first.player.name,
+          'Player 1');
 
       // Update player
       when(() => mockPlayerRepo.get('p1')).thenAnswer((_) async => tPlayer1);
       when(() => mockPlayerRepo.put(any())).thenAnswer((_) async => {});
-      when(() => mockPlayerRepo.getByLeague(tLeagueId))
-          .thenAnswer((_) async => [
-                tPlayer1.copyWith(name: 'Updated Name'),
-                tPlayer2
-              ]);
+      when(() => mockPlayerRepo.getByLeague(tLeagueId)).thenAnswer(
+          (_) async => [tPlayer1.copyWith(name: 'Updated Name'), tPlayer2]);
 
       final leagueNotifier =
           container.read(leagueDetailProvider(tLeagueId).notifier);

@@ -13,10 +13,12 @@ import 'package:game_on/presentation/screens/settings/user_detail_screen.dart';
 import 'package:game_on/presentation/widgets/user_edit_dialog.dart';
 
 class MockUserRepository extends Mock implements UserRepository {}
+
 class MockDeleteUserService extends Mock implements DeleteUserService {}
 
 class FakeUsersNotifier extends UsersNotifier {
-  FakeUsersNotifier([this._users = const [], this.onBuild, this.shouldThrowOnDelete = false]);
+  FakeUsersNotifier(
+      [this._users = const [], this.onBuild, this.shouldThrowOnDelete = false]);
   final List<User> _users;
   final Future<List<User>> Function()? onBuild;
   final bool shouldThrowOnDelete;
@@ -65,7 +67,10 @@ class FakeUsersNotifier extends UsersNotifier {
 }
 
 class RefreshingUsersNotifier extends FakeUsersNotifier {
-  RefreshingUsersNotifier(List<User> users, {this.onRefresh, Future<List<User>> Function()? onBuild, bool shouldThrowOnDelete = false}) 
+  RefreshingUsersNotifier(List<User> users,
+      {this.onRefresh,
+      Future<List<User>> Function()? onBuild,
+      bool shouldThrowOnDelete = false})
       : super(users, onBuild, shouldThrowOnDelete);
   final Future<List<User>> Function()? onRefresh;
   int refreshCount = 0;
@@ -103,7 +108,8 @@ void main() {
   );
 
   setUpAll(() {
-    registerFallbackValue(User(id: '', name: '', avatarColorHex: '', icon: null));
+    registerFallbackValue(
+        User(id: '', name: '', avatarColorHex: '', icon: null));
   });
 
   setUp(() {
@@ -112,7 +118,8 @@ void main() {
     fakeUsersNotifier = FakeUsersNotifier([tUser1, tUser2]);
     when(() => mockUserRepo.getAll()).thenAnswer((_) async => [tUser1, tUser2]);
     when(() => mockUserRepo.put(any())).thenAnswer((_) async => {});
-    when(() => mockDeleteService.execute(any())).thenAnswer((_) async => DeleteUserResult(affectedLeagueIds: {}));
+    when(() => mockDeleteService.execute(any()))
+        .thenAnswer((_) async => DeleteUserResult(affectedLeagueIds: {}));
   });
 
   Widget createWidget({
@@ -123,13 +130,15 @@ void main() {
   }) {
     late final FakeUsersNotifier notifier;
     if (onRefresh != null) {
-      notifier = RefreshingUsersNotifier(users ?? [], onRefresh: onRefresh, shouldThrowOnDelete: shouldThrowOnDelete);
+      notifier = RefreshingUsersNotifier(users ?? [],
+          onRefresh: onRefresh, shouldThrowOnDelete: shouldThrowOnDelete);
     } else if (onBuild != null) {
       notifier = FakeUsersNotifier(users ?? [], onBuild, shouldThrowOnDelete);
     } else if (users != null) {
       notifier = FakeUsersNotifier(users, null, shouldThrowOnDelete);
     } else {
-      notifier = FakeUsersNotifier(fakeUsersNotifier._users, fakeUsersNotifier.onBuild, shouldThrowOnDelete);
+      notifier = FakeUsersNotifier(fakeUsersNotifier._users,
+          fakeUsersNotifier.onBuild, shouldThrowOnDelete);
     }
     fakeUsersNotifier = notifier;
     return ProviderScope(
@@ -158,7 +167,8 @@ void main() {
     );
   }
 
-  Future<void> openScreen(WidgetTester tester, {
+  Future<void> openScreen(
+    WidgetTester tester, {
     List<User>? users,
     Future<List<User>> Function()? onBuild,
     Future<List<User>> Function()? onRefresh,
@@ -188,7 +198,8 @@ void main() {
     });
 
     testWidgets('should show error message on error', (tester) async {
-      await tester.pumpWidget(createWidget(onBuild: () => throw Exception('Error occurred')));
+      await tester.pumpWidget(
+          createWidget(onBuild: () => throw Exception('Error occurred')));
       await tester.tap(find.text('Open'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
@@ -215,7 +226,8 @@ void main() {
       expect(find.text('Global User'), findsNWidgets(2));
     });
 
-    testWidgets('should navigate to UserDetailScreen when tapping a user', (tester) async {
+    testWidgets('should navigate to UserDetailScreen when tapping a user',
+        (tester) async {
       await openScreen(tester);
       await tester.pump();
 
@@ -227,7 +239,8 @@ void main() {
       expect(find.text("User One's Leagues"), findsOneWidget);
     });
 
-    testWidgets('should open UserEditDialog for create when tapping FAB', (tester) async {
+    testWidgets('should open UserEditDialog for create when tapping FAB',
+        (tester) async {
       await openScreen(tester);
       await tester.pump();
 
@@ -260,7 +273,8 @@ void main() {
       expect(find.text('User created successfully'), findsOneWidget);
     });
 
-    testWidgets('should open UserEditDialog for edit when tapping edit icon', (tester) async {
+    testWidgets('should open UserEditDialog for edit when tapping edit icon',
+        (tester) async {
       await openScreen(tester);
       await tester.pump();
 
@@ -313,7 +327,9 @@ void main() {
       expect(find.text('Edit User'), findsNothing);
     });
 
-    testWidgets('should show delete confirmation dialog when tapping delete icon', (tester) async {
+    testWidgets(
+        'should show delete confirmation dialog when tapping delete icon',
+        (tester) async {
       await openScreen(tester);
       await tester.pump();
 
@@ -323,7 +339,11 @@ void main() {
 
       expect(find.text('Delete User?'), findsOneWidget);
       // Use a more specific finder for the dialog content
-      expect(find.descendant(of: find.byType(AlertDialog), matching: find.textContaining('User One')), findsOneWidget);
+      expect(
+          find.descendant(
+              of: find.byType(AlertDialog),
+              matching: find.textContaining('User One')),
+          findsOneWidget);
       expect(find.widgetWithText(TextButton, 'Cancel'), findsOneWidget);
       expect(find.widgetWithText(ElevatedButton, 'Delete'), findsOneWidget);
     });
@@ -370,7 +390,8 @@ void main() {
       expect(find.textContaining('Error'), findsOneWidget);
     });
 
-    testWidgets('should handle pull-to-refresh drag without RefreshIndicator', (tester) async {
+    testWidgets('should handle pull-to-refresh drag without RefreshIndicator',
+        (tester) async {
       int refreshCount = 0;
       final refreshingNotifier = RefreshingUsersNotifier(
         [tUser1],
@@ -395,7 +416,8 @@ void main() {
                 body: Center(
                   child: ElevatedButton(
                     onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ManageUsersScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const ManageUsersScreen()),
                     ),
                     child: const Text('Open'),
                   ),

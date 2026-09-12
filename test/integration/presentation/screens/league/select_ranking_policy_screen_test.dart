@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:game_on/domain/entities/ranking_policy_type.dart';
 import 'package:game_on/presentation/screens/league/select_ranking_policy_screen.dart';
 import 'package:game_on/presentation/screens/league/create_simple_league_screen.dart';
 import 'package:game_on/presentation/screens/league/create_goal_difference_league_screen.dart';
@@ -46,12 +45,20 @@ void main() {
 
       expect(find.text('Simple Scoring'), findsOneWidget);
       expect(find.text('Goal Difference'), findsOneWidget);
-      expect(find.text('Standard points for Match outcomes (e.g. 3 for Win, 1 for Draw, 0 for Loss).'), findsOneWidget);
-      expect(find.text('Enter the score for each match and rank by points, goal difference, then goals for (e.g. Ping Pong, Table Football).'), findsOneWidget);
+      expect(
+          find.text(
+              'Standard points for Match outcomes (e.g. 3 for Win, 1 for Draw, 0 for Loss).'),
+          findsOneWidget);
+      expect(
+          find.text(
+              'Enter the score for each match and rank by points, goal difference, then goals for (e.g. Ping Pong, Table Football).'),
+          findsOneWidget);
       expect(find.byType(Card), findsNWidgets(2));
     });
 
-    testWidgets('should navigate to CreateSimpleLeagueScreen when tapping Simple Scoring', (tester) async {
+    testWidgets(
+        'should navigate to CreateSimpleLeagueScreen when tapping Simple Scoring',
+        (tester) async {
       await openScreen(tester);
       await tester.pump();
 
@@ -62,7 +69,9 @@ void main() {
       expect(find.text('New Simple League'), findsOneWidget);
     });
 
-    testWidgets('should navigate to CreateGoalDifferenceLeagueScreen when tapping Goal Difference', (tester) async {
+    testWidgets(
+        'should navigate to CreateGoalDifferenceLeagueScreen when tapping Goal Difference',
+        (tester) async {
       await openScreen(tester);
       await tester.pump();
 

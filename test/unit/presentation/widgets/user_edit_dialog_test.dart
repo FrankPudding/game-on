@@ -59,7 +59,8 @@ void main() {
   );
 
   setUpAll(() {
-    registerFallbackValue(User(id: '', name: '', avatarColorHex: '', icon: null));
+    registerFallbackValue(
+        User(id: '', name: '', avatarColorHex: '', icon: null));
   });
 
   setUp(() {
@@ -125,8 +126,8 @@ void main() {
     testWidgets('should create user successfully with valid input',
         (WidgetTester tester) async {
       when(() => mockUserRepo.put(any())).thenAnswer((_) async => {});
-      when(() => mockUserRepo.getAll())
-          .thenAnswer((_) async => [User(id: 'new-id', name: 'New User', avatarColorHex: 'AE0C00')]);
+      when(() => mockUserRepo.getAll()).thenAnswer((_) async =>
+          [User(id: 'new-id', name: 'New User', avatarColorHex: 'AE0C00')]);
 
       await openDialog(tester);
 
@@ -134,8 +135,9 @@ void main() {
       await tester.tap(find.widgetWithText(ElevatedButton, 'Create'));
       await tester.pumpAndSettle();
 
-      verify(() => mockUserRepo.put(any(that: isA<User>().having(
-          (u) => u.name, 'name', 'New User')))).called(1);
+      verify(() => mockUserRepo.put(
+              any(that: isA<User>().having((u) => u.name, 'name', 'New User'))))
+          .called(1);
       expect(find.text('User created successfully'), findsOneWidget);
     });
 
@@ -167,8 +169,13 @@ void main() {
     testWidgets('should select custom icon when creating user',
         (WidgetTester tester) async {
       when(() => mockUserRepo.put(any())).thenAnswer((_) async => {});
-      when(() => mockUserRepo.getAll())
-          .thenAnswer((_) async => [User(id: 'new-id', name: 'Gamer', avatarColorHex: 'AE0C00', icon: '🎮')]);
+      when(() => mockUserRepo.getAll()).thenAnswer((_) async => [
+            User(
+                id: 'new-id',
+                name: 'Gamer',
+                avatarColorHex: 'AE0C00',
+                icon: '🎮')
+          ]);
 
       await openDialog(tester);
 
@@ -179,8 +186,9 @@ void main() {
       await tester.tap(find.widgetWithText(ElevatedButton, 'Create'));
       await tester.pumpAndSettle();
 
-      verify(() => mockUserRepo.put(any(that: isA<User>().having(
-          (u) => u.icon, 'icon', '🎮')))).called(1);
+      verify(() => mockUserRepo
+              .put(any(that: isA<User>().having((u) => u.icon, 'icon', '🎮'))))
+          .called(1);
     });
   });
 
@@ -206,8 +214,9 @@ void main() {
       await tester.tap(find.widgetWithText(ElevatedButton, 'Save'));
       await tester.pumpAndSettle();
 
-      verify(() => mockUpdateService.execute(any(that: isA<User>().having(
-          (u) => u.name, 'name', 'Updated')))).called(1);
+      verify(() => mockUpdateService.execute(
+              any(that: isA<User>().having((u) => u.name, 'name', 'Updated'))))
+          .called(1);
       expect(find.text('User updated successfully'), findsOneWidget);
     });
 
@@ -251,8 +260,8 @@ void main() {
       await tester.tap(find.widgetWithText(ElevatedButton, 'Save'));
       await tester.pumpAndSettle();
 
-      verify(() => mockUpdateService.execute(any(that: isA<User>().having(
-          (u) => u.icon, 'icon', '⚽')))).called(1);
+      verify(() => mockUpdateService.execute(
+          any(that: isA<User>().having((u) => u.icon, 'icon', '⚽')))).called(1);
     });
   });
 }

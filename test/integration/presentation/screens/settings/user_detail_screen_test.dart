@@ -22,11 +22,6 @@ import 'package:game_on/application/services/delete_user_service.dart';
 import 'package:game_on/application/services/update_user_service.dart';
 import 'package:game_on/presentation/screens/settings/user_detail_screen.dart';
 import 'package:game_on/presentation/screens/match/log_match_screen.dart';
-import 'package:game_on/providers/users_provider.dart' as users_p;
-import 'package:game_on/providers/leagues_provider.dart' as leagues_p;
-import 'package:game_on/providers/league_detail_provider.dart' as league_detail_p;
-import 'package:game_on/core/injection_container.dart' as injection;
-import 'package:game_on/application/services/create_league_service.dart';
 
 class MockLeagueRepository extends Mock implements LeagueRepository {}
 
@@ -68,15 +63,15 @@ class FakeUsersNotifier extends UsersNotifier {
 }
 
 class FakeUserDetailNotifier extends UserDetailNotifier {
-  FakeUserDetailNotifier(String userId, {FutureOr<List<UserLeagueInfo>> Function()? onBuild})
-      : _onBuild = onBuild,
-        super(userId);
+  FakeUserDetailNotifier(super.userId,
+      {FutureOr<List<UserLeagueInfo>> Function()? onBuild})
+      : _onBuild = onBuild;
   final FutureOr<List<UserLeagueInfo>> Function()? _onBuild;
   int invalidateCount = 0;
 
   @override
   Future<List<UserLeagueInfo>> build() async {
-    if (_onBuild != null) return await _onBuild!();
+    if (_onBuild != null) return await _onBuild();
     return [];
   }
 
@@ -140,7 +135,8 @@ void main() {
         isComplete: false,
         sides: []));
     registerFallbackValue(Side(id: '', playerIds: []));
-    registerFallbackValue(User(id: '', name: '', avatarColorHex: '', icon: null));
+    registerFallbackValue(
+        User(id: '', name: '', avatarColorHex: '', icon: null));
     registerFallbackValue(LeaguePlayer(
         id: '', userId: '', leagueId: '', name: '', avatarColorHex: ''));
   });
@@ -228,12 +224,13 @@ void main() {
   }
 
   Future<void> openScreen(
-    WidgetTester tester, AsyncValue<List<UserLeagueInfo>> value, {
+    WidgetTester tester,
+    AsyncValue<List<UserLeagueInfo>> value, {
     List<User>? users,
     List<dynamic> extraOverrides = const [],
   }) async {
-    await tester.pumpWidget(
-      createWidgetWithValue(value, users: users, extraOverrides: extraOverrides));
+    await tester.pumpWidget(createWidgetWithValue(value,
+        users: users, extraOverrides: extraOverrides));
     await tester.tap(find.text('Open'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
@@ -312,7 +309,8 @@ void main() {
       expect(find.text('No matches recorded in this league.'), findsOneWidget);
     });
 
-    testWidgets('should show correct result for ghost players (player not in match)',
+    testWidgets(
+        'should show correct result for ghost players (player not in match)',
         (tester) async {
       final ghostMatch = SimpleMatch(
         id: 'm1',
@@ -343,8 +341,7 @@ void main() {
       expect(find.text('Lost'), findsOneWidget);
     });
 
-    testWidgets('should open edit user dialog from app bar',
-        (tester) async {
+    testWidgets('should open edit user dialog from app bar', (tester) async {
       when(() => mockUpdateService.execute(any())).thenAnswer((_) async => {});
 
       // Use container with real notifiers and mocked services
@@ -401,8 +398,9 @@ void main() {
       await tester.tap(find.widgetWithText(ElevatedButton, 'Save'));
       await tester.pumpAndSettle();
 
-      verify(() => mockUpdateService.execute(any(that: isA<User>().having(
-          (u) => u.name, 'name', 'Updated')))).called(1);
+      verify(() => mockUpdateService.execute(
+              any(that: isA<User>().having((u) => u.name, 'name', 'Updated'))))
+          .called(1);
     });
 
     testWidgets('should open participant edit dialog and update player',
@@ -419,11 +417,10 @@ void main() {
       );
 
       when(() => mockPlayerRepo.put(any())).thenAnswer((_) async => {});
-      when(() => mockPlayerRepo.get(tPlayerId)).thenAnswer((_) async => tPlayer);
-      when(() => mockPlayerRepo.getByLeague(tLeagueId))
-          .thenAnswer((_) async => [
-                tPlayer.copyWith(name: 'New Nickname', icon: '🎮')
-              ]);
+      when(() => mockPlayerRepo.get(tPlayerId))
+          .thenAnswer((_) async => tPlayer);
+      when(() => mockPlayerRepo.getByLeague(tLeagueId)).thenAnswer(
+          (_) async => [tPlayer.copyWith(name: 'New Nickname', icon: '🎮')]);
 
       // Create widget with custom userDetailNotifier to avoid duplicate override
       final widget = ProviderScope(
@@ -478,8 +475,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify player was updated via repository
-      verify(() => mockPlayerRepo.put(any(that: isA<LeaguePlayer>().having(
-          (p) => p.name, 'name', 'New Nickname')))).called(1);
+      verify(() => mockPlayerRepo.put(any(
+          that: isA<LeaguePlayer>()
+              .having((p) => p.name, 'name', 'New Nickname')))).called(1);
     });
 
     testWidgets('should navigate to LogMatchScreen when tapping a match',
@@ -516,8 +514,7 @@ void main() {
       expect(find.text('Edit Match'), findsOneWidget);
     });
 
-    testWidgets('should display correct result for draw match',
-        (tester) async {
+    testWidgets('should display correct result for draw match', (tester) async {
       final drawMatch = SimpleMatch(
         id: 'm1',
         leagueId: tLeagueId,
@@ -545,8 +542,7 @@ void main() {
       expect(find.text('Draw'), findsOneWidget);
     });
 
-    testWidgets('should display correct result for lost match',
-        (tester) async {
+    testWidgets('should display correct result for lost match', (tester) async {
       final lostMatch = SimpleMatch(
         id: 'm1',
         leagueId: tLeagueId,
@@ -574,8 +570,7 @@ void main() {
       expect(find.text('Lost'), findsOneWidget);
     });
 
-    testWidgets('should display multiple leagues correctly',
-        (tester) async {
+    testWidgets('should display multiple leagues correctly', (tester) async {
       final league2 = League(
         id: 'l2',
         name: 'Second League',

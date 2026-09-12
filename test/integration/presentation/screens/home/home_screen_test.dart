@@ -14,7 +14,8 @@ import 'package:game_on/presentation/screens/league/select_ranking_policy_screen
 class MockLeagueRepository extends Mock implements LeagueRepository {}
 
 class FakeLeaguesNotifier extends LeaguesNotifier {
-  FakeLeaguesNotifier({this.leagues = const [], this.shouldThrow = false, this.onBuild});
+  FakeLeaguesNotifier(
+      {this.leagues = const [], this.shouldThrow = false, this.onBuild});
   final List<League> leagues;
   final bool shouldThrow;
   final Future<List<League>> Function()? onBuild;
@@ -39,11 +40,11 @@ class FakeLeaguesNotifier extends LeaguesNotifier {
 }
 
 class RefreshingLeaguesNotifier extends FakeLeaguesNotifier {
-  RefreshingLeaguesNotifier({required super.leagues, this.onRefresh, super.shouldThrow});
+  RefreshingLeaguesNotifier(
+      {required super.leagues, this.onRefresh, super.shouldThrow});
   final Future<List<League>> Function()? onRefresh;
   int refreshCount = 0;
 
-  @override
   Future<void> refresh() async {
     refreshCount++;
     if (onRefresh != null) {
@@ -77,7 +78,8 @@ void main() {
   setUp(() {
     mockLeagueRepo = MockLeagueRepository();
     fakeLeaguesNotifier = FakeLeaguesNotifier(leagues: [tLeague1, tLeague2]);
-    when(() => mockLeagueRepo.getAll()).thenAnswer((_) async => [tLeague1, tLeague2]);
+    when(() => mockLeagueRepo.getAll())
+        .thenAnswer((_) async => [tLeague1, tLeague2]);
     when(() => mockLeagueRepo.delete(any())).thenAnswer((_) async => {});
   });
 
@@ -130,7 +132,8 @@ void main() {
     );
   }
 
-  Future<void> openScreen(WidgetTester tester, {
+  Future<void> openScreen(
+    WidgetTester tester, {
     List<League>? leagues,
     bool shouldThrow = false,
     Future<List<League>> Function()? onBuild,
@@ -160,7 +163,8 @@ void main() {
     });
 
     testWidgets('should show error state on error', (tester) async {
-      await tester.pumpWidget(createWidget(onBuild: () => throw Exception('Error occurred')));
+      await tester.pumpWidget(
+          createWidget(onBuild: () => throw Exception('Error occurred')));
       await tester.tap(find.text('Open'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
@@ -168,27 +172,34 @@ void main() {
       expect(find.textContaining('Error:'), findsOneWidget);
     });
 
-    testWidgets('should show empty state with Create First League button when no leagues', (tester) async {
+    testWidgets(
+        'should show empty state with Create First League button when no leagues',
+        (tester) async {
       await openScreen(tester, leagues: []);
       await tester.pump();
 
       expect(find.text('No leagues yet'), findsOneWidget);
       expect(find.byIcon(Icons.emoji_events_outlined), findsOneWidget);
-      expect(find.widgetWithText(ElevatedButton, 'Create First League'), findsOneWidget);
+      expect(find.widgetWithText(ElevatedButton, 'Create First League'),
+          findsOneWidget);
     });
 
-    testWidgets('should navigate to SelectRankingPolicyScreen when tapping Create First League button', (tester) async {
+    testWidgets(
+        'should navigate to SelectRankingPolicyScreen when tapping Create First League button',
+        (tester) async {
       await openScreen(tester, leagues: []);
       await tester.pump();
 
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Create First League'));
+      await tester
+          .tap(find.widgetWithText(ElevatedButton, 'Create First League'));
       await tester.pumpAndSettle();
 
       expect(find.byType(SelectRankingPolicyScreen), findsOneWidget);
       expect(find.text('Select Scoring System'), findsOneWidget);
     });
 
-    testWidgets('should show FAB that navigates to SelectRankingPolicyScreen', (tester) async {
+    testWidgets('should show FAB that navigates to SelectRankingPolicyScreen',
+        (tester) async {
       await openScreen(tester);
       await tester.pump();
 
@@ -201,7 +212,8 @@ void main() {
       expect(find.byType(SelectRankingPolicyScreen), findsOneWidget);
     });
 
-    testWidgets('should display league list when leagues exist', (tester) async {
+    testWidgets('should display league list when leagues exist',
+        (tester) async {
       await openScreen(tester);
       await tester.pump();
 
@@ -212,7 +224,8 @@ void main() {
       expect(find.byIcon(Icons.sports_esports), findsNWidgets(2));
     });
 
-    testWidgets('should navigate to LeagueDetailScreen when tapping a league', (tester) async {
+    testWidgets('should navigate to LeagueDetailScreen when tapping a league',
+        (tester) async {
       await openScreen(tester);
       await tester.pump();
 
@@ -238,7 +251,8 @@ void main() {
       expect(find.text('League Three'), findsOneWidget);
     });
 
-    testWidgets('should handle pull-to-refresh drag without RefreshIndicator', (tester) async {
+    testWidgets('should handle pull-to-refresh drag without RefreshIndicator',
+        (tester) async {
       int refreshCount = 0;
       final refreshingNotifier = RefreshingLeaguesNotifier(
         leagues: [tLeague1],

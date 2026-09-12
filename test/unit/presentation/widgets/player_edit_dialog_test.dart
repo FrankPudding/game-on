@@ -65,7 +65,7 @@ class FakeLeagueDetailNotifier extends LeagueDetailNotifier {
 }
 
 class FakeUserDetailNotifier extends UserDetailNotifier {
-  FakeUserDetailNotifier(String userId) : super(userId);
+  FakeUserDetailNotifier(super.userId);
   int invalidateCount = 0;
 
   @override
@@ -107,7 +107,8 @@ void main() {
         isComplete: false,
         sides: []));
     registerFallbackValue(Side(id: '', playerIds: []));
-    registerFallbackValue(User(id: '', name: '', avatarColorHex: '', icon: null));
+    registerFallbackValue(
+        User(id: '', name: '', avatarColorHex: '', icon: null));
     registerFallbackValue(LeaguePlayer(
         id: '', userId: '', leagueId: '', name: '', avatarColorHex: ''));
   });
@@ -129,12 +130,11 @@ void main() {
       ],
     );
 
-    when(() => mockLeagueRepo.get(tLeagueId))
-        .thenAnswer((_) async => League(
-              id: tLeagueId,
-              name: 'Test League',
-              createdAt: DateTime.now(),
-            ));
+    when(() => mockLeagueRepo.get(tLeagueId)).thenAnswer((_) async => League(
+          id: tLeagueId,
+          name: 'Test League',
+          createdAt: DateTime.now(),
+        ));
     when(() => mockPlayerRepo.get(tPlayerId)).thenAnswer((_) async => tPlayer);
     when(() => mockPlayerRepo.getByLeague(tLeagueId))
         .thenAnswer((_) async => [tPlayer]);
@@ -159,10 +159,8 @@ void main() {
         userRepositoryProvider.overrideWithValue(mockUserRepo),
         simpleMatchRepositoryProvider.overrideWithValue(mockMatchRepo),
         rankingPolicyRepositoryProvider.overrideWithValue(mockPolicyRepo),
-        leagueDetailProvider.overrideWith2(
-            (arg) => fakeLeagueNotifier),
-        userDetailProvider.overrideWith2(
-            (arg) => fakeUserDetailNotifier),
+        leagueDetailProvider.overrideWith2((arg) => fakeLeagueNotifier),
+        userDetailProvider.overrideWith2((arg) => fakeUserDetailNotifier),
       ],
       child: MaterialApp(
         home: Builder(
@@ -199,7 +197,9 @@ void main() {
         onBuild: () async => LeagueDetailState(
           players: [tPlayer],
           matches: [],
-          playerStats: {tPlayerId: const PlayerStats(points: 0, matchesPlayed: 0)},
+          playerStats: {
+            tPlayerId: const PlayerStats(points: 0, matchesPlayed: 0)
+          },
         ),
       );
       fakeUserDetailNotifier = FakeUserDetailNotifier(tUserId);
@@ -221,12 +221,11 @@ void main() {
 
     testWidgets('should update player name and icon successfully',
         (WidgetTester tester) async {
-      when(() => mockPlayerRepo.get(tPlayerId)).thenAnswer((_) async => tPlayer);
+      when(() => mockPlayerRepo.get(tPlayerId))
+          .thenAnswer((_) async => tPlayer);
       when(() => mockPlayerRepo.put(any())).thenAnswer((_) async => {});
-      when(() => mockPlayerRepo.getByLeague(tLeagueId))
-          .thenAnswer((_) async => [
-                tPlayer.copyWith(name: 'Updated Name', icon: '🎮')
-              ]);
+      when(() => mockPlayerRepo.getByLeague(tLeagueId)).thenAnswer(
+          (_) async => [tPlayer.copyWith(name: 'Updated Name', icon: '🎮')]);
 
       await openDialog(
           tester,
@@ -244,7 +243,8 @@ void main() {
 
       expect(fakeLeagueNotifier.updatePlayerCalls, hasLength(1));
       expect(fakeLeagueNotifier.updatePlayerCalls.first['playerId'], tPlayerId);
-      expect(fakeLeagueNotifier.updatePlayerCalls.first['name'], 'Updated Name');
+      expect(
+          fakeLeagueNotifier.updatePlayerCalls.first['name'], 'Updated Name');
       expect(fakeLeagueNotifier.updatePlayerCalls.first['icon'], '🎮');
     });
 
@@ -265,9 +265,10 @@ void main() {
       expect(fakeUserDetailNotifier.invalidateCount, 0);
     });
 
-testWidgets('should show error snackbar when repository fails',
+    testWidgets('should show error snackbar when repository fails',
         (WidgetTester tester) async {
-      when(() => mockPlayerRepo.get(tPlayerId)).thenAnswer((_) async => tPlayer);
+      when(() => mockPlayerRepo.get(tPlayerId))
+          .thenAnswer((_) async => tPlayer);
       when(() => mockPlayerRepo.put(any()))
           .thenThrow(Exception('Repository error'));
 
@@ -285,14 +286,12 @@ testWidgets('should show error snackbar when repository fails',
       expect(find.byType(SnackBar), findsOneWidget);
     });
 
-    testWidgets('should select custom icon',
-        (WidgetTester tester) async {
-      when(() => mockPlayerRepo.get(tPlayerId)).thenAnswer((_) async => tPlayer);
+    testWidgets('should select custom icon', (WidgetTester tester) async {
+      when(() => mockPlayerRepo.get(tPlayerId))
+          .thenAnswer((_) async => tPlayer);
       when(() => mockPlayerRepo.put(any())).thenAnswer((_) async => {});
-      when(() => mockPlayerRepo.getByLeague(tLeagueId))
-          .thenAnswer((_) async => [
-                tPlayer.copyWith(name: 'Test Player', icon: '⚽')
-              ]);
+      when(() => mockPlayerRepo.getByLeague(tLeagueId)).thenAnswer(
+          (_) async => [tPlayer.copyWith(name: 'Test Player', icon: '⚽')]);
 
       await openDialog(
           tester,
