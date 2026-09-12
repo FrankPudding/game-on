@@ -21,11 +21,58 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Set up signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/game-on-release.jks
+
+          cat > android/key.properties <<EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=game-on-release.jks
+          EOF
+
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Build APK
-        run: flutter build apk --release
+        run: |
+          flutter build apk --release \
+            --build-name="${{ steps.version.outputs.version }}" \
+            --build-number="${{ github.run_number }}"
+
+      - name: Rename APK
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk \
+             build/app/outputs/flutter-apk/game-on-${{ steps.version.outputs.version }}.apk
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-on-${{ steps.version.outputs.version }}.apk
+          path: build/app/outputs/flutter-apk/game-on-${{ steps.version.outputs.version }}.apk
+
+      - name: Check if tag is on main
+        id: check_main
+        run: |
+          git fetch origin main --depth=1
+          if git merge-base --is-ancestor ${{ github.sha }} origin/main; then
+            echo "on_main=true" >> $GITHUB_OUTPUT
+          else
+            echo "on_main=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Create Release
+        if: steps.check_main.outputs.on_main == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: build/app/outputs/flutter-apk/game-on-${{ steps.version.outputs.version }}.apk
           generate_release_notes: true

@@ -5,9 +5,8 @@ import '../domain/entities/matches/simple_match.dart';
 import '../domain/repositories/league_repository.dart';
 import '../domain/repositories/league_player_repository.dart';
 import '../domain/repositories/match/simple_match_repository.dart';
+import '../providers/league_detail_provider.dart';
 import 'leagues_provider.dart';
-import 'users_provider.dart';
-import 'league_detail_provider.dart';
 
 class UserLeagueInfo {
   const UserLeagueInfo({
@@ -36,9 +35,8 @@ class UserDetailNotifier extends AsyncNotifier<List<UserLeagueInfo>> {
     _playerRepo = ref.watch(leaguePlayerRepositoryProvider);
     _matchRepo = ref.watch(simpleMatchRepositoryProvider);
 
-    // Watch for changes in users or leagues to refresh
-    ref.watch(usersProvider);
-    ref.watch(leaguesProvider);
+    // Removed ref.watch(usersProvider) and ref.watch(leaguesProvider)
+    // Use explicit invalidation instead for precise, efficient updates
 
     return _fetchData();
   }

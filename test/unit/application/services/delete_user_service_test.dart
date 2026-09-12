@@ -72,7 +72,7 @@ void main() {
       when(() => mockUserRepo.delete(any())).thenAnswer((_) async => {});
 
       // Act
-      await service.execute(tUserId);
+      final result = await service.execute(tUserId);
 
       // Assert
       verify(() => mockMatchRepo.delete('m1')).called(1);
@@ -80,6 +80,7 @@ void main() {
       verify(() => mockPlayerRepo.delete('p1')).called(1);
       verify(() => mockPlayerRepo.delete('p2')).called(1);
       verify(() => mockUserRepo.delete(tUserId)).called(1);
+      expect(result.affectedLeagueIds, {'l1', 'l2'});
     });
 
     test('should handle user with no players or matches', () async {
@@ -87,11 +88,12 @@ void main() {
       when(() => mockMatchRepo.getAll()).thenAnswer((_) async => []);
       when(() => mockUserRepo.delete(any())).thenAnswer((_) async => {});
 
-      await service.execute(tUserId);
+      final result = await service.execute(tUserId);
 
       verify(() => mockUserRepo.delete(tUserId)).called(1);
       verifyNever(() => mockMatchRepo.delete(any()));
       verifyNever(() => mockPlayerRepo.delete(any()));
+      expect(result.affectedLeagueIds, isEmpty);
     });
   });
 }
