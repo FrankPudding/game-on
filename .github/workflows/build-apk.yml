@@ -28,6 +28,10 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
+          echo "KEYSTORE_BASE64 length: ${#KEYSTORE_BASE64}"
+          echo "KEYSTORE_PASSWORD length: ${#KEYSTORE_PASSWORD}"
+          echo "KEY_PASSWORD length: ${#KEY_PASSWORD}"
+          echo "KEY_ALIAS length: ${#KEY_ALIAS}"
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/game-on-release.jks
 
           cat > android/key.properties <<EOF
