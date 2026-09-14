@@ -26,18 +26,29 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          echo "KEYSTORE_BASE64 length: ${#KEYSTORE_BASE64}"
-          echo "KEYSTORE_PASSWORD length: ${#KEYSTORE_PASSWORD}"
-          echo "KEY_PASSWORD length: ${#KEY_PASSWORD}"
-          echo "KEY_ALIAS length: ${#KEY_ALIAS}"
-          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/game-on-release.jks
+          # Trim whitespace from secrets
+          KEYSTORE_BASE64_TRIMMED=$(printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]')
+          KEYSTORE_PASSWORD_TRIMMED=$(printf '%s' "$KEYSTORE_PASSWORD" | tr -d '[:space:]')
+          KEY_PASSWORD_TRIMMED=$(printf '%s' "$KEY_PASSWORD" | tr -d '[:space:]')
+          KEY_ALIAS_TRIMMED="game-on"
+
+          # Debug: print lengths and first/last 10 chars of keystore
+          echo "KEYSTORE_BASE64 original length: ${#KEYSTORE_BASE64}"
+          echo "KEYSTORE_BASE64 trimmed length: ${#KEYSTORE_BASE64_TRIMMED}"
+          echo "KEYSTORE_BASE64 first 10 chars: '${KEYSTORE_BASE64_TRIMMED:0:10}'"
+          echo "KEYSTORE_BASE64 last 10 chars: '${KEYSTORE_BASE64_TRIMMED: -10}'"
+          echo "KEYSTORE_PASSWORD length: ${#KEYSTORE_PASSWORD_TRIMMED}"
+          echo "KEY_PASSWORD length: ${#KEY_PASSWORD_TRIMMED}"
+          echo "KEY_ALIAS length: ${#KEY_ALIAS_TRIMMED}"
+
+          # Use printf for base64 decode to avoid echo newline issues
+          printf '%s' "$KEYSTORE_BASE64_TRIMMED" | base64 --decode > android/app/game-on-release.jks
 
           cat > android/key.properties <<EOF
-          storePassword=$KEYSTORE_PASSWORD
-          keyPassword=$KEY_PASSWORD
-          keyAlias=$KEY_ALIAS
+          storePassword=$KEYSTORE_PASSWORD_TRIMMED
+          keyPassword=$KEY_PASSWORD_TRIMMED
+          keyAlias=game-on
           storeFile=game-on-release.jks
           EOF
 
