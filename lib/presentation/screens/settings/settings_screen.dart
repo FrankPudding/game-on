@@ -17,9 +17,6 @@ class SettingsScreen extends StatelessWidget {
         future: PackageInfo.fromPlatform(),
         builder: (context, snapshot) {
           final version = snapshot.data?.version ?? 'Unknown';
-          final buildNumber = snapshot.data?.buildNumber ?? '';
-          final versionString =
-              buildNumber.isNotEmpty ? '$version ($buildNumber)' : version;
 
           return ListView(
             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -60,7 +57,7 @@ class SettingsScreen extends StatelessWidget {
                 context,
                 icon: Icons.info_outline,
                 title: 'App Version',
-                subtitle: versionString,
+                subtitle: version,
                 enabled: false,
               ),
             ],
