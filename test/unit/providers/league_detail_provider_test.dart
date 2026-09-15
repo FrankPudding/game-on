@@ -103,8 +103,11 @@ void main() {
     when(() => mockLeagueRepo.get(tLeagueId)).thenAnswer((_) async => tLeague);
     when(() => mockPlayerRepo.getByLeague(tLeagueId))
         .thenAnswer((_) async => [tPlayer1, tPlayer2]);
+    when(() => mockPlayerRepo.get('p1')).thenAnswer((_) async => tPlayer1);
+    when(() => mockPlayerRepo.get('p2')).thenAnswer((_) async => tPlayer2);
     when(() => mockMatchRepo.getByLeague(tLeagueId))
         .thenAnswer((_) async => []);
+    when(() => mockMatchRepo.get(any())).thenAnswer((_) async => null);
     when(() => mockPolicyRepo.getByLeagueId(tLeagueId))
         .thenAnswer((_) async => tRankingPolicy);
 

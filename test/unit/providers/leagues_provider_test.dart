@@ -74,6 +74,7 @@ void main() {
           League(id: 'l3', name: 'League 3', createdAt: DateTime(2023, 3, 3));
       final newPolicy =
           SimpleRankingPolicy(id: 'rp3', name: 'Standard', leagueId: 'l3');
+      // Return the updated list for all subsequent calls (including invalidation rebuild)
       when(() => mockLeagueRepo.getAll())
           .thenAnswer((_) async => [tLeague1, newLeague]);
 
@@ -98,6 +99,7 @@ void main() {
 
       await container.read(leaguesProvider.future);
 
+      // Return the updated list for all subsequent calls (including invalidation rebuild)
       when(() => mockLeagueRepo.getAll()).thenAnswer((_) async => [tLeague2]);
 
       await notifier.deleteLeague('l1');

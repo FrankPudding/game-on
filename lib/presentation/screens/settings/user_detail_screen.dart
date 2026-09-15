@@ -22,7 +22,10 @@ class UserDetailScreen extends ConsumerWidget {
       appBar: AppBar(
         title: userAsync.when(
           data: (users) {
-            final user = users.firstWhere((u) => u.id == userId);
+            final user = users.where((u) => u.id == userId).firstOrNull;
+            if (user == null) {
+              return const Text('User Detail');
+            }
             final title =
                 "${user.name}${user.name.toLowerCase().endsWith('s') ? "'" : "'s"} Leagues";
             return Text(title);
@@ -33,7 +36,10 @@ class UserDetailScreen extends ConsumerWidget {
         actions: [
           userAsync.when(
             data: (users) {
-              final user = users.firstWhere((u) => u.id == userId);
+              final user = users.where((u) => u.id == userId).firstOrNull;
+              if (user == null) {
+                return const SizedBox.shrink();
+              }
               return IconButton(
                 icon: const Icon(Icons.edit_outlined),
                 onPressed: () => UserEditDialog.show(context, user: user),

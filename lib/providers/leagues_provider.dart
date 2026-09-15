@@ -6,6 +6,7 @@ import '../domain/repositories/league_repository.dart';
 import '../core/injection_container.dart';
 
 import '../domain/repositories/ranking_policy_repository.dart';
+import 'league_detail_provider.dart';
 
 import '../application/services/create_league_service.dart';
 
@@ -52,6 +53,10 @@ class LeaguesNotifier extends AsyncNotifier<List<League>> {
         rankingPolicy: rankingPolicy,
       );
 
+      // No self-invalidation - explicit fetch updates our state
+      // Dependent providers (leagueDetailProvider) are invalidated separately
+      // when their league is deleted
+
       final leagues = await _leagueRepository.getAll();
       return leagues;
     });
@@ -61,9 +66,9 @@ class LeaguesNotifier extends AsyncNotifier<List<League>> {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       await _leagueRepository.delete(id);
-      // We might want to delete the ranking policy too, but for now we follow domain logic
-      // Ideally we should delete related entities or have cascading delete.
-      // But let's just delete the league for now as requested.
+
+      // Invalidate the specific league detail (dependent provider)
+      ref.invalidate(leagueDetailProvider(id));
 
       final leagues = await _leagueRepository.getAll();
       return leagues;
