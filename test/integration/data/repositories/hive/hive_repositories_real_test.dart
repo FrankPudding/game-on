@@ -218,7 +218,8 @@ void main() {
   group('HiveLeaguePlayerRepository (real box)', () {
     test('should put, get, filter by league/user and delete', () async {
       final box = await Hive.openBox<LeaguePlayerHiveModel>('league_players');
-      final repo = HiveLeaguePlayerRepository(box);
+      final uniqueIndexBox = await Hive.openBox<String>('league_players_unique_index');
+      final repo = HiveLeaguePlayerRepository(box, uniqueIndexBox);
       final p1 = LeaguePlayer(
           id: 'p1',
           userId: 'u1',

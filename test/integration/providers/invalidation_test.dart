@@ -246,7 +246,20 @@ void main() {
 
       // Add player with new user (creates new user)
       when(() => mockUserRepo.put(any())).thenAnswer((_) async => {});
-      when(() => mockPlayerRepo.put(any())).thenAnswer((_) async => {});
+      // Mock addPlayerIfUnique to return the new player
+      when(() => mockPlayerRepo.addPlayerIfUnique(
+            userId: any(named: 'userId'),
+            leagueId: any(named: 'leagueId'),
+            name: any(named: 'name'),
+            avatarColorHex: any(named: 'avatarColorHex'),
+            icon: any(named: 'icon'),
+          )).thenAnswer((_) async => LeaguePlayer(
+                id: 'p4',
+                userId: 'u4',
+                leagueId: tLeagueId,
+                name: 'New Player',
+                avatarColorHex: 'AAAAAA',
+              ));
       // New user u4 will be created
       final newUser =
           User(id: 'u4', name: 'New Player', avatarColorHex: 'AAAAAA');
@@ -280,7 +293,19 @@ void main() {
       await container.read(leagueDetailProvider(tLeagueId).future);
 
       // Add player linked to existing user u2
-      when(() => mockPlayerRepo.put(any())).thenAnswer((_) async => {});
+      when(() => mockPlayerRepo.addPlayerIfUnique(
+            userId: any(named: 'userId'),
+            leagueId: any(named: 'leagueId'),
+            name: any(named: 'name'),
+            avatarColorHex: any(named: 'avatarColorHex'),
+            icon: any(named: 'icon'),
+          )).thenAnswer((_) async => LeaguePlayer(
+                id: 'p4',
+                userId: 'u2',
+                leagueId: tLeagueId,
+                name: 'Player 3',
+                avatarColorHex: '00FF00',
+              ));
       when(() => mockPlayerRepo.getByLeague(tLeagueId))
           .thenAnswer((_) async => [
                 tPlayer1,

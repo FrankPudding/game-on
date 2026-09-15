@@ -52,4 +52,7 @@ class LeaguePlayerHiveModel extends HiveObject {
       icon: icon,
     );
   }
+
+  /// Composite key for uniqueness index: userId_leagueId
+  String get compositeKey => '${userId}_$leagueId';
 }

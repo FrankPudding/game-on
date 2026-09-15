@@ -12,6 +12,7 @@ import '../domain/repositories/league_player_repository.dart';
 import '../domain/repositories/match/simple_match_repository.dart';
 import '../domain/repositories/user_repository.dart';
 import '../domain/repositories/ranking_policy_repository.dart';
+import '../domain/exceptions/duplicate_league_player_exception.dart';
 import '../core/injection_container.dart';
 import 'leagues_provider.dart';
 import 'users_provider.dart';
@@ -225,16 +226,21 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
         createdNewUser = true;
       }
 
-      final leaguePlayer = LeaguePlayer(
-        id: _uuid.v4(),
-        userId: finalUserId,
-        leagueId: _leagueId,
-        name: finalName,
-        avatarColorHex: 'AE0C00',
-        icon: finalIcon,
-      );
-
-      await _playerRepo.put(leaguePlayer);
+      // Use addPlayerIfUnique which enforces uniqueness per (userId, leagueId)
+      try {
+        await _playerRepo.addPlayerIfUnique(
+          userId: finalUserId,
+          leagueId: _leagueId,
+          name: finalName,
+          avatarColorHex: 'AE0C00',
+          icon: finalIcon,
+        );
+      } on DuplicateLeaguePlayerException {
+        // Re-throw with a user-friendly message
+        throw Exception(
+          'This user is already a player in this league.',
+        );
+      }
 
       // Invalidate related providers (but NOT self - we update state directly)
       if (createdNewUser) {

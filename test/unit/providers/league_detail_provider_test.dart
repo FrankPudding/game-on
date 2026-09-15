@@ -219,9 +219,21 @@ void main() {
       });
     });
 
-    test('addPlayer should call repository and refresh', () async {
+    test('addPlayer should call repository addPlayerIfUnique and refresh', () async {
       when(() => mockUserRepo.put(any())).thenAnswer((_) async => {});
-      when(() => mockPlayerRepo.put(any())).thenAnswer((_) async => {});
+      when(() => mockPlayerRepo.addPlayerIfUnique(
+            userId: any(named: 'userId'),
+            leagueId: any(named: 'leagueId'),
+            name: any(named: 'name'),
+            avatarColorHex: any(named: 'avatarColorHex'),
+            icon: any(named: 'icon'),
+          )).thenAnswer((_) async => LeaguePlayer(
+                id: 'new-player-id',
+                userId: 'new-user-id',
+                leagueId: tLeagueId,
+                name: 'New Player',
+                avatarColorHex: 'AE0C00',
+              ));
 
       final notifier = container.read(leagueDetailProvider(tLeagueId).notifier);
       await notifier.addPlayer(name: 'New Player');
@@ -229,10 +241,13 @@ void main() {
       verify(() => mockUserRepo.put(any(
               that: isA<User>().having((u) => u.name, 'name', 'New Player'))))
           .called(1);
-      verify(() => mockPlayerRepo.put(any(
-          that: isA<LeaguePlayer>()
-              .having((p) => p.name, 'name', 'New Player')
-              .having((p) => p.leagueId, 'leagueId', tLeagueId)))).called(1);
+      verify(() => mockPlayerRepo.addPlayerIfUnique(
+            userId: any(named: 'userId'),
+            leagueId: tLeagueId,
+            name: 'New Player',
+            avatarColorHex: 'AE0C00',
+            icon: any(named: 'icon'),
+          )).called(1);
     });
 
     test('logSimpleMatch should create match and sides and refresh', () async {
@@ -491,17 +506,33 @@ void main() {
             id: 'u9', name: 'Existing', avatarColorHex: '123456', icon: '🎯');
         when(() => mockUserRepo.get('u9'))
             .thenAnswer((_) async => existingUser);
-        when(() => mockPlayerRepo.put(any())).thenAnswer((_) async => {});
+        when(() => mockPlayerRepo.addPlayerIfUnique(
+              userId: any(named: 'userId'),
+              leagueId: any(named: 'leagueId'),
+              name: any(named: 'name'),
+              avatarColorHex: any(named: 'avatarColorHex'),
+              icon: any(named: 'icon'),
+            )).thenAnswer((_) async => LeaguePlayer(
+                  id: 'p9',
+                  userId: 'u9',
+                  leagueId: tLeagueId,
+                  name: 'Existing',
+                  avatarColorHex: 'AE0C00',
+                  icon: '🎯',
+                ));
 
         final notifier =
             container.read(leagueDetailProvider(tLeagueId).notifier);
         await notifier.addPlayer(name: '', userId: 'u9');
 
         verify(() => mockUserRepo.get('u9')).called(1);
-        verify(() => mockPlayerRepo.put(any(
-            that: isA<LeaguePlayer>()
-                .having((p) => p.name, 'name', 'Existing')
-                .having((p) => p.icon, 'icon', '🎯')))).called(1);
+        verify(() => mockPlayerRepo.addPlayerIfUnique(
+              userId: 'u9',
+              leagueId: tLeagueId,
+              name: 'Existing',
+              avatarColorHex: 'AE0C00',
+              icon: '🎯',
+            )).called(1);
         verifyNever(() => mockUserRepo.put(any()));
       });
 

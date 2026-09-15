@@ -13,6 +13,7 @@ import 'package:game_on/providers/leagues_provider.dart';
 import 'package:game_on/providers/users_provider.dart';
 import 'package:game_on/presentation/screens/league/league_detail_screen.dart';
 import 'package:game_on/presentation/screens/match/log_match_screen.dart';
+import 'package:game_on/presentation/screens/settings/create_user_screen.dart';
 
 class FakeLeagueDetailNotifier extends LeagueDetailNotifier {
   FakeLeagueDetailNotifier({this.onBuild}) : super('test-league-id');
@@ -376,38 +377,66 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Add Player'), findsOneWidget);
+      // Empty state shown when no users exist
+      expect(find.text('No users yet'), findsOneWidget);
+      expect(find.text('Add New User'), findsOneWidget);
 
-      await tester.enterText(find.byType(TextField), 'Newbie');
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Add to League'));
+      // Tap "Add New User" - closes dialog and opens CreateUserScreen
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Add New User'));
       await tester.pumpAndSettle();
 
-      expect(fakeNotifier.addPlayerCalls, hasLength(1));
-      expect(fakeNotifier.addPlayerCalls.first['name'], 'Newbie');
-      expect(fakeNotifier.addPlayerCalls.first['userId'], null);
+      // Should navigate to CreateUserScreen (dialog is closed)
+      expect(find.byType(CreateUserScreen), findsOneWidget);
     });
 
-    testWidgets('should select icon when adding a new player', (tester) async {
+    testWidgets('should select icon when adding existing user', (tester) async {
+      final existingUser = User(
+          id: 'u9', name: 'Existing', avatarColorHex: '123456', icon: '🎯');
+
       await openScreen(
         tester,
         AsyncValue.data(tState),
         extraOverrides: [
-          usersProvider.overrideWith(() => FakeUsersNotifier([])),
+          usersProvider.overrideWith(() => FakeUsersNotifier([existingUser])),
         ],
       );
       await tester.pump();
 
       await tester.tap(find.byIcon(Icons.person_add));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump(const Duration(milliseconds: 500));
 
-      await tester.enterText(find.byType(TextField), 'Gamer');
+      expect(find.text('Add Player'), findsOneWidget);
+      // User list shown
+      expect(find.text('Existing'), findsOneWidget);
+
+      // Tap the user to select (progressive disclosure)
+      await tester.tap(find.byType(ListTile).first);
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Nickname field and icon picker should appear
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.text('Icon'), findsOneWidget);
+
+      // Scroll to make icon picker visible
+      await tester.dragUntilVisible(
+        find.text('🎮'),
+        find.byType(SingleChildScrollView),
+        const Offset(0, -200),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Select a different icon
       await tester.tap(find.text('🎮'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.widgetWithText(ElevatedButton, 'Add to League'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(fakeNotifier.addPlayerCalls, hasLength(1));
-      expect(fakeNotifier.addPlayerCalls.first['name'], 'Gamer');
+      // Nickname is pre-filled with user's name
+      expect(fakeNotifier.addPlayerCalls.first['name'], 'Existing');
+      expect(fakeNotifier.addPlayerCalls.first['userId'], 'u9');
       expect(fakeNotifier.addPlayerCalls.first['icon'], '🎮');
     });
 
@@ -447,24 +476,29 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.byIcon(Icons.person_add));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump(const Duration(milliseconds: 500));
 
-      // Switch to Existing user
-      await tester.tap(find.text('Existing'));
-      await tester.pumpAndSettle();
+      expect(find.text('Add Player'), findsOneWidget);
+      // User list shown
+      expect(find.text('Existing'), findsOneWidget);
 
-      await tester.tap(find.byType(DropdownButtonFormField<String>));
-      await tester.pumpAndSettle();
+      // Tap the user to select (progressive disclosure) - tap the ListTile
+      await tester.tap(find.byType(ListTile).first);
+      await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(find.text('🎯 Existing').last);
-      await tester.pumpAndSettle();
+      // Nickname field and icon picker should appear
+      expect(find.byType(TextField), findsOneWidget);
 
       await tester.tap(find.widgetWithText(ElevatedButton, 'Add to League'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(fakeNotifier.addPlayerCalls, hasLength(1));
-      expect(fakeNotifier.addPlayerCalls.first['name'], '');
+      // Nickname is pre-filled with user's name
+      expect(fakeNotifier.addPlayerCalls.first['name'], 'Existing');
       expect(fakeNotifier.addPlayerCalls.first['userId'], 'u9');
+      expect(
+          fakeNotifier.addPlayerCalls.first['icon'], '🎯'); // uses user's icon
     });
 
     testWidgets('should edit a player via dialog', (tester) async {

@@ -5,6 +5,7 @@ import '../../../domain/entities/league.dart';
 import '../../../domain/entities/league_player.dart';
 import '../../../domain/entities/side.dart';
 import '../../../domain/entities/matches/simple_match.dart';
+import '../../../domain/entities/user.dart';
 import '../../../providers/league_detail_provider.dart';
 import '../../../providers/leagues_provider.dart';
 import '../../../providers/users_provider.dart';
@@ -72,11 +73,13 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
     }
   }
 
-  void _showAddPlayerDialog() {
-    showDialog(
+  Future<void> _showAddPlayerDialog() async {
+    await showDialog(
       context: context,
-      builder: (context) => _AddPlayerDialog(leagueId: widget.league.id),
+      builder: (_) => _AddPlayerDialog(leagueId: widget.league.id),
     );
+    // Dialog closed - if user created a user via CreateUserScreen,
+    // they need to tap "Add Player" again
   }
 
   void _showEditPlayerDialog(LeaguePlayer player) {
@@ -549,233 +552,415 @@ class _AddPlayerDialog extends ConsumerStatefulWidget {
 }
 
 class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
-  final _nameController = TextEditingController();
   String? _selectedUserId;
+  String? _nickname;
   String? _selectedIcon = '👤';
   bool _isLoading = false;
-  bool _isNewUser = true;
 
-  final List<String> _icons = [
+  static const List<String> _icons = [
     '👤',
-    '🎮',
     '⚽',
     '🏀',
     '🎾',
-    '🎳',
-    '🎯',
-    '🏎️',
-    '🧙',
-    '🥷'
+    '🏈',
+    '⚾',
+    '🏐',
+    '🏓',
+    '🏸',
+    '🥊',
+    '🥋',
+    '🎮',
   ];
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
+  Future<void> _onAddNewUser() async {
+    // CRITICAL: Close dialog FIRST (no stacking)
+    if (mounted) Navigator.of(context).pop();
+
+    // Push CreateUserScreen (existing pattern)
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const CreateUserScreen()),
+    );
+    // Dialog is closed; user returns to LeagueDetailScreen
+    // They must tap "Add Player" again to add the new user
   }
 
   Future<void> _submit() async {
-    final name = _nameController.text.trim();
-    if (name.isEmpty && _selectedUserId == null) return;
+    if (_selectedUserId == null || _isLoading) return;
 
     setState(() => _isLoading = true);
+
     try {
-      await ref.read(leagueDetailProvider(widget.leagueId).notifier).addPlayer(
-            name: name,
-            userId: _isNewUser ? null : _selectedUserId,
-            icon: _selectedIcon,
-          );
-      if (mounted) Navigator.pop(context);
+      final leagueDetailNotifier =
+          ref.read(leagueDetailProvider(widget.leagueId).notifier);
+      await leagueDetailNotifier.addPlayer(
+        name: _nickname?.isNotEmpty == true ? _nickname! : '',
+        userId: _selectedUserId,
+        icon: _selectedIcon,
+      );
+
+      if (mounted) {
+        Navigator.of(context).pop(); // Close dialog on success
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Player added to league')),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error adding player: $e')),
+          SnackBar(content: Text('Failed to add player: $e')),
         );
+        setState(() => _isLoading = false);
       }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final usersAsync = ref.watch(usersProvider);
+    final leagueDetailAsync = ref.watch(leagueDetailProvider(widget.leagueId));
 
-    return AlertDialog(
-      title: const Text('Add Player'),
-      content: SingleChildScrollView(
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 400,
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // User Selection Type
-            Row(
-              children: [
-                Expanded(
-                  child: ChoiceChip(
-                    label: const Text('New User'),
-                    selected: _isNewUser,
-                    onSelected: (val) => setState(() => _isNewUser = true),
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  const Text('Add Player',
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed:
+                        _isLoading ? null : () => Navigator.of(context).pop(),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ChoiceChip(
-                    label: const Text('Existing'),
-                    selected: !_isNewUser,
-                    onSelected: (val) => setState(() => _isNewUser = false),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
-
-            if (_isNewUser) ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const CreateUserScreen(),
-                        ),
-                      );
-                      if (mounted) {
-                        setState(() => _isNewUser = false);
-                      }
-                    },
-                    icon: const Icon(Icons.person_add),
-                    label: const Text('Create New User'),
+            const Divider(height: 1),
+            // Content
+            Flexible(
+              child: SingleChildScrollView(
+                child: _buildContent(usersAsync, leagueDetailAsync),
+              ),
+            ),
+            // Actions
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed:
+                        _isLoading ? null : () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
                   ),
-                ),
-              ),
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Player Name',
-                  border: OutlineInputBorder(),
-                ),
-                textCapitalization: TextCapitalization.words,
-              ),
-              const SizedBox(height: 16),
-              const Text('Choose Icon',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: _icons.map((icon) {
-                  return InkWell(
-                    onTap: () => setState(() => _selectedIcon = icon),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: _selectedIcon == icon
-                            ? AppTheme.accentRed.withValues(alpha: 0.2)
-                            : Colors.transparent,
-                        border: Border.all(
-                          color: _selectedIcon == icon
-                              ? AppTheme.accentRed
-                              : Colors.grey.withValues(alpha: 0.3),
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(icon, style: const TextStyle(fontSize: 24)),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
-
-            if (!_isNewUser)
-              usersAsync.when(
-                data: (users) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _selectedUserId,
-                    decoration: const InputDecoration(
-                      labelText: 'Select User',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: users.map((user) {
-                      return DropdownMenuItem(
-                        value: user.id,
-                        child: Text('${user.icon ?? "👤"} ${user.name}'),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      setState(() {
-                        _selectedUserId = val;
-                        final user = users.firstWhere((u) => u.id == val);
-                        if (user.icon != null) _selectedIcon = user.icon;
-                      });
-                    },
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed:
+                        _selectedUserId != null && !_isLoading ? _submit : null,
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Add to League'),
                   ),
-                ),
-                loading: () => const Center(
-                    child: Padding(
-                  padding: EdgeInsets.only(bottom: 16),
-                  child: CircularProgressIndicator(),
-                )),
-                error: (e, _) => Text('Error loading users: $e'),
+                ],
               ),
-
-            if (!_isNewUser)
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Nickname (Optional)',
-                  hintText: 'Defaults to user name',
-                  border: OutlineInputBorder(),
-                ),
-                textCapitalization: TextCapitalization.words,
-              ),
-
-            if (!_isNewUser) ...[
-              const SizedBox(height: 16),
-              const Text('Choose Icon',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: _icons.map((icon) {
-                  return InkWell(
-                    onTap: () => setState(() => _selectedIcon = icon),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: _selectedIcon == icon
-                            ? AppTheme.accentRed.withValues(alpha: 0.2)
-                            : Colors.transparent,
-                        border: Border.all(
-                          color: _selectedIcon == icon
-                              ? AppTheme.accentRed
-                              : Colors.grey.withValues(alpha: 0.3),
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(icon, style: const TextStyle(fontSize: 24)),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
+            ),
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+    );
+  }
+
+  Widget _buildContent(
+      AsyncValue<List<User>> usersAsync, AsyncValue<LeagueDetailState> leagueDetailAsync) {
+    return usersAsync.when(
+      data: (users) {
+        // If there are no users in the system at all, show the original empty state
+        if (users.isEmpty) {
+          return _buildEmptyState();
+        }
+
+        return leagueDetailAsync.when(
+          data: (leagueDetail) {
+            // Extract userIds of players already in the league
+            final existingUserIds = leagueDetail.players
+                .map((p) => p.userId)
+                .where((id) => id.isNotEmpty)
+                .toSet();
+
+            // Filter out users already in the league
+            final availableUsers = users
+                .where((user) => !existingUserIds.contains(user.id))
+                .toList();
+
+            if (availableUsers.isEmpty) {
+              return _buildNoAvailableUsersState();
+            }
+            return _buildUserListView(availableUsers, usersAsync);
+          },
+          loading: () => const SizedBox(
+            height: 100,
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (e, _) => Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text('Error loading league details: $e'),
+          ),
+        );
+      },
+      loading: () => const SizedBox(
+        height: 100,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text('Error loading users: $e'),
+      ),
+    );
+  }
+
+  Widget _buildNoAvailableUsersState() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.people_outline, size: 48, color: AppTheme.textTertiary),
+        const SizedBox(height: 8),
+        Text('All users already in league',
+            style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 4),
+        Text(
+          'Create a new user to add them to this league.',
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(color: AppTheme.textTertiary),
+          textAlign: TextAlign.center,
         ),
-        ElevatedButton(
-          onPressed: _isLoading ? null : _submit,
-          child: _isLoading
-              ? const SizedBox(
-                  width: 16, height: 16, child: CircularProgressIndicator())
-              : const Text('Add to League'),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _onAddNewUser,
+            icon: const Icon(Icons.person_add),
+            label: const Text('Add New User'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.people_outline, size: 48, color: AppTheme.textTertiary),
+        const SizedBox(height: 8),
+        Text('No users yet', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 4),
+        Text(
+          'Create a user first, then add them to the league.',
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(color: AppTheme.textTertiary),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _onAddNewUser,
+            icon: const Icon(Icons.person_add),
+            label: const Text('Add New User'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUserListView(
+      List<User> users, AsyncValue<List<User>> usersAsync) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // EXISTING USERS LIST (Primary View)
+        SizedBox(
+          height: 200,
+          child: ListView.builder(
+            itemCount: users.length,
+            itemBuilder: (context, index) {
+              final user = users[index];
+              final isSelected = _selectedUserId == user.id;
+              return ListTile(
+                dense: true,
+                leading: CircleAvatar(
+                  radius: 16,
+                  backgroundColor: AppTheme.accentRed.withValues(alpha: 0.1),
+                  child: Text(
+                    user.icon ?? user.name[0].toUpperCase(),
+                    style: const TextStyle(
+                        color: AppTheme.accentRed, fontSize: 14),
+                  ),
+                ),
+                title: Text(
+                  user.name,
+                  style: TextStyle(
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
+                    color:
+                        isSelected ? AppTheme.accentRed : AppTheme.textPrimary,
+                  ),
+                ),
+                trailing: isSelected
+                    ? const Icon(Icons.check_circle, color: AppTheme.accentRed)
+                    : null,
+                selected: isSelected,
+                onTap: () => setState(() {
+                  _selectedUserId = user.id;
+                  _nickname = user.name; // Pre-fill nickname
+                  _selectedIcon = user.icon ?? '👤'; // Pre-fill icon
+                }),
+              );
+            },
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // CTA: ADD NEW USER BUTTON
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _onAddNewUser,
+            icon: const Icon(Icons.person_add),
+            label: const Text('Add New User'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
+        ),
+
+        // SELECTED USER DETAILS (Progressive Disclosure)
+        if (_selectedUserId != null) ...[
+          const SizedBox(height: 16),
+          _buildSelectedUserPreview(usersAsync),
+          const SizedBox(height: 16),
+          _buildNicknameField(),
+          const SizedBox(height: 16),
+          _buildIconPicker(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSelectedUserPreview(AsyncValue<List<User>> usersAsync) {
+    final user = usersAsync.value?.firstWhere((u) => u.id == _selectedUserId);
+    if (user == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.accentRed.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.accentRed.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: AppTheme.accentRed.withValues(alpha: 0.1),
+            child: Text(
+              _selectedIcon ?? user.icon ?? user.name[0].toUpperCase(),
+              style: const TextStyle(color: AppTheme.accentRed, fontSize: 18),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(user.name, style: Theme.of(context).textTheme.titleMedium),
+                if (_nickname != null && _nickname != user.name)
+                  Text(
+                    'League nickname: $_nickname',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: AppTheme.textSecondary),
+                  ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => setState(() {
+              _selectedUserId = null;
+              _nickname = null;
+              _selectedIcon = '👤';
+            }),
+            child: const Text('Change'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNicknameField() {
+    return TextField(
+      controller: TextEditingController(text: _nickname),
+      decoration: const InputDecoration(
+        labelText: 'Nickname (Optional)',
+        hintText: 'Defaults to user name',
+        border: OutlineInputBorder(),
+      ),
+      onChanged: (val) => setState(() => _nickname = val),
+    );
+  }
+
+  Widget _buildIconPicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Icon', style: Theme.of(context).textTheme.labelMedium),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _icons.map((icon) {
+            final isSelected = _selectedIcon == icon;
+            return FilterChip(
+              label: Text(icon, style: const TextStyle(fontSize: 20)),
+              selected: isSelected,
+              onSelected: (_) => setState(() => _selectedIcon = icon),
+              backgroundColor: AppTheme.surfaceWhite,
+              selectedColor: AppTheme.accentRed.withValues(alpha: 0.1),
+              checkmarkColor: AppTheme.accentRed,
+              side: BorderSide(
+                color: isSelected
+                    ? AppTheme.accentRed
+                    : Colors.grey.withValues(alpha: 0.3),
+              ),
+            );
+          }).toList(),
         ),
       ],
     );

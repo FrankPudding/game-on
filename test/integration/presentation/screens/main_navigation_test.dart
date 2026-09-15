@@ -262,7 +262,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Add Player'), findsOneWidget);
-      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.byType(Dialog), findsOneWidget);
 
       // Press back button
       await tester.pageBack();

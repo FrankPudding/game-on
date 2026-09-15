@@ -75,6 +75,8 @@ Future<void> _initHive() async {
   final leagueBox = await Hive.openBox<LeagueHiveModel>('leagues');
   final leaguePlayerBox =
       await Hive.openBox<LeaguePlayerHiveModel>('league_players');
+  final leaguePlayerUniqueIndexBox =
+      await Hive.openBox<String>('league_players_unique_index');
   final simpleMatchBox =
       await Hive.openBox<SimpleMatchHiveModel>('simple_matches');
   final rankingPolicyBox =
@@ -89,7 +91,7 @@ Future<void> _initHive() async {
 
   if (!sl.isRegistered<LeaguePlayerRepository>()) {
     sl.registerLazySingleton<LeaguePlayerRepository>(
-        () => HiveLeaguePlayerRepository(leaguePlayerBox));
+        () => HiveLeaguePlayerRepository(leaguePlayerBox, leaguePlayerUniqueIndexBox));
   }
 
   if (!sl.isRegistered<UserRepository>()) {
