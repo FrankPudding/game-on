@@ -646,9 +646,12 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
               ),
             ),
             const Divider(height: 1),
-            // Content
+            // Content - shrink-wraps, only scrolls when exceeding dialog maxHeight
             Flexible(
+              fit: FlexFit.loose,
               child: SingleChildScrollView(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 child: _buildContent(usersAsync, leagueDetailAsync),
               ),
             ),
@@ -684,8 +687,8 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
     );
   }
 
-  Widget _buildContent(
-      AsyncValue<List<User>> usersAsync, AsyncValue<LeagueDetailState> leagueDetailAsync) {
+  Widget _buildContent(AsyncValue<List<User>> usersAsync,
+      AsyncValue<LeagueDetailState> leagueDetailAsync) {
     return usersAsync.when(
       data: (users) {
         // If there are no users in the system at all, show the original empty state
@@ -709,7 +712,7 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
             if (availableUsers.isEmpty) {
               return _buildNoAvailableUsersState();
             }
-            return _buildUserListView(availableUsers, usersAsync);
+            return _buildUserListView(availableUsers);
           },
           loading: () => const SizedBox(
             height: 100,
@@ -797,16 +800,16 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
     );
   }
 
-  Widget _buildUserListView(
-      List<User> users, AsyncValue<List<User>> usersAsync) {
+  Widget _buildUserListView(List<User> users) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // EXISTING USERS LIST (Primary View)
-        SizedBox(
-          height: 200,
+        // EXISTING USERS LIST (Primary View) - shrink-wraps content, scrolls only when needed
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 200),
           child: ListView.builder(
+            shrinkWrap: true,
             itemCount: users.length,
             itemBuilder: (context, index) {
               final user = users[index];
@@ -836,91 +839,45 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
                     : null,
                 selected: isSelected,
                 onTap: () => setState(() {
-                  _selectedUserId = user.id;
-                  _nickname = user.name; // Pre-fill nickname
-                  _selectedIcon = user.icon ?? '👤'; // Pre-fill icon
+                  if (isSelected) {
+                    _selectedUserId = null;
+                    _nickname = null;
+                    _selectedIcon = '👤';
+                  } else {
+                    _selectedUserId = user.id;
+                    _nickname = user.name; // Pre-fill nickname
+                    _selectedIcon = user.icon ?? '👤'; // Pre-fill icon
+                  }
                 }),
               );
             },
           ),
         ),
 
-        const SizedBox(height: 16),
-
-        // CTA: ADD NEW USER BUTTON
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _onAddNewUser,
-            icon: const Icon(Icons.person_add),
-            label: const Text('Add New User'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+        // CTA: ADD NEW USER BUTTON - hidden when a user is selected
+        if (_selectedUserId == null) ...[
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _onAddNewUser,
+              icon: const Icon(Icons.person_add),
+              label: const Text('Add New User'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
             ),
           ),
-        ),
+        ],
 
-        // SELECTED USER DETAILS (Progressive Disclosure)
+        // SELECTED USER DETAILS (Progressive Disclosure) - preview removed, selection indicated via list highlight
         if (_selectedUserId != null) ...[
-          const SizedBox(height: 16),
-          _buildSelectedUserPreview(usersAsync),
           const SizedBox(height: 16),
           _buildNicknameField(),
           const SizedBox(height: 16),
           _buildIconPicker(),
         ],
       ],
-    );
-  }
-
-  Widget _buildSelectedUserPreview(AsyncValue<List<User>> usersAsync) {
-    final user = usersAsync.value?.firstWhere((u) => u.id == _selectedUserId);
-    if (user == null) return const SizedBox.shrink();
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppTheme.accentRed.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.accentRed.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: AppTheme.accentRed.withValues(alpha: 0.1),
-            child: Text(
-              _selectedIcon ?? user.icon ?? user.name[0].toUpperCase(),
-              style: const TextStyle(color: AppTheme.accentRed, fontSize: 18),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(user.name, style: Theme.of(context).textTheme.titleMedium),
-                if (_nickname != null && _nickname != user.name)
-                  Text(
-                    'League nickname: $_nickname',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: AppTheme.textSecondary),
-                  ),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: () => setState(() {
-              _selectedUserId = null;
-              _nickname = null;
-              _selectedIcon = '👤';
-            }),
-            child: const Text('Change'),
-          ),
-        ],
-      ),
     );
   }
 
