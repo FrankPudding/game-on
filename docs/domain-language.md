@@ -23,3 +23,13 @@ The domain distinction (global User vs league-scoped LeaguePlayer) is made expli
 - **"Changes only affect this league."** — the subtitle at the top of `PlayerEditDialog` content (`lib/presentation/screens/league/widgets/player_edit_dialog.dart`). Editing the nickname/icon mutates only the `LeaguePlayer` (via `LeagueDetailNotifier.updatePlayer`); it does not update the `User` row or any other league's `LeaguePlayer` for the same User.
 
 - **Invariants:** Bracket suffix is `Flexible` + `ellipsis`; row is `mainAxisSize: min`; `_truncateName` trims and caps at 22 + `…`. Former `LinkedUserHeader` card (`lib/presentation/screens/league/widgets/linked_user_header.dart`) is deleted.
+
+## Ordering — Alphabetical Pickers vs Ranked Standings
+
+Users and league players are presented **alphabetically** wherever they appear as selectable or browsable lists; the **only** exception is the league standings table, which is ordered by competitive position.
+
+- **Users** (`usersProvider`) — alphabetical by `User.name` using `lib/core/sorting/name_sort.dart:compareNames` then `id`. Trimmed, empty/whitespace first, case-insensitive primary with case-sensitive secondary for determinism (see `docs/architecture/sorting.md`). Insertion or storage order never affects display; all provider paths (`build`, `addUser`, `deleteUser`, `updateUser`, `refresh`) re-sort.
+- **League players as pickers** — alphabetical as above via `LeagueDetailState.playersByName` (`compareNames(LeaguePlayer.name)` then `id`). Pickers, selectors, dropdowns and the two-player auto-select in `LogMatchScreen` must use `playersByName`.
+- **League standings** — ranked by position: points → (goal difference → goals for for GD leagues) → `id`. `LeagueDetailState.players` carries this order and **never** uses name as a tie-breaker; the stable `id` fallback is the only tie-break beyond the ranking policy. Only the standings table may use `players`. `players` and `playersByName` always contain the same set, only differing in order.
+
+Hive repositories remain unsorted — ordering is an in-memory presentation concern at the provider layer.

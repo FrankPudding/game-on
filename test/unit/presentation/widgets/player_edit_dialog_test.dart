@@ -43,7 +43,8 @@ class FakeLeagueDetailNotifier extends LeagueDetailNotifier {
   @override
   Future<LeagueDetailState> build() async {
     if (onBuild != null) return await onBuild!();
-    return const LeagueDetailState(players: [], matches: [], playerStats: {});
+    return const LeagueDetailState(
+        players: [], matches: [], playerStats: {}, playersByName: []);
   }
 
   @override
@@ -249,6 +250,7 @@ void main() {
         leagueId: tLeagueId,
         onBuild: () async => LeagueDetailState(
           players: [tPlayer],
+          playersByName: [tPlayer],
           matches: [],
           playerStats: {
             tPlayerId: const PlayerStats(points: 0, matchesPlayed: 0)

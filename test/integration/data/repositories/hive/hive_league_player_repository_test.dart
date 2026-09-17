@@ -105,10 +105,12 @@ void main() {
       verify(() => mockPlayerBox.put(tPlayer.id, any())).called(1);
     });
 
-    test('delete should call box.delete and remove from unique index', () async {
+    test('delete should call box.delete and remove from unique index',
+        () async {
       when(() => mockPlayerBox.get('p1')).thenReturn(tModel);
       when(() => mockPlayerBox.delete('p1')).thenAnswer((_) async => {});
-      when(() => mockUniqueIndexBox.delete('u1_l1')).thenAnswer((_) async => {});
+      when(() => mockUniqueIndexBox.delete('u1_l1'))
+          .thenAnswer((_) async => {});
 
       await repository.delete('p1');
 
@@ -136,7 +138,8 @@ void main() {
 
         when(() => mockUniqueIndexBox.containsKey(compositeKey))
             .thenReturn(false);
-        when(() => mockPlayerBox.put(any(), any())).thenAnswer((invocation) async {
+        when(() => mockPlayerBox.put(any(), any()))
+            .thenAnswer((invocation) async {
           capturedId = invocation.positionalArguments[0] as String;
         });
         when(() => mockUniqueIndexBox.put(compositeKey, any()))
@@ -154,7 +157,8 @@ void main() {
         when(() => mockUniqueIndexBox.get(compositeKey))
             .thenAnswer((_) => capturedId);
         when(() => mockPlayerBox.delete(any())).thenAnswer((_) async => {});
-        when(() => mockUniqueIndexBox.delete(any())).thenAnswer((_) async => {});
+        when(() => mockUniqueIndexBox.delete(any()))
+            .thenAnswer((_) async => {});
 
         final result = await repository.addPlayerIfUnique(
           userId: userId,
@@ -171,7 +175,9 @@ void main() {
         verify(() => mockUniqueIndexBox.put(compositeKey, any())).called(1);
       });
 
-      test('should throw DuplicateLeaguePlayerException when player exists in league', () async {
+      test(
+          'should throw DuplicateLeaguePlayerException when player exists in league',
+          () async {
         when(() => mockUniqueIndexBox.containsKey(compositeKey))
             .thenReturn(true);
 
@@ -196,7 +202,8 @@ void main() {
 
         when(() => mockUniqueIndexBox.containsKey(otherCompositeKey))
             .thenReturn(false);
-        when(() => mockPlayerBox.put(any(), any())).thenAnswer((invocation) async {
+        when(() => mockPlayerBox.put(any(), any()))
+            .thenAnswer((invocation) async {
           capturedId = invocation.positionalArguments[0] as String;
         });
         when(() => mockUniqueIndexBox.put(otherCompositeKey, any()))
@@ -214,7 +221,8 @@ void main() {
         when(() => mockUniqueIndexBox.get(otherCompositeKey))
             .thenAnswer((_) => capturedId);
         when(() => mockPlayerBox.delete(any())).thenAnswer((_) async => {});
-        when(() => mockUniqueIndexBox.delete(any())).thenAnswer((_) async => {});
+        when(() => mockUniqueIndexBox.delete(any()))
+            .thenAnswer((_) async => {});
 
         final result = await repository.addPlayerIfUnique(
           userId: userId,
@@ -225,19 +233,24 @@ void main() {
 
         expect(result.leagueId, otherLeagueId);
         verify(() => mockPlayerBox.put(any(), any())).called(1);
-        verify(() => mockUniqueIndexBox.put(otherCompositeKey, any())).called(1);
+        verify(() => mockUniqueIndexBox.put(otherCompositeKey, any()))
+            .called(1);
       });
 
       test('should rollback index if player save fails', () async {
         when(() => mockUniqueIndexBox.containsKey(compositeKey))
             .thenReturn(false);
-        when(() => mockPlayerBox.put(any(), any())).thenAnswer((_) => Future.value());
+        when(() => mockPlayerBox.put(any(), any()))
+            .thenAnswer((_) => Future.value());
         when(() => mockUniqueIndexBox.put(compositeKey, any()))
             .thenAnswer((_) => Future.value());
         when(() => mockPlayerBox.get(any())).thenReturn(null);
-        when(() => mockUniqueIndexBox.get(compositeKey)).thenReturn('generated-id');
-        when(() => mockUniqueIndexBox.delete(compositeKey)).thenAnswer((_) => Future.value());
-        when(() => mockPlayerBox.delete(any())).thenAnswer((_) => Future.value());
+        when(() => mockUniqueIndexBox.get(compositeKey))
+            .thenReturn('generated-id');
+        when(() => mockUniqueIndexBox.delete(compositeKey))
+            .thenAnswer((_) => Future.value());
+        when(() => mockPlayerBox.delete(any()))
+            .thenAnswer((_) => Future.value());
 
         await expectLater(
           repository.addPlayerIfUnique(
@@ -257,7 +270,8 @@ void main() {
 
         when(() => mockUniqueIndexBox.containsKey(compositeKey))
             .thenReturn(false);
-        when(() => mockPlayerBox.put(any(), any())).thenAnswer((invocation) async {
+        when(() => mockPlayerBox.put(any(), any()))
+            .thenAnswer((invocation) async {
           capturedId = invocation.positionalArguments[0] as String;
         });
         when(() => mockUniqueIndexBox.put(compositeKey, any()))
@@ -274,8 +288,10 @@ void main() {
         });
         // Return a different ID than what was stored to simulate index failure
         when(() => mockUniqueIndexBox.get(compositeKey)).thenReturn('wrong-id');
-        when(() => mockPlayerBox.delete(any())).thenAnswer((_) => Future.value());
-        when(() => mockUniqueIndexBox.delete(any())).thenAnswer((_) => Future.value());
+        when(() => mockPlayerBox.delete(any()))
+            .thenAnswer((_) => Future.value());
+        when(() => mockUniqueIndexBox.delete(any()))
+            .thenAnswer((_) => Future.value());
 
         await expectLater(
           repository.addPlayerIfUnique(

@@ -25,7 +25,8 @@ class FakeLeagueDetailNotifier extends LeagueDetailNotifier {
   @override
   Future<LeagueDetailState> build() async {
     if (onBuild != null) return await onBuild!();
-    return const LeagueDetailState(players: [], matches: [], playerStats: {});
+    return const LeagueDetailState(
+        players: [], matches: [], playerStats: {}, playersByName: []);
   }
 
   @override
@@ -86,6 +87,14 @@ void main() {
 
     tState = LeagueDetailState(
       players: [
+        LeaguePlayer(
+            id: 'p1',
+            userId: 'u1',
+            leagueId: 'l1',
+            name: 'Player 1',
+            avatarColorHex: 'FF0000'),
+      ],
+      playersByName: [
         LeaguePlayer(
             id: 'p1',
             userId: 'u1',
@@ -171,8 +180,8 @@ void main() {
     });
 
     testWidgets('should show empty state when no players', (tester) async {
-      const emptyState =
-          LeagueDetailState(players: [], matches: [], playerStats: {});
+      const emptyState = LeagueDetailState(
+          players: [], playersByName: [], matches: [], playerStats: {});
       await openScreen(tester, const AsyncValue.data(emptyState));
       await tester.pump();
 
@@ -226,6 +235,7 @@ void main() {
 
       final stateWithMatches = LeagueDetailState(
         players: [p1, p2],
+        playersByName: [p1, p2],
         matches: [matchWin, matchDraw],
         playerStats: tState.playerStats,
       );
@@ -256,6 +266,7 @@ void main() {
 
       final stateWithMatches = LeagueDetailState(
         players: tState.players,
+        playersByName: tState.players,
         matches: [matchWin],
         playerStats: tState.playerStats,
       );
@@ -296,6 +307,7 @@ void main() {
 
       final stateWithMatches = LeagueDetailState(
         players: tState.players,
+        playersByName: tState.players,
         matches: [matchWin],
         playerStats: tState.playerStats,
       );

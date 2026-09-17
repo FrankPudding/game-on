@@ -925,5 +925,3 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
     );
   }
 }
-
-

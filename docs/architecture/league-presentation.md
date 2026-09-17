@@ -140,6 +140,17 @@ The title is informational only. It does not navigate, does not open `UserDetail
 2. **Subtitle answers "what will change?"** — `"Changes only affect this league."` (top of content, `13sp textSecondary`) scopes the edit to the `LeaguePlayer` row.
 3. **Together they reinforce the invariant:** `LeagueDetailNotifier.updatePlayer` mutates `LeaguePlayer` only; `User` is untouched. Verified by the provider tests.
 
+## Player Ordering — Ranked vs Alphabetical
+
+`LeagueDetailState` exposes two views of the same player set (see `docs/architecture/sorting.md`):
+
+- `players` — **ranked** (`points → GD → GF → id`). Never uses `name` as a tie-breaker; only `id` is the stable fallback. Only `_StandingsTab` may use this list.
+- `playersByName` — **alphabetical** (`compareNames(name) → id`, via `lib/core/sorting/name_sort.dart`). Trim/empty-first/case-insensitive primary + case-sensitive secondary, then `id`. Pickers, selectors and dropdowns must use this list.
+
+`LeagueDetailScreen` passes ranked `state.players` to both `_StandingsTab` and `_MatchesTab` for display; all pickers in `LogMatchScreen` (two-player auto-select, `_PlayerSelector` sheets, winner dropdown and score labels) use `state.playersByName` and carry a `// Use alphabetical list for pickers — never ranked list.` comment. `_AddPlayerDialog` inherits alphabetical order from `usersProvider` (already `compareNames`-sorted) filtered by `existingUserIds` — it does not re-sort locally.
+
+**Ban:** Never use `players` for a picker/selector and never add name as a tie-breaker to the ranked sort. Tests assert the two lists are same-elements-different-order and that a player with top points (`Bob`) still sorts after `Alice` alphabetically — standings must stay ranked.
+
 ## Invalidation Ownership
 
 `PlayerEditDialog` **does not** invalidate providers. `LeagueDetailNotifier` is the sole owner

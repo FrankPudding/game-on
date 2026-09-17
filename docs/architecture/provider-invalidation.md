@@ -273,12 +273,17 @@ If adding a new mutation method:
 5. Add unit tests verifying invalidation calls
 6. Add integration tests if cross-provider behavior is complex
 
+## Ordering Note (non-invalidation)
+
+Sorting does not affect invalidation. Alphabetical ordering (`lib/core/sorting/name_sort.dart:compareNames`) is applied **in-memory after every fetch** — `usersProvider` re-sorts on `build`/`addUser`/`deleteUser`/`updateUser`/`refresh`; `leagueDetailProvider._fetchData()` derives both `players` (ranked) and `playersByName` (alphabetical) from the same raw snapshot. Hive repositories remain unsorted (storage order). See `docs/architecture/sorting.md` and `docs/domain-language.md` → *Ordering* for the ranked-vs-alphabetical invariant and the picker ban (`playersByName` for pickers, `players` for standings only).
+
 ## Related Files
 
 - `lib/providers/leagues_provider.dart`
-- `lib/providers/league_detail_provider.dart` — sole owner of `userDetailProvider` invalidation for `updatePlayer` / `removePlayer` / match mutations
-- `lib/providers/users_provider.dart`
+- `lib/providers/league_detail_provider.dart` — sole owner of `userDetailProvider` invalidation for `updatePlayer` / `removePlayer` / match mutations; also computes `players` (ranked) and `playersByName` (alphabetical) in `_fetchData()`
+- `lib/providers/users_provider.dart` — sorts via `compareNames` + `id` on every path (`build`/`addUser`/`deleteUser`/`updateUser`/`refresh`)
 - `lib/providers/user_detail_provider.dart`
+- `lib/core/sorting/name_sort.dart` — pure comparator (`trim` / empty-first / case-insensitive primary / case-sensitive secondary); not locale-aware (see `docs/architecture/sorting.md`)
 - `lib/application/services/delete_user_service.dart`
 - `lib/presentation/screens/league/widgets/player_edit_dialog.dart` — unified `PlayerEditDialog` (requires `showRemoveAction`, title bracket via selective `usersProvider` watch); **does not** invalidate providers
 - `test/unit/providers/` - Unit tests for each provider

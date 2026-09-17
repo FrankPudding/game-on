@@ -254,12 +254,12 @@ void main() {
             avatarColorHex: any(named: 'avatarColorHex'),
             icon: any(named: 'icon'),
           )).thenAnswer((_) async => LeaguePlayer(
-                id: 'p4',
-                userId: 'u4',
-                leagueId: tLeagueId,
-                name: 'New Player',
-                avatarColorHex: 'AAAAAA',
-              ));
+            id: 'p4',
+            userId: 'u4',
+            leagueId: tLeagueId,
+            name: 'New Player',
+            avatarColorHex: 'AAAAAA',
+          ));
       // New user u4 will be created
       final newUser =
           User(id: 'u4', name: 'New Player', avatarColorHex: 'AAAAAA');
@@ -300,12 +300,12 @@ void main() {
             avatarColorHex: any(named: 'avatarColorHex'),
             icon: any(named: 'icon'),
           )).thenAnswer((_) async => LeaguePlayer(
-                id: 'p4',
-                userId: 'u2',
-                leagueId: tLeagueId,
-                name: 'Player 3',
-                avatarColorHex: '00FF00',
-              ));
+            id: 'p4',
+            userId: 'u2',
+            leagueId: tLeagueId,
+            name: 'Player 3',
+            avatarColorHex: '00FF00',
+          ));
       when(() => mockPlayerRepo.getByLeague(tLeagueId))
           .thenAnswer((_) async => [
                 tPlayer1,

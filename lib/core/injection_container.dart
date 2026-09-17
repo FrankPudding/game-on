@@ -90,8 +90,9 @@ Future<void> _initHive() async {
   }
 
   if (!sl.isRegistered<LeaguePlayerRepository>()) {
-    sl.registerLazySingleton<LeaguePlayerRepository>(
-        () => HiveLeaguePlayerRepository(leaguePlayerBox, leaguePlayerUniqueIndexBox));
+    sl.registerLazySingleton<LeaguePlayerRepository>(() =>
+        HiveLeaguePlayerRepository(
+            leaguePlayerBox, leaguePlayerUniqueIndexBox));
   }
 
   if (!sl.isRegistered<UserRepository>()) {

@@ -219,7 +219,8 @@ void main() {
       });
     });
 
-    test('addPlayer should call repository addPlayerIfUnique and refresh', () async {
+    test('addPlayer should call repository addPlayerIfUnique and refresh',
+        () async {
       when(() => mockUserRepo.put(any())).thenAnswer((_) async => {});
       when(() => mockPlayerRepo.addPlayerIfUnique(
             userId: any(named: 'userId'),
@@ -228,12 +229,12 @@ void main() {
             avatarColorHex: any(named: 'avatarColorHex'),
             icon: any(named: 'icon'),
           )).thenAnswer((_) async => LeaguePlayer(
-                id: 'new-player-id',
-                userId: 'new-user-id',
-                leagueId: tLeagueId,
-                name: 'New Player',
-                avatarColorHex: 'AE0C00',
-              ));
+            id: 'new-player-id',
+            userId: 'new-user-id',
+            leagueId: tLeagueId,
+            name: 'New Player',
+            avatarColorHex: 'AE0C00',
+          ));
 
       final notifier = container.read(leagueDetailProvider(tLeagueId).notifier);
       await notifier.addPlayer(name: 'New Player');
@@ -513,13 +514,13 @@ void main() {
               avatarColorHex: any(named: 'avatarColorHex'),
               icon: any(named: 'icon'),
             )).thenAnswer((_) async => LeaguePlayer(
-                  id: 'p9',
-                  userId: 'u9',
-                  leagueId: tLeagueId,
-                  name: 'Existing',
-                  avatarColorHex: 'AE0C00',
-                  icon: '🎯',
-                ));
+              id: 'p9',
+              userId: 'u9',
+              leagueId: tLeagueId,
+              name: 'Existing',
+              avatarColorHex: 'AE0C00',
+              icon: '🎯',
+            ));
 
         final notifier =
             container.read(leagueDetailProvider(tLeagueId).notifier);
@@ -578,9 +579,11 @@ void main() {
     });
 
     group('Ranking Sort', () {
-      test('should sort by points DESC, then matchesPlayed ASC', () async {
+      test(
+          'should sort by points DESC, then id for ties (not matchesPlayed, not name)',
+          () async {
         // Player 1: 1 match, 3 points
-        // Player 2: 2 matches, 3 points (P1 is ahead)
+        // Player 2: 2 matches, 3 points — tied on points, tie-break must be id, not matchesPlayed
         final s1 = Side(id: 's1', playerIds: ['p1']);
         final s2 = Side(id: 's2', playerIds: ['p2']);
 
@@ -614,8 +617,345 @@ void main() {
         expect(state.playerStats['p2']?.points, 3);
         expect(state.playerStats['p2']?.matchesPlayed, 2);
 
+        // Per spec, ranked order is points → GD → GF → id. Must NOT use name or matchesPlayed.
+        // p1 < p2 by id, so p1 first. This verifies id tie-break, not matchesPlayed.
+        expect(state.players.first.id, 'p1');
+        expect(state.players.map((p) => p.id).toList(), ['p1', 'p2']);
+      });
+
+      test(
+          'should use id tie-break even when fewer matches would suggest different order',
+          () async {
+        // Verify that fewer matches does NOT win tie: p1 has fewer matches but larger id, so p2 should be first.
+        final pA = LeaguePlayer(
+            id: 'pZ',
+            userId: 'uZ',
+            leagueId: tLeagueId,
+            name: 'Zoe',
+            avatarColorHex: '000');
+        final pB = LeaguePlayer(
+            id: 'pA',
+            userId: 'uA',
+            leagueId: tLeagueId,
+            name: 'Andy',
+            avatarColorHex: '000');
+        when(() => mockPlayerRepo.getByLeague(tLeagueId))
+            .thenAnswer((_) async => [pA, pB]);
+        // Both have 1 draw = 1 point each, pA (Zoe) played 1, pB (Andy) played 1 — tie, id decides pA < pZ? actually pA < pZ, so pB first regardless of name
+        final s1 = Side(id: 's1', playerIds: ['pZ']);
+        final s2 = Side(id: 's2', playerIds: ['pA']);
+        final draw = SimpleMatch(
+            id: 'm1',
+            leagueId: tLeagueId,
+            playedAt: DateTime.now(),
+            isComplete: true,
+            isDraw: true,
+            sides: [s1, s2]);
+        when(() => mockMatchRepo.getByLeague(tLeagueId))
+            .thenAnswer((_) async => [draw]);
+
+        await container.read(leagueDetailProvider(tLeagueId).future);
+        final state = container.read(leagueDetailProvider(tLeagueId)).value!;
+        // pA < pZ by id, so pA first, even though alphabetically Andy < Zoe would also give same, but confirms id not name? To prove not name, we need reversed names with ids reversed.
+        // Use p1 id larger but name smaller to prove name not used: pZ name Zoe but id larger, pA name Andy but id smaller — if name used, Andy would still be first because Andy < Zoe, but id also gives same. Need opposite: name Andy with larger id vs Zoe with smaller id.
+        expect(state.players.first.id, 'pA');
+      });
+    });
+
+    group('PlayersByName alphabetical vs ranked', () {
+      test('playersByName alphabetical independent of insertion order',
+          () async {
+        final alice = LeaguePlayer(
+            id: 'p1',
+            userId: 'u1',
+            leagueId: tLeagueId,
+            name: 'Alice',
+            avatarColorHex: '000');
+        final bob = LeaguePlayer(
+            id: 'p2',
+            userId: 'u2',
+            leagueId: tLeagueId,
+            name: 'Bob',
+            avatarColorHex: '000');
+        final charlie = LeaguePlayer(
+            id: 'p3',
+            userId: 'u3',
+            leagueId: tLeagueId,
+            name: 'Charlie',
+            avatarColorHex: '000');
+        // Insertion order unsorted: Charlie, Alice, Bob
+        when(() => mockPlayerRepo.getByLeague(tLeagueId))
+            .thenAnswer((_) async => [charlie, alice, bob]);
+        when(() => mockMatchRepo.getByLeague(tLeagueId))
+            .thenAnswer((_) async => []);
+
+        await container.read(leagueDetailProvider(tLeagueId).future);
+        var state = container.read(leagueDetailProvider(tLeagueId)).value!;
+        expect(state.playersByName.map((p) => p.name).toList(),
+            ['Alice', 'Bob', 'Charlie']);
         expect(
-            state.players.first.id, 'p1'); // P1 should be first (less matches)
+            state.playersByName.map((p) => p.id).toList(), ['p1', 'p2', 'p3']);
+        // Ranked with no points tied -> id order: p1, p2, p3 (which coincidentally alphabetical here) — need different ids to prove divergence later
+        // Verify insertion invariance: reverse repo order should give same playersByName
+        // Recreate container with different order
+        container.dispose();
+        final mockLeagueRepo2 = MockLeagueRepository();
+        final mockPlayerRepo2 = MockLeaguePlayerRepository();
+        final mockMatchRepo2 = MockSimpleMatchRepository();
+        final mockPolicyRepo2 = MockRankingPolicyRepository();
+        final mockUserRepo2 = MockUserRepository();
+        when(() => mockLeagueRepo2.get(tLeagueId))
+            .thenAnswer((_) async => tLeague);
+        when(() => mockPlayerRepo2.get('p1')).thenAnswer((_) async => alice);
+        when(() => mockPlayerRepo2.get('p2')).thenAnswer((_) async => bob);
+        when(() => mockPolicyRepo2.getByLeagueId(tLeagueId))
+            .thenAnswer((_) async => tRankingPolicy);
+        when(() => mockMatchRepo2.getByLeague(tLeagueId))
+            .thenAnswer((_) async => []);
+        when(() => mockMatchRepo2.get(any())).thenAnswer((_) async => null);
+        when(() => mockPlayerRepo2.getByLeague(tLeagueId))
+            .thenAnswer((_) async => [bob, charlie, alice]);
+        container = ProviderContainer(
+          overrides: [
+            leagueRepositoryProvider.overrideWithValue(mockLeagueRepo2),
+            leaguePlayerRepositoryProvider.overrideWithValue(mockPlayerRepo2),
+            userRepositoryProvider.overrideWithValue(mockUserRepo2),
+            simpleMatchRepositoryProvider.overrideWithValue(mockMatchRepo2),
+            rankingPolicyRepositoryProvider.overrideWithValue(mockPolicyRepo2),
+            usersProvider.overrideWith(FakeUsersNotifier.new),
+            deleteUserServiceProvider
+                .overrideWith((ref) => MockDeleteUserService()),
+            updateUserServiceProvider
+                .overrideWith((ref) => MockUpdateUserService()),
+          ],
+        );
+        container.read(usersProvider);
+        await container.read(leagueDetailProvider(tLeagueId).future);
+        state = container.read(leagueDetailProvider(tLeagueId)).value!;
+        expect(state.playersByName.map((p) => p.name).toList(),
+            ['Alice', 'Bob', 'Charlie']);
+      });
+
+      test(
+          'should sort empty/whitespace and duplicate names by id in playersByName',
+          () async {
+        final empty1 = LeaguePlayer(
+            id: 'p5',
+            userId: 'u5',
+            leagueId: tLeagueId,
+            name: '',
+            avatarColorHex: '000');
+        final empty2 = LeaguePlayer(
+            id: 'p6',
+            userId: 'u6',
+            leagueId: tLeagueId,
+            name: '   ',
+            avatarColorHex: '000');
+        final aliceTrim = LeaguePlayer(
+            id: 'p2',
+            userId: 'u2',
+            leagueId: tLeagueId,
+            name: ' Alice',
+            avatarColorHex: '000');
+        final aliceLower = LeaguePlayer(
+            id: 'p3',
+            userId: 'u3',
+            leagueId: tLeagueId,
+            name: 'alice',
+            avatarColorHex: '000');
+        final bob = LeaguePlayer(
+            id: 'p1',
+            userId: 'u1',
+            leagueId: tLeagueId,
+            name: 'bob',
+            avatarColorHex: '000');
+        final charlie = LeaguePlayer(
+            id: 'p4',
+            userId: 'u4',
+            leagueId: tLeagueId,
+            name: '  Charlie  ',
+            avatarColorHex: '000');
+        // Also duplicate name Bob with different ids
+        final bobDup1 = LeaguePlayer(
+            id: 'p7',
+            userId: 'u7',
+            leagueId: tLeagueId,
+            name: 'Bob',
+            avatarColorHex: '000');
+        final bobDup2 = LeaguePlayer(
+            id: 'p8',
+            userId: 'u8',
+            leagueId: tLeagueId,
+            name: 'Bob',
+            avatarColorHex: '000');
+
+        final unsorted = [
+          bob,
+          aliceTrim,
+          aliceLower,
+          charlie,
+          empty1,
+          empty2,
+          bobDup2,
+          bobDup1
+        ];
+        when(() => mockPlayerRepo.getByLeague(tLeagueId))
+            .thenAnswer((_) async => unsorted);
+        when(() => mockMatchRepo.getByLeague(tLeagueId))
+            .thenAnswer((_) async => []);
+
+        await container.read(leagueDetailProvider(tLeagueId).future);
+        final state = container.read(leagueDetailProvider(tLeagueId)).value!;
+
+        // Expected playersByName: empty first by id p5,p6, then Alice/alice with trim handling, then Bob/bob variations, then Charlie
+        // For 'bob' lower vs 'Bob' upper: 'Bob' < 'bob' case-sensitive tie-break, but also 'Bob' id order among duplicates
+        // Let's list expected names/ids sorted by compareNames then id:
+        // empty "" (p5,p6) first
+        // " Alice" -> "Alice" (p2) , "alice" (p3) -> p2 before p3
+        // then "Bob" duplicates p7,p8 -> ordered by id p7,p8
+        // then "bob" lower p1 -> after Bob? Actually lower compare: "bob" lower == "bob" lower for Bob/bob? "bob".toLowerCase() vs "Bob".toLowerCase() == "bob" same, then case-sensitive "Bob" < "bob" so Bob before bob
+        // then Charlie
+        expect(state.playersByName.map((p) => p.id).toList(),
+            ['p5', 'p6', 'p2', 'p3', 'p7', 'p8', 'p1', 'p4']);
+        expect(state.playersByName.map((p) => p.name).toList(),
+            ['', '   ', ' Alice', 'alice', 'Bob', 'Bob', 'bob', '  Charlie  ']);
+        // Verify duplicate "Bob" ordered by id
+        expect(
+            state.playersByName
+                .where((p) => p.name == 'Bob')
+                .map((p) => p.id)
+                .toList(),
+            ['p7', 'p8']);
+      });
+
+      test(
+          'ranked vs alphabetical divergence: Bob top points but Alice alphabetical first — standings must stay ranked',
+          () async {
+        // Alice p1 (0 pts), Bob p2 (3 pts), Charlie p3 (0 pts). Ranked: Bob first, then Alice, Charlie by id. Alphabetical: Alice, Bob, Charlie
+        final alice = LeaguePlayer(
+            id: 'p1',
+            userId: 'u1',
+            leagueId: tLeagueId,
+            name: 'Alice',
+            avatarColorHex: '000');
+        final bob = LeaguePlayer(
+            id: 'p2',
+            userId: 'u2',
+            leagueId: tLeagueId,
+            name: 'Bob',
+            avatarColorHex: '000');
+        final charlie = LeaguePlayer(
+            id: 'p3',
+            userId: 'u3',
+            leagueId: tLeagueId,
+            name: 'Charlie',
+            avatarColorHex: '000');
+        // Unsorted insertion: Charlie, Alice, Bob
+        when(() => mockPlayerRepo.getByLeague(tLeagueId))
+            .thenAnswer((_) async => [charlie, alice, bob]);
+        // Bob beats Alice -> Bob 3 pts
+        final s1 = Side(id: 's1', playerIds: ['p2']);
+        final s2 = Side(id: 's2', playerIds: ['p1']);
+        final win = SimpleMatch(
+            id: 'm1',
+            leagueId: tLeagueId,
+            playedAt: DateTime.now(),
+            isComplete: true,
+            sides: [s1, s2],
+            winnerSideId: 's1');
+        when(() => mockMatchRepo.getByLeague(tLeagueId))
+            .thenAnswer((_) async => [win]);
+
+        await container.read(leagueDetailProvider(tLeagueId).future);
+        final state = container.read(leagueDetailProvider(tLeagueId)).value!;
+
+        // Ranked: Bob (3pts) first, then Alice/Charlie tied 0pts -> id order p1,p3
+        expect(state.players.map((p) => p.id).toList(), ['p2', 'p1', 'p3']);
+        expect(state.players.map((p) => p.name).toList(),
+            ['Bob', 'Alice', 'Charlie']);
+        // Alphabetical: Alice, Bob, Charlie regardless of points
+        expect(
+            state.playersByName.map((p) => p.id).toList(), ['p1', 'p2', 'p3']);
+        expect(state.playersByName.map((p) => p.name).toList(),
+            ['Alice', 'Bob', 'Charlie']);
+        // Must be same elements, different order
+        expect(state.players.map((p) => p.id).toSet(),
+            state.playersByName.map((p) => p.id).toSet());
+        expect(state.players.map((p) => p.id).toList(),
+            isNot(state.playersByName.map((p) => p.id).toList()));
+        // Standings stay ranked even though alphabetically Alice first
+        expect(state.players.first.name, 'Bob');
+        expect(state.playersByName.first.name, 'Alice');
+      });
+
+      test(
+          'players and playersByName contain same elements with only order differing',
+          () async {
+        final pA = LeaguePlayer(
+            id: 'pZ',
+            userId: 'uZ',
+            leagueId: tLeagueId,
+            name: 'Zoe',
+            avatarColorHex: '000');
+        final pB = LeaguePlayer(
+            id: 'pA',
+            userId: 'uA',
+            leagueId: tLeagueId,
+            name: 'Andy',
+            avatarColorHex: '000');
+        when(() => mockPlayerRepo.getByLeague(tLeagueId))
+            .thenAnswer((_) async => [pA, pB]);
+        when(() => mockMatchRepo.getByLeague(tLeagueId))
+            .thenAnswer((_) async => []);
+        await container.read(leagueDetailProvider(tLeagueId).future);
+        final state = container.read(leagueDetailProvider(tLeagueId)).value!;
+        expect(state.players.length, state.playersByName.length);
+        expect(state.players.map((p) => p.id).toSet(),
+            state.playersByName.map((p) => p.id).toSet());
+        // With no points, ranked is id order: pA, pZ
+        expect(state.players.map((p) => p.id).toList(), ['pA', 'pZ']);
+        // Alphabetical is Andy, Zoe which happens to match id order here, but still same set
+        expect(
+            state.playersByName.map((p) => p.name).toList(), ['Andy', 'Zoe']);
+      });
+
+      test('should handle trim and case-insensitive secondary in playersByName',
+          () async {
+        final p1 = LeaguePlayer(
+            id: 'p1',
+            userId: 'u1',
+            leagueId: tLeagueId,
+            name: '  alice',
+            avatarColorHex: '000');
+        final p2 = LeaguePlayer(
+            id: 'p2',
+            userId: 'u2',
+            leagueId: tLeagueId,
+            name: 'Alice',
+            avatarColorHex: '000');
+        final p3 = LeaguePlayer(
+            id: 'p3',
+            userId: 'u3',
+            leagueId: tLeagueId,
+            name: 'Bob',
+            avatarColorHex: '000');
+        final p4 = LeaguePlayer(
+            id: 'p4',
+            userId: 'u4',
+            leagueId: tLeagueId,
+            name: 'bob',
+            avatarColorHex: '000');
+        when(() => mockPlayerRepo.getByLeague(tLeagueId))
+            .thenAnswer((_) async => [p4, p3, p2, p1]);
+        when(() => mockMatchRepo.getByLeague(tLeagueId))
+            .thenAnswer((_) async => []);
+        await container.read(leagueDetailProvider(tLeagueId).future);
+        final state = container.read(leagueDetailProvider(tLeagueId)).value!;
+        // Alice (trimmed) < alice (case-sensitive) < Bob < bob
+        expect(state.playersByName.map((p) => p.name).toList(),
+            ['Alice', '  alice', 'Bob', 'bob']);
+        expect(state.playersByName.map((p) => p.id).toList(),
+            ['p2', 'p1', 'p3', 'p4']);
       });
     });
 

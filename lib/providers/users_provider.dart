@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/sorting/name_sort.dart';
 import '../domain/entities/user.dart';
 import '../domain/repositories/user_repository.dart';
 import '../domain/repositories/league_player_repository.dart';
@@ -8,6 +9,14 @@ import '../core/injection_container.dart';
 import 'leagues_provider.dart';
 import 'league_detail_provider.dart';
 import 'user_detail_provider.dart';
+
+void _sortUsers(List<User> users) {
+  users.sort((a, b) {
+    final c = compareNames(a.name, b.name);
+    if (c != 0) return c;
+    return a.id.compareTo(b.id);
+  });
+}
 
 final userRepositoryProvider = Provider<UserRepository>((ref) {
   return sl<UserRepository>();
@@ -37,7 +46,9 @@ class UsersNotifier extends AsyncNotifier<List<User>> {
     _deleteService = ref.read(deleteUserServiceProvider);
     _updateService = ref.read(updateUserServiceProvider);
     _playerRepo = ref.read(leaguePlayerRepositoryProvider);
-    return _repo.getAll();
+    final users = await _repo.getAll();
+    _sortUsers(users);
+    return users;
   }
 
   Future<void> addUser(User user) async {
@@ -47,7 +58,9 @@ class UsersNotifier extends AsyncNotifier<List<User>> {
 
       // No self-invalidation - explicit fetch updates our state
 
-      return _repo.getAll();
+      final users = await _repo.getAll();
+      _sortUsers(users);
+      return users;
     });
     if (state.hasError && state.error != null) {
       throw state.error!;
@@ -67,7 +80,9 @@ class UsersNotifier extends AsyncNotifier<List<User>> {
         ref.invalidate(leagueDetailProvider(leagueId));
       }
 
-      return _repo.getAll();
+      final users = await _repo.getAll();
+      _sortUsers(users);
+      return users;
     });
   }
 
@@ -87,7 +102,9 @@ class UsersNotifier extends AsyncNotifier<List<User>> {
         ref.invalidate(leagueDetailProvider(leagueId));
       }
 
-      return _repo.getAll();
+      final users = await _repo.getAll();
+      _sortUsers(users);
+      return users;
     });
     if (state.hasError && state.error != null) {
       throw state.error!;
@@ -96,6 +113,10 @@ class UsersNotifier extends AsyncNotifier<List<User>> {
 
   Future<void> refresh() async {
     state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => _repo.getAll());
+    state = await AsyncValue.guard(() async {
+      final users = await _repo.getAll();
+      _sortUsers(users);
+      return users;
+    });
   }
 }

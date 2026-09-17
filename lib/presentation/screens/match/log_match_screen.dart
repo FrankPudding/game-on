@@ -300,20 +300,20 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
         data: (state) {
-          if (state.players.length < 2) {
+          if (state.playersByName.length < 2) {
             return const Center(
               child: Text('Need at least 2 players to log a match'),
             );
           }
 
-          // Auto-select players if there are only 2
-          if (state.players.length == 2 &&
+          // Auto-select players if there are only 2 — use alphabetical order.
+          if (state.playersByName.length == 2 &&
               (_player1Id == null || _player2Id == null)) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
                 setState(() {
-                  _player1Id = state.players[0].id;
-                  _player2Id = state.players[1].id;
+                  _player1Id = state.playersByName[0].id;
+                  _player2Id = state.playersByName[1].id;
                 });
               }
             });
@@ -331,7 +331,8 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
                       child: _PlayerSelector(
                         title: 'Player 1',
                         selectedId: _player1Id,
-                        players: state.players,
+                        // Use alphabetical list for pickers — never ranked list.
+                        players: state.playersByName,
                         excludeId: _player2Id,
                         onSelected: (id) => setState(() {
                           _player1Id = id;
@@ -354,7 +355,8 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
                       child: _PlayerSelector(
                         title: 'Player 2',
                         selectedId: _player2Id,
-                        players: state.players,
+                        // Use alphabetical list for pickers — never ranked list.
+                        players: state.playersByName,
                         excludeId: _player1Id,
                         onSelected: (id) => setState(() {
                           _player2Id = id;
@@ -458,13 +460,17 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
             DropdownMenuItem(
               value: _player1Id,
               child: Text(
-                  state.players.firstWhere((p) => p.id == _player1Id).name,
+                  state.playersByName
+                      .firstWhere((p) => p.id == _player1Id)
+                      .name,
                   style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
             DropdownMenuItem(
               value: _player2Id,
               child: Text(
-                  state.players.firstWhere((p) => p.id == _player2Id).name,
+                  state.playersByName
+                      .firstWhere((p) => p.id == _player2Id)
+                      .name,
                   style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
             const DropdownMenuItem(
@@ -496,8 +502,9 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
               child: TextFormField(
                 controller: _score1Controller,
                 decoration: InputDecoration(
-                  labelText:
-                      state.players.firstWhere((p) => p.id == _player1Id).name,
+                  labelText: state.playersByName
+                      .firstWhere((p) => p.id == _player1Id)
+                      .name,
                   filled: true,
                   fillColor: AppTheme.surfaceOffWhite,
                   border: OutlineInputBorder(
@@ -515,8 +522,9 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
               child: TextFormField(
                 controller: _score2Controller,
                 decoration: InputDecoration(
-                  labelText:
-                      state.players.firstWhere((p) => p.id == _player2Id).name,
+                  labelText: state.playersByName
+                      .firstWhere((p) => p.id == _player2Id)
+                      .name,
                   filled: true,
                   fillColor: AppTheme.surfaceOffWhite,
                   border: OutlineInputBorder(
