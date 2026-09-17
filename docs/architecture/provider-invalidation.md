@@ -102,6 +102,49 @@ The `userDetailProvider` has no mutation methods of its own. It is invalidated b
 | `deleteUser` | `userDetailProvider(deletedUserId)` |
 | `updateUser` | `userDetailProvider(updatedUserId)` |
 
+## Ownership Rule — LeagueDetailNotifier Is Sole Invalidator of userDetailProvider
+
+All `userDetailProvider(userId)` invalidation for league-scoped mutations is owned
+exclusively by `LeagueDetailNotifier`. The presentation layer (dialogs, screens) must
+**not** call `ref.invalidate(userDetailProvider(...))` itself.
+
+**Why:** The earlier global widget at `lib/presentation/widgets/player_edit_dialog.dart`
+duplicated `ref.invalidate(userDetailProvider(player.userId))` after `updatePlayer`.
+That created two owners for the same side effect (notifier + dialog), risking double
+invalidation, race conditions, and an unclear dependency graph. The fix:
+
+- Deleted `lib/presentation/widgets/player_edit_dialog.dart` and the private
+  `_EditPlayerDialog` in `league_detail_screen.dart`.
+- Unified the dialog at `lib/presentation/screens/league/widgets/player_edit_dialog.dart`;
+  its `_submit()` / `_removePlayer()` methods contain an explicit comment
+  `// Invalidation is handled by LeagueDetailNotifier... — do not duplicate invalidate here`
+  and do **not** import or invalidate `userDetailProvider`.
+- `LeagueDetailNotifier.updatePlayer` and `LeagueDetailNotifier.removePlayer` remain the
+  single place that calls `ref.invalidate(userDetailProvider(userId))` after the write
+  succeeds (see tables above). `PlayerEditDialog` only awaits the notifier and pops.
+
+If you add a new league-player mutation, add the `ref.invalidate(userDetailProvider(...))`
+call inside `LeagueDetailNotifier`, not in any widget.
+
+### Presentation Layer Is Not an Invalidation Owner
+
+```dart
+// BAD — inside PlayerEditDialog._submit() (removed)
+await ref.read(leagueDetailProvider(leagueId).notifier)
+    .updatePlayer(playerId: id, name: name, icon: icon);
+ref.invalidate(userDetailProvider(player.userId)); // ❌ duplicated, now forbidden
+```
+
+```dart
+// GOOD — inside LeagueDetailNotifier.updatePlayer() (sole owner)
+await _playerRepo.put(updatedPlayer);
+ref.invalidate(userDetailProvider(userId)); // ✅ sole location
+return _fetchData();
+```
+
+Dialogs may watch state (e.g. `PlayerEditDialog` title selectively watches `usersProvider` via `usersProvider.select((a) => a.whenData(...))`),
+but they never invalidate cross-provider state.
+
 ## Implementation Details
 
 ### DeleteUserService Returns Affected League IDs
@@ -188,10 +231,20 @@ Future<void> addItem() async {
 }
 ```
 
+### ❌ Don't: Invalidate from the Presentation Layer
+```dart
+// BAD - dialog duplicates invalidation owned by LeagueDetailNotifier
+Future<void> _submit() async {
+  await ref.read(leagueDetailProvider(leagueId).notifier)
+      .updatePlayer(playerId: id, name: name, icon: icon);
+  ref.invalidate(userDetailProvider(userId)); // ❌ remove — notifier already does this
+}
+```
+
 ### ❌ Don't: Reactive Watches for Invalidation
 ```dart
 // BAD - causes unnecessary rebuilds when ANY user/league changes
-@override
+@Override
 Future<State> build() async {
   ref.watch(usersProvider); // DON'T do this
   ref.watch(leaguesProvider); // DON'T do this
@@ -223,9 +276,10 @@ If adding a new mutation method:
 ## Related Files
 
 - `lib/providers/leagues_provider.dart`
-- `lib/providers/league_detail_provider.dart`
+- `lib/providers/league_detail_provider.dart` — sole owner of `userDetailProvider` invalidation for `updatePlayer` / `removePlayer` / match mutations
 - `lib/providers/users_provider.dart`
 - `lib/providers/user_detail_provider.dart`
 - `lib/application/services/delete_user_service.dart`
+- `lib/presentation/screens/league/widgets/player_edit_dialog.dart` — unified `PlayerEditDialog` (requires `showRemoveAction`, title bracket via selective `usersProvider` watch); **does not** invalidate providers
 - `test/unit/providers/` - Unit tests for each provider
 - `test/integration/providers/invalidation_test.dart` - Cross-provider integration tests

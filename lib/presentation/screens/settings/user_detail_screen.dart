@@ -5,7 +5,7 @@ import '../../../providers/user_detail_provider.dart';
 import '../../../providers/users_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/user_edit_dialog.dart';
-import '../../widgets/player_edit_dialog.dart';
+import '../league/widgets/player_edit_dialog.dart';
 import '../match/log_match_screen.dart';
 
 class UserDetailScreen extends ConsumerWidget {
@@ -133,6 +133,7 @@ class _LeagueParticipantTile extends StatelessWidget {
                 context,
                 leagueId: info.league.id,
                 player: info.player,
+                showRemoveAction: false,
               ),
             ),
             const Icon(Icons.expand_more),

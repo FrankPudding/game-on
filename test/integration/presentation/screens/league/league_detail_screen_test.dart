@@ -511,7 +511,7 @@ void main() {
       expect(find.text('Edit Player'), findsOneWidget);
 
       await tester.enterText(find.byType(TextField), 'Renamed');
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Save Changes'));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Save'));
       await tester.pumpAndSettle();
 
       expect(fakeNotifier.updatePlayerCalls, hasLength(1));

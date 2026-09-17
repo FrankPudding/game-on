@@ -100,7 +100,7 @@ void main() {
     id: tUserId,
     name: 'Test User',
     avatarColorHex: 'FF0000',
-    icon: '🎮',
+    icon: '🐯',
   );
 
   final tLeague = League(
@@ -464,7 +464,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.edit_note));
       await tester.pumpAndSettle();
 
-      expect(find.text('Edit League Participant'), findsOneWidget);
+      expect(find.text('Edit Player'), findsOneWidget);
 
       // Update nickname
       await tester.enterText(find.byType(TextField), 'New Nickname');

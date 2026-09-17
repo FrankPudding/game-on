@@ -12,6 +12,7 @@ import '../../../providers/users_provider.dart';
 import '../../theme/app_theme.dart';
 import '../match/log_match_screen.dart';
 import '../settings/create_user_screen.dart';
+import 'widgets/player_edit_dialog.dart';
 
 class LeagueDetailScreen extends ConsumerStatefulWidget {
   const LeagueDetailScreen({
@@ -83,10 +84,11 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
   }
 
   void _showEditPlayerDialog(LeaguePlayer player) {
-    showDialog(
-      context: context,
-      builder: (context) =>
-          _EditPlayerDialog(leagueId: widget.league.id, player: player),
+    PlayerEditDialog.show(
+      context,
+      leagueId: widget.league.id,
+      player: player,
+      showRemoveAction: true,
     );
   }
 
@@ -924,204 +926,4 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
   }
 }
 
-class _EditPlayerDialog extends ConsumerStatefulWidget {
-  const _EditPlayerDialog({
-    required this.leagueId,
-    required this.player,
-  });
-  final String leagueId;
-  final LeaguePlayer player;
 
-  @override
-  ConsumerState<_EditPlayerDialog> createState() => _EditPlayerDialogState();
-}
-
-class _EditPlayerDialogState extends ConsumerState<_EditPlayerDialog> {
-  late final TextEditingController _nameController;
-  String? _selectedIcon;
-  bool _isLoading = false;
-
-  final List<String> _icons = [
-    '👤',
-    '🎮',
-    '⚽',
-    '🏀',
-    '🎾',
-    '🎳',
-    '🎯',
-    '🏎️',
-    '🧙',
-    '🥷',
-    '🐯',
-    '🦊',
-    '🦉',
-    '🐢',
-    '🦖',
-    '🤖',
-    '👻',
-    '🍦',
-    '🍕',
-    '🎲'
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: widget.player.name);
-    _selectedIcon = widget.player.icon ?? '👤';
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    final name = _nameController.text.trim();
-    if (name.isEmpty) return;
-
-    setState(() => _isLoading = true);
-    try {
-      await ref
-          .read(leagueDetailProvider(widget.leagueId).notifier)
-          .updatePlayer(
-            playerId: widget.player.id,
-            name: name,
-            icon: _selectedIcon,
-          );
-      if (mounted) Navigator.pop(context);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating player: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _removePlayer() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Remove Player?'),
-        content: Text(
-            'Are you sure you want to remove ${widget.player.name} from this league? This only works if they have no match history.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.errorRed),
-            child: const Text('Remove'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && mounted) {
-      setState(() => _isLoading = true);
-      try {
-        await ref
-            .read(leagueDetailProvider(widget.leagueId).notifier)
-            .removePlayer(widget.player.id);
-        if (mounted) {
-          Navigator.pop(context); // Close edit dialog
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Player removed from league')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error removing player: $e')),
-          );
-        }
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Edit Player'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Player Name',
-                border: OutlineInputBorder(),
-              ),
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 16),
-            const Text('Choose Icon',
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _icons.map((icon) {
-                return InkWell(
-                  onTap: () => setState(() => _selectedIcon = icon),
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: _selectedIcon == icon
-                          ? AppTheme.accentRed.withValues(alpha: 0.2)
-                          : Colors.transparent,
-                      border: Border.all(
-                        color: _selectedIcon == icon
-                            ? AppTheme.accentRed
-                            : Colors.grey.withValues(alpha: 0.3),
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(icon, style: const TextStyle(fontSize: 24)),
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: TextButton.icon(
-                onPressed: _isLoading ? null : _removePlayer,
-                icon: const Icon(Icons.person_remove_outlined,
-                    color: AppTheme.errorRed),
-                label: const Text('Remove from League',
-                    style: TextStyle(color: AppTheme.errorRed)),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: _isLoading ? null : _submit,
-          child: _isLoading
-              ? const SizedBox(
-                  width: 16, height: 16, child: CircularProgressIndicator())
-              : const Text('Save Changes'),
-        ),
-      ],
-    );
-  }
-}
