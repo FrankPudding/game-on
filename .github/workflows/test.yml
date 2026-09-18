@@ -72,22 +72,22 @@ jobs:
           git diff --exit-code -- README.md
           exit 1
 
-      - name: Validate COVERAGE_PAT for auto-commit
+      - name: Generate GitHub App token
         if: steps.check_diff.outputs.changed == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-        run: |
-          if [ -z "${{ secrets.COVERAGE_PAT }}" ]; then
-            echo "::error::COVERAGE_PAT secret is missing. Add a Personal Access Token as COVERAGE_PAT to enable coverage auto-commit. Alternatively, run 'make coverage-deterministic' locally and push the updated README.md."
-            exit 1
-          fi
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: Auto-commit coverage update
         if: steps.check_diff.outputs.changed == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         env:
-          COVERAGE_PAT: ${{ secrets.COVERAGE_PAT }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin "https://x-access-token:${COVERAGE_PAT}@github.com/${{ github.repository }}.git"
+          git config user.name "coverage-auto-commit[bot]"
+          git config user.email "coverage-auto-commit[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
           git fetch origin "${{ github.head_ref }}"
           git rebase "origin/${{ github.head_ref }}"
           git add -- README.md
