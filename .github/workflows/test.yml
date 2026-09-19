@@ -92,15 +92,23 @@ jobs:
           # Commit the README.md change first (working tree has updated README from update_coverage.dart)
           git add -- README.md
           git commit -m "chore: update coverage"
-          
-          # Now rebase our new commit on top of origin
+
+          # Stash any remaining dirty files (e.g., coverage/lcov.info, generated
+          # files like lib/hive_registrar.g.dart) so rebase can proceed in
+          # detached HEAD. `git rebase --autostash` handles tracked unstaged
+          # changes, but we also stash untracked files explicitly. Use || true
+          # so empty stash doesn't fail the step.
+          git stash push --include-untracked -m "coverage-auto-stash" || true
           git fetch origin "${{ github.head_ref }}"
-          git rebase "origin/${{ github.head_ref }}"
-          
+          git rebase --autostash "origin/${{ github.head_ref }}"
+          git stash pop || true
+
           # Push with retry: fetch + rebase if first push fails (handles concurrent updates)
           if ! git push origin "HEAD:${{ github.head_ref }}"; then
             echo "Push failed, retrying with fetch and rebase..."
+            git stash push --include-untracked -m "coverage-auto-stash-retry" || true
             git fetch origin "${{ github.head_ref }}"
-            git rebase "origin/${{ github.head_ref }}"
+            git rebase --autostash "origin/${{ github.head_ref }}"
+            git stash pop || true
             git push origin "HEAD:${{ github.head_ref }}"
           fi
