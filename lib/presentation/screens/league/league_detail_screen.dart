@@ -555,9 +555,21 @@ class _AddPlayerDialog extends ConsumerStatefulWidget {
 
 class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
   String? _selectedUserId;
-  String? _nickname;
+  late final TextEditingController _nicknameController;
   String? _selectedIcon = '👤';
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nicknameController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _nicknameController.dispose();
+    super.dispose();
+  }
 
   static const List<String> _icons = [
     '👤',
@@ -594,8 +606,9 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
     try {
       final leagueDetailNotifier =
           ref.read(leagueDetailProvider(widget.leagueId).notifier);
+      final nickname = _nicknameController.text.trim();
       await leagueDetailNotifier.addPlayer(
-        name: _nickname?.isNotEmpty == true ? _nickname! : '',
+        name: nickname.isNotEmpty ? nickname : '',
         userId: _selectedUserId,
         icon: _selectedIcon,
       );
@@ -843,11 +856,11 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
                 onTap: () => setState(() {
                   if (isSelected) {
                     _selectedUserId = null;
-                    _nickname = null;
+                    _nicknameController.clear();
                     _selectedIcon = '👤';
                   } else {
                     _selectedUserId = user.id;
-                    _nickname = user.name; // Pre-fill nickname
+                    _nicknameController.text = user.name; // Pre-fill nickname
                     _selectedIcon = user.icon ?? '👤'; // Pre-fill icon
                   }
                 }),
@@ -885,13 +898,12 @@ class _AddPlayerDialogState extends ConsumerState<_AddPlayerDialog> {
 
   Widget _buildNicknameField() {
     return TextField(
-      controller: TextEditingController(text: _nickname),
+      controller: _nicknameController,
       decoration: const InputDecoration(
         labelText: 'Nickname (Optional)',
         hintText: 'Defaults to user name',
         border: OutlineInputBorder(),
       ),
-      onChanged: (val) => setState(() => _nickname = val),
     );
   }
 
