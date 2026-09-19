@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import '../core/sorting/name_sort.dart';
 import '../domain/entities/league_player.dart';
 import '../domain/entities/side.dart';
 import '../domain/entities/matches/simple_match.dart';
@@ -12,9 +13,11 @@ import '../domain/repositories/league_player_repository.dart';
 import '../domain/repositories/match/simple_match_repository.dart';
 import '../domain/repositories/user_repository.dart';
 import '../domain/repositories/ranking_policy_repository.dart';
+import '../domain/exceptions/duplicate_league_player_exception.dart';
 import '../core/injection_container.dart';
 import 'leagues_provider.dart';
 import 'users_provider.dart';
+import 'user_detail_provider.dart';
 
 // Match Repository Provider
 final simpleMatchRepositoryProvider = Provider<SimpleMatchRepository>((ref) {
@@ -55,14 +58,32 @@ class PlayerStats {
   }
 }
 
+/// State for a single league detail view.
+///
+/// Invariants:
+/// - [players] is the **ranked** order: points → (goal difference → goals for
+///   for GD leagues) → id. It must NOT use name as a tie-breaker; only the
+///   stable `id` fallback is allowed.
+/// - [playersByName] is the **alphabetical** order of the same set as
+///   [players], sorted by [compareNames] on [LeaguePlayer.name] then `id`.
+///   The two lists always contain the same elements, only differing in order.
+///
+/// Ban note: pickers / selectors (e.g. match player pickers, dropdowns) must
+/// use [playersByName], never [players]. Only the standings table may use
+/// [players] (ranked order).
 class LeagueDetailState {
   const LeagueDetailState({
     required this.players,
+    required this.playersByName,
     required this.matches,
     required this.playerStats,
     this.rankingPolicy,
   });
+  // Ranked order: points → GD → GF → id. Never name.
   final List<LeaguePlayer> players;
+  // Alphabetical order: name (compareNames) → id. Same set as [players].
+  // Use this for pickers/dropdowns; do NOT use [players] for pickers.
+  final List<LeaguePlayer> playersByName;
   final List<SimpleMatch> matches;
   final Map<String, PlayerStats> playerStats;
   final RankingPolicy? rankingPolicy;
@@ -92,8 +113,7 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
     _matchRepo = ref.read(simpleMatchRepositoryProvider);
     _policyRepo = ref.read(rankingPolicyRepositoryProvider);
 
-    // Watch usersProvider so we refresh if users are deleted/added
-    ref.watch(usersProvider);
+    // Removed ref.watch(usersProvider) - use invalidation instead
 
     return _fetchData();
   }
@@ -164,7 +184,7 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
       }
     }
 
-    // Sort players: by points, then goal difference, then goals for (GD leagues)
+    // Ranked order: points → GD → GF → id. Never use name as tie-breaker.
     final sortedPlayers = List<LeaguePlayer>.from(rawPlayers)
       ..sort((a, b) {
         final statsA = playerStats[a.id];
@@ -177,11 +197,23 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
         if (result == 0 && policy is GoalDifferenceRankingPolicy) {
           result = (statsB?.goalsFor ?? 0).compareTo(statsA?.goalsFor ?? 0);
         }
+        if (result == 0) {
+          result = a.id.compareTo(b.id);
+        }
         return result;
+      });
+
+    // Alphabetical order for pickers: name (compareNames) → id. Same set as sortedPlayers.
+    final sortedByName = List<LeaguePlayer>.from(rawPlayers)
+      ..sort((a, b) {
+        final c = compareNames(a.name, b.name);
+        if (c != 0) return c;
+        return a.id.compareTo(b.id);
       });
 
     return LeagueDetailState(
       players: sortedPlayers,
+      playersByName: sortedByName,
       matches: matches,
       playerStats: playerStats,
       rankingPolicy: policy,
@@ -204,6 +236,8 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
       String finalName = name;
       String? finalIcon = icon;
 
+      bool createdNewUser = false;
+
       if (userId != null) {
         finalUserId = userId;
         final user = await _userRepo.get(userId);
@@ -220,18 +254,31 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
           icon: icon,
         );
         await _userRepo.put(user);
+        createdNewUser = true;
       }
 
-      final leaguePlayer = LeaguePlayer(
-        id: _uuid.v4(),
-        userId: finalUserId,
-        leagueId: _leagueId,
-        name: finalName,
-        avatarColorHex: 'AE0C00',
-        icon: finalIcon,
-      );
+      // Use addPlayerIfUnique which enforces uniqueness per (userId, leagueId)
+      try {
+        await _playerRepo.addPlayerIfUnique(
+          userId: finalUserId,
+          leagueId: _leagueId,
+          name: finalName,
+          avatarColorHex: 'AE0C00',
+          icon: finalIcon,
+        );
+      } on DuplicateLeaguePlayerException {
+        // Re-throw with a user-friendly message
+        throw Exception(
+          'This user is already a player in this league.',
+        );
+      }
 
-      await _playerRepo.put(leaguePlayer);
+      // Invalidate related providers (but NOT self - we update state directly)
+      if (createdNewUser) {
+        ref.invalidate(usersProvider);
+      }
+      ref.invalidate(userDetailProvider(finalUserId));
+
       return _fetchData();
     });
   }
@@ -269,6 +316,18 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
       );
 
       await _matchRepo.logSimpleMatch(match: match);
+
+      // Invalidate related providers (but NOT self - we update state directly)
+      // winnerId and loserId are LeaguePlayer IDs; we need userIds for userDetailProvider
+      final winnerPlayer = await _playerRepo.get(winnerId);
+      final loserPlayer = await _playerRepo.get(loserId);
+      if (winnerPlayer != null) {
+        ref.invalidate(userDetailProvider(winnerPlayer.userId));
+      }
+      if (loserPlayer != null) {
+        ref.invalidate(userDetailProvider(loserPlayer.userId));
+      }
+
       return _fetchData();
     });
   }
@@ -306,14 +365,46 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
       );
 
       await _matchRepo.logSimpleMatch(match: updatedMatch);
+
+      // Invalidate related providers (but NOT self - we update state directly)
+      // winnerId and loserId are LeaguePlayer IDs; we need userIds for userDetailProvider
+      final winnerPlayer = await _playerRepo.get(winnerId);
+      final loserPlayer = await _playerRepo.get(loserId);
+      if (winnerPlayer != null) {
+        ref.invalidate(userDetailProvider(winnerPlayer.userId));
+      }
+      if (loserPlayer != null) {
+        ref.invalidate(userDetailProvider(loserPlayer.userId));
+      }
+
       return _fetchData();
     });
   }
 
   Future<void> deleteMatch(String matchId) async {
+    // Fetch match first to get player IDs for invalidation
+    final match = await _matchRepo.get(matchId);
+    final userIds = <String>{};
+    if (match != null) {
+      for (final side in match.sides) {
+        for (final playerId in side.playerIds) {
+          final player = await _playerRepo.get(playerId);
+          if (player != null) {
+            userIds.add(player.userId);
+          }
+        }
+      }
+    }
+
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       await _matchRepo.delete(matchId);
+
+      // Invalidate related providers (but NOT self - we update state directly)
+      for (final userId in userIds) {
+        ref.invalidate(userDetailProvider(userId));
+      }
+
       return _fetchData();
     });
   }
@@ -327,12 +418,16 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
     try {
       final player = await _playerRepo.get(playerId);
       if (player == null) throw Exception('Player not found');
+      final userId = player.userId;
 
       final updatedPlayer = player.copyWith(
         name: name,
         icon: icon,
       );
       await _playerRepo.put(updatedPlayer);
+
+      // Invalidate related providers (but NOT self - we update state directly)
+      ref.invalidate(userDetailProvider(userId));
 
       state = AsyncValue.data(await _fetchData());
     } catch (e, st) {
@@ -344,6 +439,10 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
   Future<void> removePlayer(String playerId) async {
     state = const AsyncValue.loading();
     try {
+      // Get player info before deletion for invalidation
+      final player = await _playerRepo.get(playerId);
+      final userId = player?.userId;
+
       // Don't allow removing if they have played matches
       final matches = await _matchRepo.getByLeague(_leagueId);
       final hasPlayed = matches
@@ -355,6 +454,13 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
       }
 
       await _playerRepo.delete(playerId);
+
+      // Invalidate related providers (but NOT self - we update state directly)
+      ref.invalidate(usersProvider);
+      if (userId != null) {
+        ref.invalidate(userDetailProvider(userId));
+      }
+
       state = AsyncValue.data(await _fetchData());
     } catch (e, st) {
       state = AsyncValue.error(e, st);

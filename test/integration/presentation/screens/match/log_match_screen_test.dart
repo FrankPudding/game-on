@@ -20,7 +20,8 @@ class FakeLeagueDetailNotifier extends LeagueDetailNotifier {
   @override
   Future<LeagueDetailState> build() async {
     if (onBuild != null) return await onBuild!();
-    return const LeagueDetailState(players: [], matches: [], playerStats: {});
+    return const LeagueDetailState(
+        players: [], matches: [], playerStats: {}, playersByName: []);
   }
 
   @override
@@ -78,6 +79,20 @@ void main() {
   setUp(() {
     tState = LeagueDetailState(
       players: [
+        LeaguePlayer(
+            id: 'p1',
+            userId: 'u1',
+            leagueId: tLeagueId,
+            name: 'Player 1',
+            avatarColorHex: 'FF0000'),
+        LeaguePlayer(
+            id: 'p2',
+            userId: 'u2',
+            leagueId: tLeagueId,
+            name: 'Player 2',
+            avatarColorHex: '00FF00'),
+      ],
+      playersByName: [
         LeaguePlayer(
             id: 'p1',
             userId: 'u1',
@@ -171,6 +186,14 @@ void main() {
               name: 'Player 1',
               avatarColorHex: 'FF0000'),
         ],
+        playersByName: [
+          LeaguePlayer(
+              id: 'p1',
+              userId: 'u1',
+              leagueId: tLeagueId,
+              name: 'Player 1',
+              avatarColorHex: 'FF0000'),
+        ],
         matches: const [],
         playerStats: const {},
       );
@@ -241,6 +264,26 @@ void main() {
               name: 'Player 3',
               avatarColorHex: '0000FF'),
         ],
+        playersByName: [
+          LeaguePlayer(
+              id: 'p1',
+              userId: 'u1',
+              leagueId: tLeagueId,
+              name: 'Player 1',
+              avatarColorHex: 'FF0000'),
+          LeaguePlayer(
+              id: 'p2',
+              userId: 'u2',
+              leagueId: tLeagueId,
+              name: 'Player 2',
+              avatarColorHex: '00FF00'),
+          LeaguePlayer(
+              id: 'p3',
+              userId: 'u3',
+              leagueId: tLeagueId,
+              name: 'Player 3',
+              avatarColorHex: '0000FF'),
+        ],
         matches: const [],
         playerStats: const {},
       );
@@ -261,6 +304,26 @@ void main() {
     testWidgets('should pick players via the bottom sheet', (tester) async {
       final threePlayers = LeagueDetailState(
         players: [
+          LeaguePlayer(
+              id: 'p1',
+              userId: 'u1',
+              leagueId: tLeagueId,
+              name: 'Player 1',
+              avatarColorHex: 'FF0000'),
+          LeaguePlayer(
+              id: 'p2',
+              userId: 'u2',
+              leagueId: tLeagueId,
+              name: 'Player 2',
+              avatarColorHex: '00FF00'),
+          LeaguePlayer(
+              id: 'p3',
+              userId: 'u3',
+              leagueId: tLeagueId,
+              name: 'Player 3',
+              avatarColorHex: '0000FF'),
+        ],
+        playersByName: [
           LeaguePlayer(
               id: 'p1',
               userId: 'u1',
@@ -520,6 +583,26 @@ void main() {
               name: 'Player 3',
               avatarColorHex: '0000FF'),
         ],
+        playersByName: [
+          LeaguePlayer(
+              id: 'p1',
+              userId: 'u1',
+              leagueId: tLeagueId,
+              name: 'Player 1',
+              avatarColorHex: 'FF0000'),
+          LeaguePlayer(
+              id: 'p2',
+              userId: 'u2',
+              leagueId: tLeagueId,
+              name: 'Player 2',
+              avatarColorHex: '00FF00'),
+          LeaguePlayer(
+              id: 'p3',
+              userId: 'u3',
+              leagueId: tLeagueId,
+              name: 'Player 3',
+              avatarColorHex: '0000FF'),
+        ],
         matches: const [],
         playerStats: const {},
       );
@@ -563,6 +646,7 @@ void main() {
         (tester) async {
       final gdState = LeagueDetailState(
         players: tState.players,
+        playersByName: tState.players,
         matches: const [],
         playerStats: const {},
         rankingPolicy: GoalDifferenceRankingPolicy(
@@ -602,6 +686,7 @@ void main() {
         (tester) async {
       final gdState = LeagueDetailState(
         players: tState.players,
+        playersByName: tState.players,
         matches: const [],
         playerStats: const {},
         rankingPolicy: GoalDifferenceRankingPolicy(
@@ -636,6 +721,7 @@ void main() {
         (tester) async {
       final gdState = LeagueDetailState(
         players: tState.players,
+        playersByName: tState.players,
         matches: const [],
         playerStats: const {},
         rankingPolicy: GoalDifferenceRankingPolicy(
