@@ -88,10 +88,15 @@ jobs:
           git config user.name "coverage-auto-commit[bot]"
           git config user.email "coverage-auto-commit[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
-          git fetch origin "${{ github.head_ref }}"
-          git rebase "origin/${{ github.head_ref }}"
+          
+          # Commit the README.md change first (working tree has updated README from update_coverage.dart)
           git add -- README.md
           git commit -m "chore: update coverage"
+          
+          # Now rebase our new commit on top of origin
+          git fetch origin "${{ github.head_ref }}"
+          git rebase "origin/${{ github.head_ref }}"
+          
           # Push with retry: fetch + rebase if first push fails (handles concurrent updates)
           if ! git push origin "HEAD:${{ github.head_ref }}"; then
             echo "Push failed, retrying with fetch and rebase..."
