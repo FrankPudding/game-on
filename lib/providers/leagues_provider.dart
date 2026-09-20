@@ -29,8 +29,8 @@ final leaguesProvider =
 });
 
 class LeaguesNotifier extends AsyncNotifier<List<League>> {
-  late final LeagueRepository _leagueRepository;
-  late final CreateLeagueService _createLeagueService;
+  late LeagueRepository _leagueRepository;
+  late CreateLeagueService _createLeagueService;
 
   @override
   Future<List<League>> build() async {

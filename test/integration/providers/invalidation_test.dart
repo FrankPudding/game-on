@@ -794,4 +794,155 @@ void main() {
       expect(userDetailState2.isLoading || userDetailState2.hasValue, isTrue);
     });
   });
+
+  group('LateInitializationError rebuild coverage (coverage gaps)', () {
+    test(
+        'leaguesProvider rebuild after usersProvider.updateUser invalidation - hasValue, no error, data matches getAll',
+        () async {
+      // Initial load primes leaguesProvider (build assigns late fields)
+      final initialLeagues = await container.read(leaguesProvider.future);
+      expect(initialLeagues, equals([tLeague, tLeague2]));
+      expect(container.read(leaguesProvider).hasValue, isTrue);
+      expect(container.read(leaguesProvider).hasError, isFalse);
+
+      // Prepare usersProvider.updateUser which invalidates leaguesProvider
+      when(() => mockPlayerRepo.getByUserId('u1'))
+          .thenAnswer((_) async => [tPlayer1, tPlayer3]);
+      when(() => mockUpdateService.execute(any())).thenAnswer((_) async => {});
+      final updatedUser = tUser1.copyWith(name: 'Updated User 1');
+      when(() => mockUserRepo.getAll())
+          .thenAnswer((_) async => [updatedUser, tUser2, tUser3]);
+      // leaguesProvider rebuild will call getAll again
+      when(() => mockLeagueRepo.getAll())
+          .thenAnswer((_) async => [tLeague, tLeague2]);
+
+      await container.read(usersProvider.notifier).updateUser(updatedUser);
+
+      // leaguesProvider was invalidated by updateUser - rebuild must succeed
+      // without LateInitializationError (late not late final)
+      final rebuiltLeagues = await container.read(leaguesProvider.future);
+      final state = container.read(leaguesProvider);
+      expect(state.hasValue, isTrue);
+      expect(state.hasError, isFalse);
+      expect(state.error, isNull);
+      expect(state.value, equals([tLeague, tLeague2]));
+      expect(rebuiltLeagues, equals([tLeague, tLeague2]));
+      // Verify rebuild actually called getAll again (initial + at least one rebuild)
+      verify(() => mockLeagueRepo.getAll()).called(greaterThanOrEqualTo(2));
+    });
+
+    test(
+        'usersProvider rebuild after leagueDetailProvider.addPlayer(newUser) invalidation - hasValue, no error, data matches getAll',
+        () async {
+      // Initial load primes usersProvider (build assigns late fields)
+      final initialUsers = await container.read(usersProvider.future);
+      expect(initialUsers.length, 3);
+      expect(container.read(usersProvider).hasValue, isTrue);
+      expect(container.read(usersProvider).hasError, isFalse);
+
+      // Setup addPlayer with new user (createdNewUser=true -> invalidates usersProvider)
+      when(() => mockUserRepo.put(any())).thenAnswer((_) async => {});
+      when(() => mockPlayerRepo.addPlayerIfUnique(
+            userId: any(named: 'userId'),
+            leagueId: any(named: 'leagueId'),
+            name: any(named: 'name'),
+            avatarColorHex: any(named: 'avatarColorHex'),
+            icon: any(named: 'icon'),
+          )).thenAnswer((invocation) async {
+        final userId =
+            invocation.namedArguments[const Symbol('userId')] as String;
+        final name = invocation.namedArguments[const Symbol('name')] as String;
+        return LeaguePlayer(
+          id: 'p_new',
+          userId: userId,
+          leagueId: tLeagueId,
+          name: name,
+          avatarColorHex: 'AE0C00',
+        );
+      });
+      final newUser =
+          User(id: 'u_new', name: 'New Player', avatarColorHex: 'AE0C00');
+      // After addPlayer, leagueDetail rebuild will fetch updated players
+      when(() => mockPlayerRepo.getByLeague(tLeagueId))
+          .thenAnswer((_) async => [
+                tPlayer1,
+                tPlayer2,
+                LeaguePlayer(
+                    id: 'p_new',
+                    userId: 'u_new',
+                    leagueId: tLeagueId,
+                    name: 'New Player',
+                    avatarColorHex: 'AE0C00')
+              ]);
+      // usersProvider rebuild will call getAll - must return new user
+      when(() => mockUserRepo.getAll())
+          .thenAnswer((_) async => [tUser1, tUser2, tUser3, newUser]);
+
+      await container
+          .read(leagueDetailProvider(tLeagueId).notifier)
+          .addPlayer(name: 'New Player');
+
+      // usersProvider was invalidated by addPlayer - rebuild must succeed
+      // without LateInitializationError (late not late final)
+      // Note: UsersProvider sorts alphabetically, so New Player (N) < User 1/2/3 (U)
+      final rebuiltUsers = await container.read(usersProvider.future);
+      final state = container.read(usersProvider);
+      expect(state.hasValue, isTrue);
+      expect(state.hasError, isFalse);
+      expect(state.error, isNull);
+      expect(state.value?.length, 4);
+      expect(rebuiltUsers.length, 4);
+      // Verify sorted order and that data matches mock getAll (sorted)
+      expect(state.value?.map((u) => u.name).toList(),
+          equals(['New Player', 'User 1', 'User 2', 'User 3']));
+      expect(rebuiltUsers.map((u) => u.name).toList(),
+          equals(['New Player', 'User 1', 'User 2', 'User 3']));
+      expect(state.value?.any((u) => u.id == 'u_new'), isTrue);
+      verify(() => mockUserRepo.getAll()).called(greaterThanOrEqualTo(2));
+    });
+
+    test(
+        'multiple sequential invalidations - two updateUser calls rebuild leaguesProvider twice without LateInitializationError',
+        () async {
+      // Initial load primes leaguesProvider
+      await container.read(leaguesProvider.future);
+      expect(container.read(leaguesProvider).hasValue, isTrue);
+
+      when(() => mockUpdateService.execute(any())).thenAnswer((_) async => {});
+      when(() => mockPlayerRepo.getByUserId('u1'))
+          .thenAnswer((_) async => [tPlayer1]);
+      when(() => mockPlayerRepo.getByUserId('u2'))
+          .thenAnswer((_) async => [tPlayer2]);
+      when(() => mockLeagueRepo.getAll())
+          .thenAnswer((_) async => [tLeague, tLeague2]);
+
+      // First updateUser -> invalidates leaguesProvider -> rebuild 1
+      final updated1 = tUser1.copyWith(name: 'Updated1');
+      when(() => mockUserRepo.getAll())
+          .thenAnswer((_) async => [updated1, tUser2, tUser3]);
+      await container.read(usersProvider.notifier).updateUser(updated1);
+
+      final afterFirst = await container.read(leaguesProvider.future);
+      expect(container.read(leaguesProvider).hasValue, isTrue);
+      expect(container.read(leaguesProvider).hasError, isFalse);
+      expect(container.read(leaguesProvider).error, isNull);
+      expect(afterFirst, equals([tLeague, tLeague2]));
+
+      // Second updateUser -> invalidates leaguesProvider again -> rebuild 2
+      final updated2 = tUser2.copyWith(name: 'Updated2');
+      when(() => mockUserRepo.getAll())
+          .thenAnswer((_) async => [updated1, updated2, tUser3]);
+      await container.read(usersProvider.notifier).updateUser(updated2);
+
+      final afterSecond = await container.read(leaguesProvider.future);
+      final state = container.read(leaguesProvider);
+      expect(state.hasValue, isTrue);
+      expect(state.hasError, isFalse);
+      expect(state.error, isNull);
+      expect(state.value, equals([tLeague, tLeague2]));
+      expect(afterSecond, equals([tLeague, tLeague2]));
+      // At least 3 calls: initial + 2 rebuilds
+      verify(() => mockLeagueRepo.getAll()).called(greaterThanOrEqualTo(3));
+    });
+  });
 }

@@ -179,6 +179,16 @@ The following `ref.watch()` calls were removed to eliminate unnecessary rebuilds
 
 These providers now rely on explicit invalidation from mutation methods.
 
+### AsyncNotifier Field Initialization — `late` Not `late final`
+
+All `AsyncNotifier` fields that are assigned inside `build()` **must** be declared `late`, not `late final`.
+
+**Why:** The explicit-invalidation graph (`ref.invalidate(provider)`) re-executes `build()` on next read. A `late final` field can only be assigned once per notifier instance; the second `build()` assignment throws `LateInitializationError: Field '_xxx@...' has already been initialized.` Using `late` (without `final`) allows re-assignment on every rebuild.
+
+This was fixed in `LeaguesNotifier` (`_leagueRepository`, `_createLeagueService`) and `UsersNotifier` (`_repo`, `_deleteService`, `_updateService`, `_playerRepo`) — previously `late final`, now `late`. `LeagueDetailNotifier` and `UserDetailNotifier` already used `late` and were not affected.
+
+**Invariant:** Fields assigned in `AsyncNotifier.build()` must be `late` not `late final` because `build()` is re-entrant after `ref.invalidate()` – `late final` would throw on second build.
+
 ## Testing
 
 ### Unit Tests
@@ -201,6 +211,10 @@ Integration tests (`test/integration/providers/invalidation_test.dart`) verify:
   - `updateSimpleMatch` invalidates both winner and loser `userDetailProvider`
   - `deleteMatch` invalidates all involved players' `userDetailProvider`
   - `updatePlayer` and `removePlayer` invalidate affected user's `userDetailProvider`
+- **LateInitializationError rebuild coverage (3 tests):**
+  - `leaguesProvider` rebuild after `usersProvider.updateUser` invalidation — no `LateInitializationError`
+  - `usersProvider` rebuild after `leagueDetailProvider.addPlayer(newUser)` invalidation — no `LateInitializationError`
+  - Two sequential `updateUser` invalidations rebuild `leaguesProvider` twice — no `LateInitializationError` (verifies `late` fix)
 
 ## Common Pitfalls
 
@@ -259,6 +273,32 @@ Future<void> addPlayer() async {
   // ... mutation logic ...
   ref.invalidate(usersProvider); // Invalidate dependent provider
   ref.invalidate(userDetailProvider(newUserId)); // Invalidate specific instance
+}
+```
+
+### ❌ Don't: `late final` Fields Assigned in `build()`
+```dart
+// BAD - second build() after ref.invalidate() throws LateInitializationError
+class LeaguesNotifier extends AsyncNotifier<List<League>> {
+  late final LeagueRepository _repo; // ❌ final prevents re-assignment
+  @override
+  Future<List<League>> build() async {
+    _repo = ref.read(repoProvider); // throws on second build
+    return _repo.getAll();
+  }
+}
+```
+
+### ✅ Do: `late` Fields Assigned in `build()`
+```dart
+// GOOD - build() is re-entrant; late allows re-assignment
+class LeaguesNotifier extends AsyncNotifier<List<League>> {
+  late LeagueRepository _repo; // ✅ re-assignable on every build()
+  @override
+  Future<List<League>> build() async {
+    _repo = ref.read(repoProvider); // succeeds on every rebuild
+    return _repo.getAll();
+  }
 }
 ```
 

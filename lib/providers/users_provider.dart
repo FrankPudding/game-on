@@ -35,10 +35,10 @@ final usersProvider = AsyncNotifierProvider<UsersNotifier, List<User>>(() {
 });
 
 class UsersNotifier extends AsyncNotifier<List<User>> {
-  late final UserRepository _repo;
-  late final DeleteUserService _deleteService;
-  late final UpdateUserService _updateService;
-  late final LeaguePlayerRepository _playerRepo;
+  late UserRepository _repo;
+  late DeleteUserService _deleteService;
+  late UpdateUserService _updateService;
+  late LeaguePlayerRepository _playerRepo;
 
   @override
   Future<List<User>> build() async {
