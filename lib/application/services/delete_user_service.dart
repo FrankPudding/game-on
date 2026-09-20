@@ -2,6 +2,11 @@ import '../../domain/repositories/user_repository.dart';
 import '../../domain/repositories/league_player_repository.dart';
 import '../../domain/repositories/match/simple_match_repository.dart';
 
+class DeleteUserResult {
+  const DeleteUserResult({required this.affectedLeagueIds});
+  final Set<String> affectedLeagueIds;
+}
+
 class DeleteUserService {
   DeleteUserService(
     this._userRepository,
@@ -13,12 +18,13 @@ class DeleteUserService {
   final LeaguePlayerRepository _playerRepository;
   final SimpleMatchRepository _matchRepository;
 
-  Future<void> execute(String userId) async {
+  Future<DeleteUserResult> execute(String userId) async {
     // 1. Find all league players associated with this user
     // We use getAll() and filter manually to be absolutely sure we don't miss anything
     final allPlayers = await _playerRepository.getAll();
     final userPlayers = allPlayers.where((p) => p.userId == userId).toList();
     final playerIds = userPlayers.map((p) => p.id).toSet();
+    final affectedLeagueIds = userPlayers.map((p) => p.leagueId).toSet();
 
     // 2. Find and delete matches for each player
     // We delete the match if ANY of the user's players are involved.
@@ -40,5 +46,7 @@ class DeleteUserService {
 
     // 4. Delete the user
     await _userRepository.delete(userId);
+
+    return DeleteUserResult(affectedLeagueIds: affectedLeagueIds);
   }
 }

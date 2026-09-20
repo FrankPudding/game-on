@@ -74,11 +74,20 @@ This project is licensed under the Polyform Noncommercial License 1.0.0 - see th
 
 | Category | Coverage (Lines) |
 |----------|------------------|
-| **Total Project** | 91.0% |
-| **Domain & Providers** | 97.6% |
+| **Total Project** | 95.1% |
+| **Domain & Providers** | 96.7% |
 | **Data Layer** | 98.8% |
 
-To generate a full coverage report, run:
+To update the coverage table in this README, run:
+
+```bash
+make coverage-fast          # fast local (parallel) — also: make coverage
+make coverage-deterministic # deterministic, mirrors CI (--concurrency=1) — also: make coverage-ci
+```
+
+Or manually:
+
 ```bash
 flutter test --coverage
+dart scripts/update_coverage.dart
 ```

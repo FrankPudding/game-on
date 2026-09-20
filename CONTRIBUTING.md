@@ -49,18 +49,34 @@ flutter test test/integration
 ```
 
 ### All Tests & Coverage
-Run all tests and automatically update the `README.md` coverage table:
-```bash
-make coverage
-```
-Alternatively, you can run the commands manually:
+Run all tests and update the `README.md` coverage table:
+
+- **Fast local (parallel)** — for quick iteration:
+  ```bash
+  make coverage-fast   # also: make coverage (alias)
+  ```
+  Runs `flutter test --coverage` (parallel) + `dart scripts/update_coverage.dart`.
+
+- **Deterministic (mirrors CI)** — single-threaded, reproducible:
+  ```bash
+  make coverage-deterministic   # also: make coverage-ci
+  ```
+  Runs `flutter test --coverage --concurrency=1` + `dart scripts/update_coverage.dart`.
+  Hard-fails with `::error::` if your Flutter does not support `--concurrency`.
+
+Manually (without Make):
 ```bash
 flutter test --coverage
 dart scripts/update_coverage.dart
 ```
 
 > [!IMPORTANT]
-> **CI Enforcement**: GitHub Actions will fail if your `README.md` is not in sync with the current test results. Always run `make coverage` before pushing your changes to `main`.
+> **CI — `Test and Coverage` (`.github/workflows/test.yml`)**
+> - CI always generates coverage deterministically via `make coverage-deterministic` (`--concurrency=1`).
+> - **Same-repo PRs:** if only `README.md` is stale (scoped `git diff -- README.md`), CI auto-commits `chore: update coverage` with `fetch` + `rebase` and a push retry on conflict. The commit does **not** use `[skip ci]` (so checks re-run) and is **idempotent** — if the rebase resolves the diff, no extra commit is created.
+> - **Fork PRs and pushes to `main`:** verify-only — CI fails with `::error::` and prints the `README.md` diff. Run `make coverage-deterministic` locally, commit `README.md`, and push to your fork / branch.
+> - Auto-push requires the `COVERAGE_PAT` repository secret (PAT). The default `GITHUB_TOKEN` push would not trigger checks, so CI validates `COVERAGE_PAT` is set and fails explicitly if it is missing on a same-repo PR that needs an update.
+> - Concurrency is per-branch (`concurrency.group: coverage-${{ github.head_ref || github.ref_name }}`, `cancel-in-progress: false`): pushes to the same branch are serialized; different branches do not cancel each other. See `docs/ci-coverage.md` for the full flow.
 
 ## Testing Philosophy
 - **Unit Layer (`test/unit`)**: 100% coverage preferred. No external dependencies. Includes Domain and Provider logic.

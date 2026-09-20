@@ -34,7 +34,8 @@ class HiveSimpleMatchRepository implements SimpleMatchRepository {
     return _box.values
         .where((m) => m.leagueId == leagueId)
         .map((m) => m.toDomain())
-        .toList();
+        .toList()
+      ..sort((a, b) => b.playedAt.compareTo(a.playedAt));
   }
 
   @override

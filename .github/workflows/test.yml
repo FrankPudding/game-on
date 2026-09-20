@@ -6,12 +6,22 @@ on:
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: coverage-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -35,11 +45,70 @@ jobs:
         run: make lint
 
       - name: Run tests with coverage
-        run: flutter test --coverage
+        run: make coverage-deterministic
 
-      - name: Update README coverage
-        run: dart scripts/update_coverage.dart
-
-      - name: Verify README coverage is up to date
+      - name: Check if README changed
+        id: check_diff
         run: |
-          git diff --exit-code README.md || (echo "Error: README.md coverage is outdated. Please run 'make coverage' locally and commit the changes." && exit 1)
+          if git diff --quiet -- README.md; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fail if fork PR needs coverage update
+        if: steps.check_diff.outputs.changed == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+        run: |
+          echo "::error::README.md coverage is outdated. Coverage auto-commit is not permitted from forks. Please run 'make coverage-deterministic' locally, commit the updated README.md, and push to your fork."
+          git diff -- README.md
+          git diff --exit-code -- README.md
+          exit 1
+
+      - name: Fail if push needs coverage update
+        if: steps.check_diff.outputs.changed == 'true' && github.event_name == 'push'
+        run: |
+          echo "::error::README.md coverage is outdated on push to main. Please run 'make coverage-deterministic' locally and push the updated README.md."
+          git diff -- README.md
+          git diff --exit-code -- README.md
+          exit 1
+
+      - name: Generate GitHub App token
+        if: steps.check_diff.outputs.changed == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Auto-commit coverage update
+        if: steps.check_diff.outputs.changed == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          git config user.name "coverage-auto-commit[bot]"
+          git config user.email "coverage-auto-commit[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          
+          # Commit the README.md change first (working tree has updated README from update_coverage.dart)
+          git add -- README.md
+          git commit -m "chore: update coverage"
+
+          # Stash any remaining dirty files (e.g., coverage/lcov.info, generated
+          # files like lib/hive_registrar.g.dart) so rebase can proceed in
+          # detached HEAD. `git rebase --autostash` handles tracked unstaged
+          # changes, but we also stash untracked files explicitly. Use || true
+          # so empty stash doesn't fail the step.
+          git stash push --include-untracked -m "coverage-auto-stash" || true
+          git fetch origin "${{ github.head_ref }}"
+          git rebase --autostash "origin/${{ github.head_ref }}"
+          git stash pop || true
+
+          # Push with retry: fetch + rebase if first push fails (handles concurrent updates)
+          if ! git push origin "HEAD:${{ github.head_ref }}"; then
+            echo "Push failed, retrying with fetch and rebase..."
+            git stash push --include-untracked -m "coverage-auto-stash-retry" || true
+            git fetch origin "${{ github.head_ref }}"
+            git rebase --autostash "origin/${{ github.head_ref }}"
+            git stash pop || true
+            git push origin "HEAD:${{ github.head_ref }}"
+          fi
