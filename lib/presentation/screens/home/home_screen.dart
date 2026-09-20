@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../providers/leagues_provider.dart';
+import '../../../providers/league_detail_provider.dart';
 import '../../../domain/entities/league.dart';
 
 import '../../theme/app_theme.dart';
@@ -87,12 +89,21 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class _LeagueCard extends StatelessWidget {
+class _LeagueCard extends ConsumerWidget {
   const _LeagueCard({required this.league});
   final League league;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lastPlayedAsync = ref.watch(leagueLastPlayedProvider(league.id));
+    final lastPlayedText = lastPlayedAsync.when(
+      data: (date) => date == null
+          ? 'Last played: Never'
+          : 'Last played: ${DateFormat('MMM d, yyyy').format(date)}',
+      loading: () => 'Last played: Never',
+      error: (_, __) => 'Last played: Never',
+    );
+
     return Card(
       child: InkWell(
         onTap: () {
@@ -135,7 +146,7 @@ class _LeagueCard extends StatelessWidget {
                                   ),
                         ),
                         Text(
-                          'Last played: Never', // TODO: Fetch real last played
+                          lastPlayedText,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],

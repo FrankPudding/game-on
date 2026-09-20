@@ -28,6 +28,23 @@ final leaguePlayerRepositoryProvider = Provider<LeaguePlayerRepository>((ref) {
   return sl<LeaguePlayerRepository>();
 });
 
+/// Provides the last played date for a league, derived from its matches.
+///
+/// Returns `null` when the league has no completed matches (displays as "Never").
+final leagueLastPlayedProvider =
+    FutureProvider.family<DateTime?, String>((ref, leagueId) async {
+  final matchRepo = ref.watch(simpleMatchRepositoryProvider);
+  final matches = await matchRepo.getByLeague(leagueId);
+  if (matches.isEmpty) return null;
+  final completedMatches = matches.where((m) => m.isComplete).toList();
+  if (completedMatches.isEmpty) return null;
+  var latest = completedMatches.first.playedAt;
+  for (final m in completedMatches) {
+    if (m.playedAt.isAfter(latest)) latest = m.playedAt;
+  }
+  return latest;
+});
+
 // State Class
 class PlayerStats {
   const PlayerStats({
@@ -327,6 +344,7 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
       if (loserPlayer != null) {
         ref.invalidate(userDetailProvider(loserPlayer.userId));
       }
+      ref.invalidate(leagueLastPlayedProvider(_leagueId));
 
       return _fetchData();
     });
@@ -376,6 +394,7 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
       if (loserPlayer != null) {
         ref.invalidate(userDetailProvider(loserPlayer.userId));
       }
+      ref.invalidate(leagueLastPlayedProvider(_leagueId));
 
       return _fetchData();
     });
@@ -404,6 +423,7 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
       for (final userId in userIds) {
         ref.invalidate(userDetailProvider(userId));
       }
+      ref.invalidate(leagueLastPlayedProvider(_leagueId));
 
       return _fetchData();
     });

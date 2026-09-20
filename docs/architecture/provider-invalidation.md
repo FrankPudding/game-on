@@ -31,6 +31,7 @@ leagueDetailProvider(leagueId) (league details, players, matches, stats)
   │   - deleteMatch (all involved players)
   │   - updatePlayer (player's user)
   │   - removePlayer (player's user)
+  ├── invalidate: leagueLastPlayedProvider(leagueId) (logSimpleMatch, updateSimpleMatch, deleteMatch)
   └── invalidate: leagueDetailProvider(leagueId) - NOT self (explicit fetch)
 
 usersProvider (list of users)
@@ -43,6 +44,10 @@ userDetailProvider(userId) (user's leagues, players, matches)
   ├── invalidate: usersProvider - removed (was causing unnecessary rebuilds)
   ├── invalidate: leaguesProvider - removed (was causing unnecessary rebuilds)
   └── Depends on explicit invalidation from usersProvider and leagueDetailProvider
+
+leagueLastPlayedProvider(leagueId) (derived FutureProvider<DateTime?> for My Leagues last-played)
+  ├── No mutation methods — reads SimpleMatchRepository.getByLeague, filters isComplete, returns max playedAt (null → "Never")
+  └── Invalidated by: leagueDetailProvider(leagueId) on logSimpleMatch / updateSimpleMatch / deleteMatch
 ```
 
 ## Invalidation Rules by Mutation
@@ -59,11 +64,19 @@ userDetailProvider(userId) (user's leagues, players, matches)
 | Method | Invalidates |
 |--------|-------------|
 | `addPlayer` | `usersProvider` (if new user created), `userDetailProvider(newUserId)` |
-| `logSimpleMatch` | `userDetailProvider(winnerId)`, `userDetailProvider(loserId)` |
-| `updateSimpleMatch` | `userDetailProvider(winnerId)`, `userDetailProvider(loserId)` |
-| `deleteMatch` | `userDetailProvider(playerId)` for all players in match |
+| `logSimpleMatch` | `userDetailProvider(winnerId)`, `userDetailProvider(loserId)`, `leagueLastPlayedProvider(leagueId)` |
+| `updateSimpleMatch` | `userDetailProvider(winnerId)`, `userDetailProvider(loserId)`, `leagueLastPlayedProvider(leagueId)` |
+| `deleteMatch` | `userDetailProvider(playerId)` for all players in match, `leagueLastPlayedProvider(leagueId)` |
 | `updatePlayer` | `userDetailProvider(playerUserId)` |
 | `removePlayer` | `usersProvider`, `userDetailProvider(playerUserId)` |
+
+### leagueLastPlayedProvider(leagueId)
+
+| Method | Invalidates |
+|--------|-------------|
+| (No mutation methods) | N/A — read-only `FutureProvider.family<DateTime?, String>` that queries `SimpleMatchRepository.getByLeague(leagueId)`, filters `isComplete`, returns `max(playedAt)` or `null`; invalidated by `leagueDetailProvider` match mutations above; UI maps `null`/loading/error → "Never", `DateTime` → `DateFormat('MMM d, yyyy')` |
+
+> **Note:** `leagueLastPlayedProvider` is a derived view for `HomeScreen._LeagueCard` ("My Leagues" list). It does not watch other providers; it is explicitly invalidated after successful writes in `LeagueDetailNotifier` (see `lib/providers/league_detail_provider.dart: leagueLastPlayedProvider` and `HomeScreen` `ConsumerWidget`).
 
 ### usersProvider
 
@@ -200,7 +213,7 @@ Unit tests verify that:
 
 ### Integration Tests
 
-Integration tests (`test/integration/providers/invalidation_test.dart`) verify:
+Integration tests (`test/integration/providers/invalidation_test.dart`) verify (25 tests total):
 - Cross-provider invalidation works correctly
 - Dependent providers receive updates after mutations
 - No stale data remains after mutations
@@ -215,6 +228,11 @@ Integration tests (`test/integration/providers/invalidation_test.dart`) verify:
   - `leaguesProvider` rebuild after `usersProvider.updateUser` invalidation — no `LateInitializationError`
   - `usersProvider` rebuild after `leagueDetailProvider.addPlayer(newUser)` invalidation — no `LateInitializationError`
   - Two sequential `updateUser` invalidations rebuild `leaguesProvider` twice — no `LateInitializationError` (verifies `late` fix)
+- **leagueLastPlayedProvider invalidation (4 tests) — My Leagues last-played fix:**
+  - `logSimpleMatch` invalidates `leagueLastPlayedProvider(leagueId)` — next read returns newest `DateTime`
+  - `updateSimpleMatch` invalidates `leagueLastPlayedProvider` — re-fetches max `playedAt`
+  - `deleteMatch` invalidates `leagueLastPlayedProvider` — returns `null` when no completes remain (UI → "Never")
+  - Incomplete-only filter — `isComplete: false` matches are ignored; `null` returned despite later `playedAt` on incomplete (covers the `isComplete` filter invariant)
 
 ## Common Pitfalls
 
@@ -320,11 +338,14 @@ Sorting does not affect invalidation. Alphabetical ordering (`lib/core/sorting/n
 ## Related Files
 
 - `lib/providers/leagues_provider.dart`
-- `lib/providers/league_detail_provider.dart` — sole owner of `userDetailProvider` invalidation for `updatePlayer` / `removePlayer` / match mutations; also computes `players` (ranked) and `playersByName` (alphabetical) in `_fetchData()`
+- `lib/providers/league_detail_provider.dart` — defines `leagueLastPlayedProvider(leagueId)` (`FutureProvider.family<DateTime?, String>` → `SimpleMatchRepository.getByLeague` + `isComplete` filter + `max playedAt`) and `LeagueDetailNotifier` (sole owner of `userDetailProvider` invalidation for `updatePlayer` / `removePlayer` / match mutations and sole invalidator of `leagueLastPlayedProvider` on `logSimpleMatch` / `updateSimpleMatch` / `deleteMatch`); also computes `players` (ranked) and `playersByName` (alphabetical) in `_fetchData()`
+- `lib/presentation/screens/home/home_screen.dart` — `HomeScreen` + `_LeagueCard` (`ConsumerWidget` watching `leagueLastPlayedProvider(leagueId)`, `DateFormat('MMM d, yyyy')`, `null`/loading/error → "Last played: Never")
 - `lib/providers/users_provider.dart` — sorts via `compareNames` + `id` on every path (`build`/`addUser`/`deleteUser`/`updateUser`/`refresh`)
 - `lib/providers/user_detail_provider.dart`
 - `lib/core/sorting/name_sort.dart` — pure comparator (`trim` / empty-first / case-insensitive primary / case-sensitive secondary); not locale-aware (see `docs/architecture/sorting.md`)
 - `lib/application/services/delete_user_service.dart`
 - `lib/presentation/screens/league/widgets/player_edit_dialog.dart` — unified `PlayerEditDialog` (requires `showRemoveAction`, title bracket via selective `usersProvider` watch); **does not** invalidate providers
+- `test/unit/providers/league_last_played_provider_test.dart` — 6 unit tests for `leagueLastPlayedProvider` (empty, incomplete-only → null, single complete, max unsorted, error, invalidate re-fetch)
 - `test/unit/providers/` - Unit tests for each provider
-- `test/integration/providers/invalidation_test.dart` - Cross-provider integration tests
+- `test/integration/providers/invalidation_test.dart` - Cross-provider integration tests (`leagueLastPlayedProvider` invalidation: log/update/delete + incomplete-only null)
+- `test/integration/presentation/screens/home/home_screen_test.dart` — 7 "Last Played" widget/integration tests (never, complete date formatting, incomplete filtered, invalidation after log)
