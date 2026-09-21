@@ -8,7 +8,9 @@ import '../../../domain/entities/ranking_policy.dart';
 import '../../../domain/entities/ranking_policies/simple_ranking_policy.dart';
 
 class CreateSimpleLeagueScreen extends ConsumerStatefulWidget {
-  const CreateSimpleLeagueScreen({super.key});
+  const CreateSimpleLeagueScreen(
+      {super.key, this.categoryId = 'cat_custom_league_001'});
+  final String categoryId;
 
   @override
   ConsumerState<CreateSimpleLeagueScreen> createState() =>
@@ -49,6 +51,7 @@ class _CreateSimpleLeagueScreenState
       id: 'simple_$leagueId',
       name: 'Simple Ranking Policy',
       leagueId: leagueId,
+      categoryIds: [widget.categoryId],
       pointsForWin: int.parse(_winPointsController.text),
       pointsForDraw: int.parse(_drawPointsController.text),
       pointsForLoss: int.parse(_lossPointsController.text),

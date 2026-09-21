@@ -8,7 +8,9 @@ import '../../../domain/entities/ranking_policy.dart';
 import '../../../domain/entities/ranking_policies/goal_difference_ranking_policy.dart';
 
 class CreateGoalDifferenceLeagueScreen extends ConsumerStatefulWidget {
-  const CreateGoalDifferenceLeagueScreen({super.key});
+  const CreateGoalDifferenceLeagueScreen(
+      {super.key, this.categoryId = 'cat_custom_league_001'});
+  final String categoryId;
 
   @override
   ConsumerState<CreateGoalDifferenceLeagueScreen> createState() =>
@@ -49,6 +51,7 @@ class _CreateGoalDifferenceLeagueScreenState
       id: 'goal-diff_$leagueId',
       name: 'Goal Difference Ranking Policy',
       leagueId: leagueId,
+      categoryIds: [widget.categoryId],
       pointsForWin: int.parse(_winPointsController.text),
       pointsForDraw: int.parse(_drawPointsController.text),
       pointsForLoss: int.parse(_lossPointsController.text),

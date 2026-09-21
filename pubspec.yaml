@@ -25,6 +25,7 @@ dependencies:
   json_annotation: ^4.9.0
   get_it: ^9.2.0
   package_info_plus: ^8.0.0
+  synchronized: ^3.4.0
 
 dev_dependencies:
   flutter_test:

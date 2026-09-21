@@ -650,10 +650,10 @@ void main() {
         matches: const [],
         playerStats: const {},
         rankingPolicy: GoalDifferenceRankingPolicy(
-          id: 'rp-gd',
-          name: 'GD',
-          leagueId: tLeagueId,
-        ),
+            id: 'rp-gd',
+            name: 'GD',
+            leagueId: tLeagueId,
+            categoryIds: const ['cat_custom_league_001']),
       );
 
       await openScreen(
@@ -690,10 +690,10 @@ void main() {
         matches: const [],
         playerStats: const {},
         rankingPolicy: GoalDifferenceRankingPolicy(
-          id: 'rp-gd',
-          name: 'GD',
-          leagueId: tLeagueId,
-        ),
+            id: 'rp-gd',
+            name: 'GD',
+            leagueId: tLeagueId,
+            categoryIds: const ['cat_custom_league_001']),
       );
 
       await openScreen(
@@ -725,10 +725,10 @@ void main() {
         matches: const [],
         playerStats: const {},
         rankingPolicy: GoalDifferenceRankingPolicy(
-          id: 'rp-gd',
-          name: 'GD',
-          leagueId: tLeagueId,
-        ),
+            id: 'rp-gd',
+            name: 'GD',
+            leagueId: tLeagueId,
+            categoryIds: const ['cat_custom_league_001']),
       );
 
       final match = SimpleMatch(

@@ -43,6 +43,22 @@ userDetailProvider(userId) (user's leagues, players, matches)
   ├── invalidate: usersProvider - removed (was causing unnecessary rebuilds)
   ├── invalidate: leaguesProvider - removed (was causing unnecessary rebuilds)
   └── Depends on explicit invalidation from usersProvider and leagueDetailProvider
+
+categoriesProvider (all categories ordered by parentId + sortOrder)
+  └── reads: CategoryRepository.getAllOrdered() — rebuilt from truth on each read; no mutation invalidation (categories are seed-only, HiveCategoryRepository.put/delete mutate derived slug/parent indexes under shared Lock)
+
+categoriesRootsProvider (roots only, sorted by sortOrder)
+  └── reads: CategoryRepository.getRoots()
+
+rankingPolicyTypesForCategoryProvider(categoryId) (FutureProvider.family)
+  ├── reads: RankingPolicyRepository.getByCategory(categoryId) — scans truth box (categoryIds.contains), falls back to categoryPolicyIndex cache
+  ├── custom-only branch: if categoryId != kFallbackCategoryId (cat_custom_league_001) → immediately returns [] (no repo query) → SelectScoringSystemScreen shows “No scoring systems available for this category”
+  ├── for kFallbackCategoryId only: empty/error → all RankingPolicyType.values (custom remains usable even with empty box)
+  ├── reads: rankingPolicyRepositoryProvider (no watch, via ref.read inside provider)
+  └── used by: SelectScoringSystemScreen(categoryId) — category existence validated via categoriesProvider; invalid categoryId → SnackBar + fallback to kFallbackCategoryId; valid non-custom → empty state (see above)
+
+categoryRepositoryProvider / rankingPolicyRepositoryProvider (Provider<repo>)
+  └── expose: HiveCategoryRepository / HiveRankingPolicyRepository (shared Lock via GetIt; derived indexes are rebuildable caches, repaired by CategoryIndexRebuilder.rebuildIfNeeded after openBox)
 ```
 
 ## Invalidation Rules by Mutation
@@ -317,14 +333,26 @@ If adding a new mutation method:
 
 Sorting does not affect invalidation. Alphabetical ordering (`lib/core/sorting/name_sort.dart:compareNames`) is applied **in-memory after every fetch** — `usersProvider` re-sorts on `build`/`addUser`/`deleteUser`/`updateUser`/`refresh`; `leagueDetailProvider._fetchData()` derives both `players` (ranked) and `playersByName` (alphabetical) from the same raw snapshot. Hive repositories remain unsorted (storage order). See `docs/architecture/sorting.md` and `docs/domain-language.md` → *Ordering* for the ranked-vs-alphabetical invariant and the picker ban (`playersByName` for pickers, `players` for standings only).
 
+## Categories — Read-Only Providers, No Cross-Invalidation
+
+Categories are currently **seed-only** (five built-ins upserted by `HiveDatabaseMigrationService._migrateToV2`, `isBuiltIn: true`). There is no user-facing mutation flow that writes categories through a provider, so `categoriesProvider` / `categoriesRootsProvider` have no invalidation owners — they re-read truth on next `ref.watch` after the box changes. Repository-level writes (`HiveCategoryRepository.put`/`delete`) maintain derived indexes (`categorySlugIndex`, `categoryParentIndex`, `categoryPolicyIndex`) under the shared `Lock`; `CategoryIndexRebuilder.rebuildIfNeeded` repairs drift after `openBox`.
+
+`rankingPolicyTypesForCategoryProvider(categoryId)` is a `FutureProvider.family` over `RankingPolicyRepository.getByCategory`. It does **not** watch other providers; it reads the repository each time. **Custom-only:** if `categoryId != kFallbackCategoryId` it returns `[]` immediately (no repo query) and `SelectScoringSystemScreen` shows the empty state `No scoring systems available for this category`. Only for `kFallbackCategoryId` (Custom) does it query `getByCategory`; if that returns empty or throws, it falls back to `RankingPolicyType.values` so the custom category remains usable (see `docs/architecture/scoring-system-categories.md` → Scoring System Availability, Provider Graph and UI Flow).
+
+If a future feature adds user-mutable categories, add explicit `ref.invalidate(categoriesProvider)` / `ref.invalidate(categoriesRootsProvider)` and `ref.invalidate(rankingPolicyTypesForCategoryProvider(...))` at the mutation site — after the repository write succeeds — following the write-then-invalidate rule.
+
 ## Related Files
 
-- `lib/providers/leagues_provider.dart`
+- `lib/providers/leagues_provider.dart` — also exports `categoriesProvider`, `categoriesRootsProvider`, `rankingPolicyTypesForCategoryProvider`, `categoryRepositoryProvider`, `rankingPolicyRepositoryProvider`
 - `lib/providers/league_detail_provider.dart` — sole owner of `userDetailProvider` invalidation for `updatePlayer` / `removePlayer` / match mutations; also computes `players` (ranked) and `playersByName` (alphabetical) in `_fetchData()`
 - `lib/providers/users_provider.dart` — sorts via `compareNames` + `id` on every path (`build`/`addUser`/`deleteUser`/`updateUser`/`refresh`)
 - `lib/providers/user_detail_provider.dart`
 - `lib/core/sorting/name_sort.dart` — pure comparator (`trim` / empty-first / case-insensitive primary / case-sensitive secondary); not locale-aware (see `docs/architecture/sorting.md`)
 - `lib/application/services/delete_user_service.dart`
 - `lib/presentation/screens/league/widgets/player_edit_dialog.dart` — unified `PlayerEditDialog` (requires `showRemoveAction`, title bracket via selective `usersProvider` watch); **does not** invalidate providers
+- `lib/presentation/screens/league/select_category_screen.dart` — watches `categoriesRootsProvider`, maps `CategoryIcon` via `category_icon_mapper.dart`
+- `lib/presentation/screens/league/select_scoring_system_screen.dart` — watches `categoriesProvider` + `rankingPolicyTypesForCategoryProvider(categoryId)`, invalid-category SnackBar + `kFallbackCategoryId` fallback
+- `lib/data/repositories/hive/hive_category_repository.dart`, `hive_ranking_policy_repository.dart`, `lib/data/services/hive/category_index_rebuilder.dart`
 - `test/unit/providers/` - Unit tests for each provider
 - `test/integration/providers/invalidation_test.dart` - Cross-provider integration tests
+- `docs/architecture/scoring-system-categories.md` - Category schema, adjacency list, migration, indexes

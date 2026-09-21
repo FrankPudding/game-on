@@ -50,13 +50,13 @@ void main() {
 
   const tLeagueId = 'l1';
   final tRankingPolicy = SimpleRankingPolicy(
-    id: 'rp1',
-    name: 'Standard',
-    leagueId: tLeagueId,
-    pointsForWin: 3,
-    pointsForDraw: 1,
-    pointsForLoss: 0,
-  );
+      id: 'rp1',
+      name: 'Standard',
+      leagueId: tLeagueId,
+      pointsForWin: 3,
+      pointsForDraw: 1,
+      pointsForLoss: 0,
+      categoryIds: const ['cat_custom_league_001']);
 
   final tLeague = League(
     id: tLeagueId,
@@ -961,15 +961,15 @@ void main() {
 
     group('Goal Difference Ranking', () {
       setUp(() {
-        when(() => mockPolicyRepo.getByLeagueId(tLeagueId))
-            .thenAnswer((_) async => GoalDifferenceRankingPolicy(
-                  id: 'rp-gd',
-                  name: 'GD',
-                  leagueId: tLeagueId,
-                  pointsForWin: 3,
-                  pointsForDraw: 1,
-                  pointsForLoss: 0,
-                ));
+        when(() => mockPolicyRepo.getByLeagueId(tLeagueId)).thenAnswer(
+            (_) async => GoalDifferenceRankingPolicy(
+                id: 'rp-gd',
+                name: 'GD',
+                leagueId: tLeagueId,
+                pointsForWin: 3,
+                pointsForDraw: 1,
+                pointsForLoss: 0,
+                categoryIds: const ['cat_custom_league_001']));
       });
 
       test('should compute goals for, against and goal difference', () async {

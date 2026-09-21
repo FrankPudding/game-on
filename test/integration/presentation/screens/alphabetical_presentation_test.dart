@@ -159,7 +159,8 @@ void main() {
           leagueId: tLeagueId,
           pointsForWin: 3,
           pointsForDraw: 1,
-          pointsForLoss: 0);
+          pointsForLoss: 0,
+          categoryIds: const ['cat_custom_league_001']);
       when(() => mockPolicyRepo.getByLeagueId(tLeagueId))
           .thenAnswer((_) async => tPolicy);
 

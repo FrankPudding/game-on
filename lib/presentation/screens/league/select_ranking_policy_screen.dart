@@ -4,6 +4,8 @@ import '../../../domain/entities/ranking_policy_type.dart';
 import 'create_simple_league_screen.dart';
 import 'create_goal_difference_league_screen.dart';
 
+@Deprecated(
+    'Use CategoryFilteredScoringScreen (SelectScoringSystemScreen) with categoryId; kept as fallback until v3')
 class SelectRankingPolicyScreen extends StatelessWidget {
   const SelectRankingPolicyScreen({super.key});
 

@@ -6,6 +6,8 @@ import '../domain/repositories/league_repository.dart';
 import '../core/injection_container.dart';
 
 import '../domain/repositories/ranking_policy_repository.dart';
+import '../domain/repositories/category_repository.dart';
+import '../domain/entities/category.dart';
 import 'league_detail_provider.dart';
 
 import '../application/services/create_league_service.dart';
@@ -21,6 +23,20 @@ final rankingPolicyRepositoryProvider =
 
 final createLeagueServiceProvider = Provider<CreateLeagueService>((ref) {
   return sl<CreateLeagueService>();
+});
+
+final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
+  return sl<CategoryRepository>();
+});
+
+final categoriesProvider = FutureProvider<List<Category>>((ref) async {
+  final repo = ref.read(categoryRepositoryProvider);
+  return repo.getAllOrdered();
+});
+
+final categoriesRootsProvider = FutureProvider<List<Category>>((ref) async {
+  final repo = ref.read(categoryRepositoryProvider);
+  return repo.getRoots();
 });
 
 final leaguesProvider =
@@ -44,6 +60,7 @@ class LeaguesNotifier extends AsyncNotifier<List<League>> {
     required String id,
     required String name,
     required RankingPolicy rankingPolicy,
+    List<String>? categoryIds,
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -51,6 +68,7 @@ class LeaguesNotifier extends AsyncNotifier<List<League>> {
         id: id,
         name: name,
         rankingPolicy: rankingPolicy,
+        categoryIds: categoryIds ?? rankingPolicy.categoryIds,
       );
 
       // No self-invalidation - explicit fetch updates our state

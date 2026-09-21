@@ -6,7 +6,7 @@ enum DataSourceType {
 class AppConfig {
   AppConfig({
     this.dataSourceType = DataSourceType.hive,
-    this.hiveDbVersion = 1,
+    this.hiveDbVersion = 2,
   });
   final DataSourceType dataSourceType;
   final int hiveDbVersion;
