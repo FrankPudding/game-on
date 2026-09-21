@@ -9,9 +9,7 @@ import 'package:game_on/domain/entities/league.dart';
 import 'package:game_on/domain/entities/matches/simple_match.dart';
 import 'package:game_on/domain/entities/side.dart';
 import 'package:game_on/domain/repositories/league_repository.dart';
-import 'package:game_on/domain/repositories/match/simple_match_repository.dart';
 import 'package:game_on/providers/leagues_provider.dart';
-import 'package:game_on/providers/league_detail_provider.dart';
 import 'package:game_on/providers/sorted_leagues_provider.dart';
 import 'package:game_on/providers/sort_preference_provider.dart';
 import 'package:game_on/application/preferences/sort_preference.dart';
@@ -20,8 +18,6 @@ import 'package:game_on/presentation/screens/league/league_detail_screen.dart';
 import 'package:game_on/presentation/screens/league/select_ranking_policy_screen.dart';
 
 class MockLeagueRepository extends Mock implements LeagueRepository {}
-
-class MockSimpleMatchRepository extends Mock implements SimpleMatchRepository {}
 
 class FakeLeaguesNotifier extends LeaguesNotifier {
   FakeLeaguesNotifier(
@@ -50,7 +46,8 @@ class FakeLeaguesNotifier extends LeaguesNotifier {
 }
 
 class FakeSortedLeaguesNotifier extends SortedLeaguesNotifier {
-  FakeSortedLeaguesNotifier(this.sortedLeagues, {this.shouldThrow = false, this.onBuild});
+  FakeSortedLeaguesNotifier(this.sortedLeagues,
+      {this.shouldThrow = false, this.onBuild});
   final List<SortedLeague> sortedLeagues;
   final bool shouldThrow;
   final Future<List<SortedLeague>> Function()? onBuild;
@@ -73,6 +70,7 @@ class RefreshingLeaguesNotifier extends FakeLeaguesNotifier {
   final Future<List<League>> Function()? onRefresh;
   int refreshCount = 0;
 
+  @override
   Future<void> refresh() async {
     refreshCount++;
     if (onRefresh != null) {
@@ -143,15 +141,20 @@ void main() {
     } else {
       notifier = fakeLeaguesNotifier;
     }
-    final sortedLeagues = (leagues ?? fakeLeaguesNotifier.leagues).map((l) => SortedLeague(league: l, lastPlayed: null)).toList();
+    final sortedLeagues = (leagues ?? fakeLeaguesNotifier.leagues)
+        .map((l) => SortedLeague(league: l, lastPlayed: null))
+        .toList();
     late final FakeSortedLeaguesNotifier sortedNotifier;
     if (onBuild != null) {
       sortedNotifier = FakeSortedLeaguesNotifier([], onBuild: () async {
         final result = await onBuild();
-        return result.map((l) => SortedLeague(league: l, lastPlayed: null)).toList();
+        return result
+            .map((l) => SortedLeague(league: l, lastPlayed: null))
+            .toList();
       });
     } else {
-      sortedNotifier = FakeSortedLeaguesNotifier(sortedLeagues, shouldThrow: shouldThrow);
+      sortedNotifier =
+          FakeSortedLeaguesNotifier(sortedLeagues, shouldThrow: shouldThrow);
     }
     return ProviderScope(
       retry: (_, __) => null,
@@ -316,7 +319,8 @@ void main() {
           retry: (_, __) => null,
           overrides: [
             leaguesProvider.overrideWith(() => refreshingNotifier),
-            sortedLeaguesProvider.overrideWith(() => FakeSortedLeaguesNotifier([SortedLeague(league: tLeague1, lastPlayed: null)])),
+            sortedLeaguesProvider.overrideWith(() => FakeSortedLeaguesNotifier(
+                [SortedLeague(league: tLeague1, lastPlayed: null)])),
             sortPreferenceProvider.overrideWith(FakeSortPrefNotifier.new),
             leagueRepositoryProvider.overrideWithValue(mockLeagueRepo),
           ],
@@ -352,355 +356,6 @@ void main() {
       expect(find.text('League One'), findsOneWidget);
       expect(find.text('League Two'), findsNothing);
       expect(refreshCount, 0);
-    });
-  });
-
-  group('HomeScreen Last Played with explicit simpleMatchRepositoryProvider (deprecated bulk R5)', skip: true,
-      () {
-    testWidgets(
-        'with 2 leagues, one with completed match shows formatted date and other shows Never (proves bug fixed)',
-        (tester) async {
-      final mockMatchRepo = MockSimpleMatchRepository();
-      // League One has a completed match on 2023-06-15
-      final completedMatch = SimpleMatch(
-        id: 'm1',
-        leagueId: tLeagueId1,
-        playedAt: DateTime(2023, 6, 15),
-        isComplete: true,
-        isDraw: false,
-        sides: [
-          Side(id: 's1', playerIds: ['p1']),
-          Side(id: 's2', playerIds: ['p2'])
-        ],
-        winnerSideId: 's1',
-      );
-      when(() => mockMatchRepo.getByLeague(tLeagueId1))
-          .thenAnswer((_) async => [completedMatch]);
-      when(() => mockMatchRepo.getByLeague(tLeagueId2))
-          .thenAnswer((_) async => []);
-
-      final notifier = FakeLeaguesNotifier(leagues: [tLeague1, tLeague2]);
-      await tester.pumpWidget(
-        ProviderScope(
-          retry: (_, __) => null,
-          overrides: [
-            leaguesProvider.overrideWith(() => notifier),
-            leagueRepositoryProvider.overrideWithValue(mockLeagueRepo),
-            simpleMatchRepositoryProvider.overrideWithValue(mockMatchRepo),
-          ],
-          child: MaterialApp(
-            home: Builder(
-              builder: (context) => Scaffold(
-                body: Center(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const HomeScreen()),
-                    ),
-                    child: const Text('Open'),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
-      await tester.pump();
-
-      expect(find.text('League One'), findsOneWidget);
-      expect(find.text('League Two'), findsOneWidget);
-      // Explicit date formatting must match HomeScreen's DateFormat('MMM d, yyyy')
-      final expectedDate =
-          DateFormat('MMM d, yyyy').format(DateTime(2023, 6, 15));
-      expect(find.text('Last played: $expectedDate'), findsOneWidget);
-      expect(find.text('Last played: Never'), findsOneWidget);
-      // Verify repository was actually queried for both leagues (not hidden error fallback)
-      verify(() => mockMatchRepo.getByLeague(tLeagueId1))
-          .called(greaterThanOrEqualTo(1));
-      verify(() => mockMatchRepo.getByLeague(tLeagueId2))
-          .called(greaterThanOrEqualTo(1));
-    });
-
-    testWidgets(
-        'only incomplete matches shows Never (explicit mock, not error fallback)',
-        (tester) async {
-      final mockMatchRepo = MockSimpleMatchRepository();
-      final incompleteMatch = SimpleMatch(
-        id: 'm1',
-        leagueId: tLeagueId1,
-        playedAt: DateTime(2023, 6, 15),
-        isComplete: false,
-        isDraw: false,
-        sides: [
-          Side(id: 's1', playerIds: ['p1']),
-          Side(id: 's2', playerIds: ['p2'])
-        ],
-      );
-      when(() => mockMatchRepo.getByLeague(tLeagueId1))
-          .thenAnswer((_) async => [incompleteMatch]);
-      when(() => mockMatchRepo.getByLeague(tLeagueId2))
-          .thenAnswer((_) async => []);
-      // Even though there is an incomplete match with a date, UI must show Never
-      final notifier = FakeLeaguesNotifier(leagues: [tLeague1, tLeague2]);
-      await tester.pumpWidget(
-        ProviderScope(
-          retry: (_, __) => null,
-          overrides: [
-            leaguesProvider.overrideWith(() => notifier),
-            leagueRepositoryProvider.overrideWithValue(mockLeagueRepo),
-            simpleMatchRepositoryProvider.overrideWithValue(mockMatchRepo),
-          ],
-          child: MaterialApp(
-            home: Builder(
-              builder: (context) => Scaffold(
-                body: Center(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const HomeScreen()),
-                    ),
-                    child: const Text('Open'),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
-      await tester.pump();
-
-      expect(find.text('Last played: Never'), findsNWidgets(2));
-      final unexpectedDate =
-          DateFormat('MMM d, yyyy').format(DateTime(2023, 6, 15));
-      expect(find.text('Last played: $unexpectedDate'), findsNothing);
-    });
-
-    testWidgets(
-        'error from repository shows Never fallback (explicit error mock)',
-        (tester) async {
-      final mockMatchRepo = MockSimpleMatchRepository();
-      when(() => mockMatchRepo.getByLeague(any()))
-          .thenThrow(Exception('DB failure'));
-      final notifier = FakeLeaguesNotifier(leagues: [tLeague1, tLeague2]);
-      await tester.pumpWidget(
-        ProviderScope(
-          retry: (_, __) => null,
-          overrides: [
-            leaguesProvider.overrideWith(() => notifier),
-            leagueRepositoryProvider.overrideWithValue(mockLeagueRepo),
-            simpleMatchRepositoryProvider.overrideWithValue(mockMatchRepo),
-          ],
-          child: MaterialApp(
-            home: Builder(
-              builder: (context) => Scaffold(
-                body: Center(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const HomeScreen()),
-                    ),
-                    child: const Text('Open'),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
-      await tester.pump();
-
-      // Both cards fallback to Never on error
-      expect(find.text('Last played: Never'), findsNWidgets(2));
-    });
-
-    testWidgets(
-        'invalidation updates displayed date (pump, change mock, invalidate, pump)',
-        (tester) async {
-      final mockMatchRepo = MockSimpleMatchRepository();
-      final firstDate = DateTime(2023, 1, 10);
-      final secondDate = DateTime(2023, 6, 15);
-      final firstMatch = SimpleMatch(
-        id: 'm1',
-        leagueId: tLeagueId1,
-        playedAt: firstDate,
-        isComplete: true,
-        isDraw: false,
-        sides: [
-          Side(id: 's1', playerIds: ['p1']),
-          Side(id: 's2', playerIds: ['p2'])
-        ],
-        winnerSideId: 's1',
-      );
-      final secondMatch = SimpleMatch(
-        id: 'm2',
-        leagueId: tLeagueId1,
-        playedAt: secondDate,
-        isComplete: true,
-        isDraw: false,
-        sides: [
-          Side(id: 's3', playerIds: ['p1']),
-          Side(id: 's4', playerIds: ['p2'])
-        ],
-        winnerSideId: 's3',
-      );
-      when(() => mockMatchRepo.getByLeague(tLeagueId1))
-          .thenAnswer((_) async => [firstMatch]);
-      when(() => mockMatchRepo.getByLeague(tLeagueId2))
-          .thenAnswer((_) async => []);
-
-      final notifier = FakeLeaguesNotifier(leagues: [tLeague1, tLeague2]);
-      final container = ProviderContainer(
-        overrides: [
-          leaguesProvider.overrideWith(() => notifier),
-          leagueRepositoryProvider.overrideWithValue(mockLeagueRepo),
-          simpleMatchRepositoryProvider.overrideWithValue(mockMatchRepo),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            home: Builder(
-              builder: (context) => Scaffold(
-                body: Center(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const HomeScreen()),
-                    ),
-                    child: const Text('Open'),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
-      await tester.pump();
-
-      expect(
-          find.text(
-              'Last played: ${DateFormat('MMM d, yyyy').format(firstDate)}'),
-          findsOneWidget);
-      expect(find.text('Last played: Never'), findsOneWidget);
-
-      // Change mock to return newer match
-      when(() => mockMatchRepo.getByLeague(tLeagueId1))
-          .thenAnswer((_) async => [firstMatch, secondMatch]);
-
-      container.invalidate(leagueLastPlayedProvider(tLeagueId1));
-      await tester.pump();
-      await tester.pumpAndSettle();
-      await tester.pump();
-
-      expect(
-          find.text(
-              'Last played: ${DateFormat('MMM d, yyyy').format(secondDate)}'),
-          findsOneWidget);
-      expect(find.text('Last played: Never'), findsOneWidget);
-      verify(() => mockMatchRepo.getByLeague(tLeagueId1))
-          .called(greaterThanOrEqualTo(2));
-    });
-
-    testWidgets(
-        'multiple leagues each show own newest complete date (unsorted + incomplete newest ignored)',
-        (tester) async {
-      final mockMatchRepo = MockSimpleMatchRepository();
-      // League 1: unsorted completes + incomplete newest should yield Jun 15
-      final l1Old = SimpleMatch(
-          id: 'm1',
-          leagueId: tLeagueId1,
-          playedAt: DateTime(2023, 1, 10),
-          isComplete: true,
-          isDraw: false,
-          sides: [
-            Side(id: 's1', playerIds: ['p1']),
-            Side(id: 's2', playerIds: ['p2'])
-          ],
-          winnerSideId: 's1');
-      final l1NewestComplete = SimpleMatch(
-          id: 'm2',
-          leagueId: tLeagueId1,
-          playedAt: DateTime(2023, 6, 15),
-          isComplete: true,
-          isDraw: false,
-          sides: [
-            Side(id: 's3', playerIds: ['p1']),
-            Side(id: 's4', playerIds: ['p2'])
-          ],
-          winnerSideId: 's3');
-      final l1IncompleteNewest = SimpleMatch(
-          id: 'm3',
-          leagueId: tLeagueId1,
-          playedAt: DateTime(2023, 8, 1),
-          isComplete: false,
-          isDraw: false,
-          sides: [
-            Side(id: 's5', playerIds: ['p1']),
-            Side(id: 's6', playerIds: ['p2'])
-          ]);
-      // League 2: single complete Dec 1 2022
-      final l2Match = SimpleMatch(
-          id: 'm4',
-          leagueId: tLeagueId2,
-          playedAt: DateTime(2022, 12, 1),
-          isComplete: true,
-          isDraw: false,
-          sides: [
-            Side(id: 's7', playerIds: ['p1']),
-            Side(id: 's8', playerIds: ['p2'])
-          ],
-          winnerSideId: 's7');
-
-      when(() => mockMatchRepo.getByLeague(tLeagueId1)).thenAnswer(
-          (_) async => [l1IncompleteNewest, l1Old, l1NewestComplete]);
-      when(() => mockMatchRepo.getByLeague(tLeagueId2))
-          .thenAnswer((_) async => [l2Match]);
-
-      final notifier = FakeLeaguesNotifier(leagues: [tLeague1, tLeague2]);
-      await tester.pumpWidget(
-        ProviderScope(
-          retry: (_, __) => null,
-          overrides: [
-            leaguesProvider.overrideWith(() => notifier),
-            leagueRepositoryProvider.overrideWithValue(mockLeagueRepo),
-            simpleMatchRepositoryProvider.overrideWithValue(mockMatchRepo),
-          ],
-          child: MaterialApp(
-            home: Builder(
-              builder: (context) => Scaffold(
-                body: Center(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const HomeScreen()),
-                    ),
-                    child: const Text('Open'),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
-      await tester.pump();
-
-      expect(
-          find.text(
-              'Last played: ${DateFormat('MMM d, yyyy').format(DateTime(2023, 6, 15))}'),
-          findsOneWidget);
-      expect(
-          find.text(
-              'Last played: ${DateFormat('MMM d, yyyy').format(DateTime(2022, 12, 1))}'),
-          findsOneWidget);
-      expect(find.text('Last played: Never'), findsNothing);
     });
   });
 }

@@ -24,8 +24,9 @@ class HomeScreen extends ConsumerWidget {
         actions: [
           PopupMenuButton<LeagueSortPreference>(
             tooltip: 'Sort',
-            onSelected: (preference) =>
-                ref.read(sortPreferenceProvider.notifier).setPreference(preference),
+            onSelected: (preference) => ref
+                .read(sortPreferenceProvider.notifier)
+                .setPreference(preference),
             itemBuilder: (context) => [
               PopupMenuItem<LeagueSortPreference>(
                 value: LeagueSortPreference.latest,

@@ -34,7 +34,9 @@ class HiveSortPreferenceRepository implements SortPreferenceRepository {
       return LeagueSortPreference.defaultPreference;
     }
     // Malformed mode -> full default fallback
-    if (modeStr != null && modeStr != 'alphabetical' && modeStr != 'lastPlayed') {
+    if (modeStr != null &&
+        modeStr != 'alphabetical' &&
+        modeStr != 'lastPlayed') {
       return LeagueSortPreference.defaultPreference;
     }
     LeagueSortMode mode;
@@ -47,8 +49,12 @@ class HiveSortPreferenceRepository implements SortPreferenceRepository {
     }
 
     // Malformed descending with valid mode -> keep mode, fallback descending
-    if (descendingStr != null && descendingStr != 'true' && descendingStr != 'false') {
-      return LeagueSortPreference(mode: mode, descending: LeagueSortPreference.defaultPreference.descending);
+    if (descendingStr != null &&
+        descendingStr != 'true' &&
+        descendingStr != 'false') {
+      return LeagueSortPreference(
+          mode: mode,
+          descending: LeagueSortPreference.defaultPreference.descending);
     }
     bool descending;
     if (descendingStr == 'true') {
@@ -69,7 +75,11 @@ class HiveSortPreferenceRepository implements SortPreferenceRepository {
 
   @override
   Future<void> set(LeagueSortPreference preference) async {
-    await _box.put(sortModeKey, preference.mode == LeagueSortMode.alphabetical ? 'alphabetical' : 'lastPlayed');
+    await _box.put(
+        sortModeKey,
+        preference.mode == LeagueSortMode.alphabetical
+            ? 'alphabetical'
+            : 'lastPlayed');
     await _box.put(sortDescendingKey, preference.descending ? 'true' : 'false');
   }
 
@@ -80,7 +90,11 @@ class HiveSortPreferenceRepository implements SortPreferenceRepository {
 
   @override
   Future<void> setPreference(LeagueSortPreference preference) async {
-    await _box.put(sortModeKey, preference.mode == LeagueSortMode.alphabetical ? 'alphabetical' : 'lastPlayed');
+    await _box.put(
+        sortModeKey,
+        preference.mode == LeagueSortMode.alphabetical
+            ? 'alphabetical'
+            : 'lastPlayed');
     await _box.put(sortDescendingKey, preference.descending ? 'true' : 'false');
   }
 }

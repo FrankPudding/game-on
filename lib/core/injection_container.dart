@@ -87,7 +87,8 @@ Future<void> _initHive() async {
   if (Hive.isBoxOpen(HiveSortPreferenceRepository.boxName)) {
     appPreferencesBox = Hive.box<String>(HiveSortPreferenceRepository.boxName);
   } else {
-    appPreferencesBox = await Hive.openBox<String>(HiveSortPreferenceRepository.boxName);
+    appPreferencesBox =
+        await Hive.openBox<String>(HiveSortPreferenceRepository.boxName);
   }
   if (!sl.isRegistered<SortPreferenceRepository>()) {
     sl.registerLazySingleton<SortPreferenceRepository>(

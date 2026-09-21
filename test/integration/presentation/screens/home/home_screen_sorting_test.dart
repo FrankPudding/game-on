@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:game_on/domain/entities/league.dart';
-import 'package:game_on/domain/entities/matches/simple_match.dart';
-import 'package:game_on/domain/entities/side.dart';
 import 'package:game_on/domain/repositories/league_repository.dart';
 import 'package:game_on/domain/repositories/match/simple_match_repository.dart';
 import 'package:game_on/domain/repositories/preferences/sort_preference_repository.dart';
@@ -16,16 +14,15 @@ import 'package:game_on/providers/sort_preference_provider.dart';
 import 'package:game_on/presentation/screens/home/home_screen.dart';
 
 class MockLeagueRepo extends Mock implements LeagueRepository {}
+
 class MockMatchRepo extends Mock implements SimpleMatchRepository {}
+
 class MockPrefRepo extends Mock implements SortPreferenceRepository {}
+
 class FakePref extends Fake implements LeagueSortPreference {}
 
-League _league(String id, String name) => League(id: id, name: name, createdAt: DateTime(2023, 1, 1));
-SimpleMatch _match(String id, String leagueId, DateTime playedAt) => SimpleMatch(
-  id: id, leagueId: leagueId, playedAt: playedAt, isComplete: true, isDraw: false,
-  sides: [Side(id: 's1-$id', playerIds: ['p1']), Side(id: 's2-$id', playerIds: ['p2'])],
-  winnerSideId: 's1-$id',
-);
+League _league(String id, String name) =>
+    League(id: id, name: name, createdAt: DateTime(2023, 1, 1));
 
 class FakeSortedLeaguesNotifier extends SortedLeaguesNotifier {
   FakeSortedLeaguesNotifier(this.leagues, {this.shouldThrow = false});
@@ -37,27 +34,38 @@ class FakeSortedLeaguesNotifier extends SortedLeaguesNotifier {
     return leagues;
   }
 }
+
 class FakeSortPrefNotifier extends LeagueSortPreferenceNotifier {
   FakeSortPrefNotifier(this.pref);
   final LeagueSortPreference pref;
   @override
   LeagueSortPreference build() => pref;
   @override
-  Future<void> setMode(LeagueSortMode mode) async { state = state.copyWith(mode: mode); }
+  Future<void> setMode(LeagueSortMode mode) async {
+    state = state.copyWith(mode: mode);
+  }
+
   @override
-  Future<void> toggleDirection() async { state = state.copyWith(descending: !state.descending); }
+  Future<void> toggleDirection() async {
+    state = state.copyWith(descending: !state.descending);
+  }
+
   @override
-  Future<void> setPreference(LeagueSortPreference p) async { state = p; }
+  Future<void> setPreference(LeagueSortPreference p) async {
+    state = p;
+  }
 }
 
 Widget _wrap(Widget child, {List<dynamic> overrides = const []}) {
-  return ProviderScope(overrides: overrides.cast(), child: MaterialApp(home: child));
+  return ProviderScope(
+      overrides: overrides.cast(), child: MaterialApp(home: child));
 }
 
 void main() {
   setUpAll(() {
     registerFallbackValue(FakePref());
-    registerFallbackValue(const LeagueSortPreference(mode: LeagueSortMode.lastPlayed, descending: true));
+    registerFallbackValue(const LeagueSortPreference(
+        mode: LeagueSortMode.lastPlayed, descending: true));
   });
   late MockLeagueRepo mockLeagueRepo;
   late MockMatchRepo mockMatchRepo;
@@ -67,14 +75,17 @@ void main() {
     mockLeagueRepo = MockLeagueRepo();
     mockMatchRepo = MockMatchRepo();
     mockPrefRepo = MockPrefRepo();
-    when(() => mockPrefRepo.get()).thenAnswer((_) async => LeagueSortPreference.defaultPreference);
-    when(() => mockPrefRepo.getPreference()).thenAnswer((_) async => LeagueSortPreference.defaultPreference);
+    when(() => mockPrefRepo.get())
+        .thenAnswer((_) async => LeagueSortPreference.defaultPreference);
+    when(() => mockPrefRepo.getPreference())
+        .thenAnswer((_) async => LeagueSortPreference.defaultPreference);
     when(() => mockPrefRepo.set(any())).thenAnswer((_) async => {});
     when(() => mockPrefRepo.setPreference(any())).thenAnswer((_) async => {});
   });
 
   group('HomeScreen sorting (R1,R2,R3,R4,R5,R7)', () {
-    testWidgets('shows leagues in lastPlayed descending order by default (R1)', (tester) async {
+    testWidgets('shows leagues in lastPlayed descending order by default (R1)',
+        (tester) async {
       final lOld = _league('l1', 'Alpha');
       final lRecent = _league('l2', 'Beta');
       final lNever = _league('l3', 'Gamma');
@@ -84,14 +95,19 @@ void main() {
         SortedLeague(league: lNever, lastPlayed: null),
       ];
       await tester.pumpWidget(_wrap(const HomeScreen(), overrides: [
-        sortedLeaguesProvider.overrideWith(() => FakeSortedLeaguesNotifier(sorted)),
-        sortPreferenceProvider.overrideWith(() => FakeSortPrefNotifier(LeagueSortPreference.defaultPreference)),
+        sortedLeaguesProvider
+            .overrideWith(() => FakeSortedLeaguesNotifier(sorted)),
+        sortPreferenceProvider.overrideWith(
+            () => FakeSortPrefNotifier(LeagueSortPreference.defaultPreference)),
         leagueRepositoryProvider.overrideWithValue(mockLeagueRepo),
         simpleMatchRepositoryProvider.overrideWithValue(mockMatchRepo),
         leagueSortPreferenceRepositoryProvider.overrideWithValue(mockPrefRepo),
       ]));
       await tester.pumpAndSettle();
-      final texts = tester.widgetList<Text>(find.byType(Text)).map((w) => w.data ?? '').toList();
+      final texts = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((w) => w.data ?? '')
+          .toList();
       // Order should be Beta, Alpha, Gamma
       final betaIdx = texts.indexWhere((t) => t.contains('Beta'));
       final alphaIdx = texts.indexWhere((t) => t.contains('Alpha'));
@@ -100,14 +116,21 @@ void main() {
       expect(alphaIdx, lessThan(gammaIdx));
     });
 
-    testWidgets('PopupMenuButton shows 4 sort options with checkmark via equality (R2)', (tester) async {
-      final sorted = [SortedLeague(league: _league('l1', 'A'), lastPlayed: null)];
+    testWidgets(
+        'PopupMenuButton shows 4 sort options with checkmark via equality (R2)',
+        (tester) async {
+      final sorted = [
+        SortedLeague(league: _league('l1', 'A'), lastPlayed: null)
+      ];
       await tester.pumpWidget(_wrap(const HomeScreen(), overrides: [
-        sortedLeaguesProvider.overrideWith(() => FakeSortedLeaguesNotifier(sorted)),
-        sortPreferenceProvider.overrideWith(() => FakeSortPrefNotifier(LeagueSortPreference.defaultPreference)),
+        sortedLeaguesProvider
+            .overrideWith(() => FakeSortedLeaguesNotifier(sorted)),
+        sortPreferenceProvider.overrideWith(
+            () => FakeSortPrefNotifier(LeagueSortPreference.defaultPreference)),
       ]));
       await tester.pumpAndSettle();
-      expect(find.byType(PopupMenuButton<LeagueSortPreference>), findsOneWidget);
+      expect(
+          find.byType(PopupMenuButton<LeagueSortPreference>), findsOneWidget);
       expect(find.byTooltip('Sort'), findsOneWidget);
       expect(find.byIcon(Icons.swap_vert), findsOneWidget);
       expect(find.text('Sort'), findsOneWidget);
@@ -123,15 +146,20 @@ void main() {
       expect(find.text('Sort by name'), findsNothing);
     });
 
-    testWidgets('PopupMenuButton Sort has tooltip Sort and setPreference via menu (R3)', (tester) async {
+    testWidgets(
+        'PopupMenuButton Sort has tooltip Sort and setPreference via menu (R3)',
+        (tester) async {
       final pref = LeagueSortPreference.latest;
       final notifier = FakeSortPrefNotifier(pref);
       final sortedDesc = [
-        SortedLeague(league: _league('l2', 'Beta'), lastPlayed: DateTime(2023, 6, 15)),
-        SortedLeague(league: _league('l1', 'Alpha'), lastPlayed: DateTime(2022, 12, 1)),
+        SortedLeague(
+            league: _league('l2', 'Beta'), lastPlayed: DateTime(2023, 6, 15)),
+        SortedLeague(
+            league: _league('l1', 'Alpha'), lastPlayed: DateTime(2022, 12, 1)),
       ];
       await tester.pumpWidget(_wrap(const HomeScreen(), overrides: [
-        sortedLeaguesProvider.overrideWith(() => FakeSortedLeaguesNotifier(sortedDesc)),
+        sortedLeaguesProvider
+            .overrideWith(() => FakeSortedLeaguesNotifier(sortedDesc)),
         sortPreferenceProvider.overrideWith(() => notifier),
       ]));
       await tester.pumpAndSettle();
@@ -139,14 +167,17 @@ void main() {
       expect(find.byTooltip('Toggle sort direction'), findsNothing);
       expect(find.byIcon(Icons.swap_vert), findsOneWidget);
       expect(find.text('Sort'), findsOneWidget);
-      expect(find.byType(PopupMenuButton<LeagueSortPreference>), findsOneWidget);
+      expect(
+          find.byType(PopupMenuButton<LeagueSortPreference>), findsOneWidget);
       // Selecting Oldest should call setPreference (lastPlayed ascending)
       await tester.tap(find.byType(PopupMenuButton<LeagueSortPreference>));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Oldest'));
       await tester.pumpAndSettle();
-      final container = ProviderScope.containerOf(tester.element(find.byType(HomeScreen)));
-      expect(container.read(sortPreferenceProvider), LeagueSortPreference.oldest);
+      final container =
+          ProviderScope.containerOf(tester.element(find.byType(HomeScreen)));
+      expect(
+          container.read(sortPreferenceProvider), LeagueSortPreference.oldest);
       // Selecting A-Z should work (alphabetical ascending)
       await tester.tap(find.byType(PopupMenuButton<LeagueSortPreference>));
       await tester.pumpAndSettle();
@@ -161,21 +192,33 @@ void main() {
       expect(container.read(sortPreferenceProvider), LeagueSortPreference.zToA);
     });
 
-    testWidgets('keepAlive - sortedLeaguesProvider not refetched on preference switch without invalidate (R5)', (tester) async {
+    testWidgets(
+        'keepAlive - sortedLeaguesProvider not refetched on preference switch without invalidate (R5)',
+        (tester) async {
       // This is more unit but also UI: verify provider remains
-      final sorted = [SortedLeague(league: _league('l1', 'A'), lastPlayed: null)];
+      final sorted = [
+        SortedLeague(league: _league('l1', 'A'), lastPlayed: null)
+      ];
       await tester.pumpWidget(_wrap(const HomeScreen(), overrides: [
-        sortedLeaguesProvider.overrideWith(() => FakeSortedLeaguesNotifier(sorted)),
-        sortPreferenceProvider.overrideWith(() => FakeSortPrefNotifier(LeagueSortPreference.defaultPreference)),
+        sortedLeaguesProvider
+            .overrideWith(() => FakeSortedLeaguesNotifier(sorted)),
+        sortPreferenceProvider.overrideWith(
+            () => FakeSortPrefNotifier(LeagueSortPreference.defaultPreference)),
       ]));
       await tester.pumpAndSettle();
-      expect(sortedLeaguesProvider is AsyncNotifierProvider<SortedLeaguesNotifier, List<SortedLeague>>, isTrue);
+      expect(
+        sortedLeaguesProvider,
+        isA<AsyncNotifierProvider<SortedLeaguesNotifier, List<SortedLeague>>>(),
+      );
     });
 
-    testWidgets('error degraded shows error text not silent empty (R7)', (tester) async {
+    testWidgets('error degraded shows error text not silent empty (R7)',
+        (tester) async {
       await tester.pumpWidget(_wrap(const HomeScreen(), overrides: [
-        sortedLeaguesProvider.overrideWith(() => FakeSortedLeaguesNotifier([], shouldThrow: true)),
-        sortPreferenceProvider.overrideWith(() => FakeSortPrefNotifier(LeagueSortPreference.defaultPreference)),
+        sortedLeaguesProvider.overrideWith(
+            () => FakeSortedLeaguesNotifier([], shouldThrow: true)),
+        sortPreferenceProvider.overrideWith(
+            () => FakeSortPrefNotifier(LeagueSortPreference.defaultPreference)),
       ]));
       await tester.pumpAndSettle();
       expect(find.textContaining('Error'), findsOneWidget);
@@ -185,20 +228,26 @@ void main() {
     testWidgets('empty list shows No leagues yet (R7)', (tester) async {
       await tester.pumpWidget(_wrap(const HomeScreen(), overrides: [
         sortedLeaguesProvider.overrideWith(() => FakeSortedLeaguesNotifier([])),
-        sortPreferenceProvider.overrideWith(() => FakeSortPrefNotifier(LeagueSortPreference.defaultPreference)),
+        sortPreferenceProvider.overrideWith(
+            () => FakeSortPrefNotifier(LeagueSortPreference.defaultPreference)),
       ]));
       await tester.pumpAndSettle();
       expect(find.text('No leagues yet'), findsOneWidget);
       expect(find.text('Create First League'), findsOneWidget);
     });
 
-    testWidgets('alphabetical mode shows correct order with empty-first (R2)', (tester) async {
-      final pref = const LeagueSortPreference(mode: LeagueSortMode.alphabetical, descending: false);
+    testWidgets('alphabetical mode shows correct order with empty-first (R2)',
+        (tester) async {
+      final pref = const LeagueSortPreference(
+          mode: LeagueSortMode.alphabetical, descending: false);
       final leagues = [
-        SortedLeague(league: _league('l3', 'Bob'), lastPlayed: DateTime(2023, 6, 15)),
-        SortedLeague(league: _league('l2', 'alice'), lastPlayed: DateTime(2023, 6, 15)),
+        SortedLeague(
+            league: _league('l3', 'Bob'), lastPlayed: DateTime(2023, 6, 15)),
+        SortedLeague(
+            league: _league('l2', 'alice'), lastPlayed: DateTime(2023, 6, 15)),
         SortedLeague(league: _league('l4', '   '), lastPlayed: null), // empty
-        SortedLeague(league: _league('l1', 'Alice'), lastPlayed: DateTime(2023, 6, 15)),
+        SortedLeague(
+            league: _league('l1', 'Alice'), lastPlayed: DateTime(2023, 6, 15)),
       ];
       // Provider should sort; but fake notifier returns as-is, so we test service sort separately?
       // For UI we expect sorted order if provider does sorting: empties first, Alice before alice before Bob
@@ -210,11 +259,17 @@ void main() {
         leagues[0], // Bob
       ];
       await tester.pumpWidget(_wrap(const HomeScreen(), overrides: [
-        sortedLeaguesProvider.overrideWith(() => FakeSortedLeaguesNotifier(sorted)),
+        sortedLeaguesProvider
+            .overrideWith(() => FakeSortedLeaguesNotifier(sorted)),
         sortPreferenceProvider.overrideWith(() => FakeSortPrefNotifier(pref)),
       ]));
       await tester.pumpAndSettle();
-      final texts = tester.widgetList<Text>(find.byType(Text)).map((w) => w.data ?? '').where((t) => t == 'Alice' || t == 'alice' || t == 'Bob' || t.trim().isEmpty).toList();
+      final texts = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((w) => w.data ?? '')
+          .where((t) =>
+              t == 'Alice' || t == 'alice' || t == 'Bob' || t.trim().isEmpty)
+          .toList();
       // Verify order: Alice before alice before Bob (empty is first but empty text)
       final aliceIdx = texts.indexOf('Alice');
       final aliceLowIdx = texts.indexOf('alice');
@@ -223,13 +278,17 @@ void main() {
       expect(aliceLowIdx, lessThan(bobIdx));
     });
 
-    testWidgets('AppBar has single PopupMenuButton<LeagueSortPreference> with Sort (R2,R3)', (tester) async {
+    testWidgets(
+        'AppBar has single PopupMenuButton<LeagueSortPreference> with Sort (R2,R3)',
+        (tester) async {
       await tester.pumpWidget(_wrap(const HomeScreen(), overrides: [
         sortedLeaguesProvider.overrideWith(() => FakeSortedLeaguesNotifier([])),
-        sortPreferenceProvider.overrideWith(() => FakeSortPrefNotifier(LeagueSortPreference.defaultPreference)),
+        sortPreferenceProvider.overrideWith(
+            () => FakeSortPrefNotifier(LeagueSortPreference.defaultPreference)),
       ]));
       await tester.pumpAndSettle();
-      expect(find.byType(PopupMenuButton<LeagueSortPreference>), findsOneWidget);
+      expect(
+          find.byType(PopupMenuButton<LeagueSortPreference>), findsOneWidget);
       expect(find.byType(PopupMenuButton<LeagueSortMode>), findsNothing);
       expect(find.byIcon(Icons.swap_vert), findsOneWidget);
       expect(find.text('Sort'), findsOneWidget);
@@ -240,12 +299,18 @@ void main() {
       expect(find.text('Sort by name'), findsNothing);
     });
 
-    testWidgets('_LeagueCard StatelessWidget idea - card shows league name and last played', (tester) async {
+    testWidgets(
+        '_LeagueCard StatelessWidget idea - card shows league name and last played',
+        (tester) async {
       final league = _league('l1', 'My League');
-      final sorted = [SortedLeague(league: league, lastPlayed: DateTime(2023, 6, 15))];
+      final sorted = [
+        SortedLeague(league: league, lastPlayed: DateTime(2023, 6, 15))
+      ];
       await tester.pumpWidget(_wrap(const HomeScreen(), overrides: [
-        sortedLeaguesProvider.overrideWith(() => FakeSortedLeaguesNotifier(sorted)),
-        sortPreferenceProvider.overrideWith(() => FakeSortPrefNotifier(LeagueSortPreference.defaultPreference)),
+        sortedLeaguesProvider
+            .overrideWith(() => FakeSortedLeaguesNotifier(sorted)),
+        sortPreferenceProvider.overrideWith(
+            () => FakeSortPrefNotifier(LeagueSortPreference.defaultPreference)),
       ]));
       await tester.pumpAndSettle();
       expect(find.text('My League'), findsOneWidget);
@@ -255,8 +320,10 @@ void main() {
       await tester.pumpAndSettle();
       final neverSorted = [SortedLeague(league: league, lastPlayed: null)];
       await tester.pumpWidget(_wrap(const HomeScreen(), overrides: [
-        sortedLeaguesProvider.overrideWith(() => FakeSortedLeaguesNotifier(neverSorted)),
-        sortPreferenceProvider.overrideWith(() => FakeSortPrefNotifier(LeagueSortPreference.defaultPreference)),
+        sortedLeaguesProvider
+            .overrideWith(() => FakeSortedLeaguesNotifier(neverSorted)),
+        sortPreferenceProvider.overrideWith(
+            () => FakeSortPrefNotifier(LeagueSortPreference.defaultPreference)),
       ]));
       await tester.pumpAndSettle();
       expect(find.text('Last played: Never'), findsOneWidget);

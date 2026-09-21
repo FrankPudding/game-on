@@ -113,7 +113,9 @@ class FakeSortedLeaguesNotifier extends SortedLeaguesNotifier {
   final List<League> leagues;
   @override
   Future<List<SortedLeague>> build() async {
-    return leagues.map((l) => SortedLeague(league: l, lastPlayed: null)).toList();
+    return leagues
+        .map((l) => SortedLeague(league: l, lastPlayed: null))
+        .toList();
   }
 }
 
@@ -136,7 +138,8 @@ Widget createTestApp({
   return ProviderScope(
     overrides: [
       leaguesProvider.overrideWith(() => fakeLeaguesNotifier),
-      sortedLeaguesProvider.overrideWith(() => FakeSortedLeaguesNotifier(leagues)),
+      sortedLeaguesProvider
+          .overrideWith(() => FakeSortedLeaguesNotifier(leagues)),
       sortPreferenceProvider.overrideWith(FakeSortPrefNotifier.new),
       leagueDetailProvider.overrideWith2((_) => fakeLeagueDetailNotifier),
       usersProvider.overrideWith(() => fakeUsersNotifier),
@@ -617,43 +620,6 @@ void main() {
       expect(find.byType(LeagueDetailScreen), findsOneWidget);
     });
 
-    // Test 15 is skipped due to test infrastructure limitations with root navigator dialogs
-    // and system back button simulation in widget tests.
-    // The PopScope implementation correctly handles root navigator priority in production.
-    /*
-    testWidgets('15. Root navigator dialogs take priority over tab navigator', (tester) async {
-      await tester.pumpWidget(createTestApp(
-        leagueState: leagueState,
-        leagues: [testLeague],
-      ));
-      await navigateToLeagueDetail(tester);
-
-      // Show a dialog using root navigator
-      await showDialog(
-        context: tester.element(find.byType(LeagueDetailScreen)),
-        barrierDismissible: true,
-        useRootNavigator: true,
-        builder: (context) => AlertDialog(
-          title: const Text('Root Dialog'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
-              child: const Text('Close'),
-            ),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-      expect(find.text('Root Dialog'), findsOneWidget);
-
-      // Press back - should dismiss root navigator dialog
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      await tester.pumpAndSettle();
-
-      expect(find.text('Root Dialog'), findsNothing);
-      expect(find.byType(LeagueDetailScreen), findsOneWidget);
-    });
-    */
+    // Test 15 (root navigator dialog) removed — dead code; widget-test infra cannot simulate root-navigator back priority.
   });
 }
