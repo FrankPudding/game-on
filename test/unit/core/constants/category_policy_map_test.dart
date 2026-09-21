@@ -49,15 +49,19 @@ void main() {
           ]));
     });
 
-    test('custom entry should not be empty and non-custom entries should not contain simple', () {
+    test(
+        'custom entry should not be empty and non-custom entries should not contain simple',
+        () {
       for (final id in [
         'cat_boardgames',
         'cat_cardgames',
         'cat_sports',
         'cat_videogames'
       ]) {
-        expect(kSeedCategoryPolicyTypes[id], isNot(contains(RankingPolicyType.simple)));
-        expect(kSeedCategoryPolicyTypes[id], isNot(contains(RankingPolicyType.goalDifference)));
+        expect(kSeedCategoryPolicyTypes[id],
+            isNot(contains(RankingPolicyType.simple)));
+        expect(kSeedCategoryPolicyTypes[id],
+            isNot(contains(RankingPolicyType.goalDifference)));
       }
     });
   });

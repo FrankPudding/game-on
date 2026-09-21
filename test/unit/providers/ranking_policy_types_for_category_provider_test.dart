@@ -11,7 +11,8 @@ import 'package:game_on/domain/repositories/ranking_policy_repository.dart';
 import 'package:game_on/presentation/screens/league/select_scoring_system_screen.dart';
 import 'package:game_on/providers/leagues_provider.dart';
 
-class MockRankingPolicyRepository extends Mock implements RankingPolicyRepository {}
+class MockRankingPolicyRepository extends Mock
+    implements RankingPolicyRepository {}
 
 class FakeRankingPolicy extends RankingPolicy<SimpleMatch> {
   FakeRankingPolicy({
@@ -48,20 +49,20 @@ void main() {
     ];
 
     for (final id in nonCustomIds) {
-      test('should return [] for non-custom $id without calling repo', () async {
+      test('should return [] for non-custom $id without calling repo',
+          () async {
         // Even if repo would return data, provider should short-circuit to []
-        when(() => mockRepo.getByCategory(any()))
-            .thenAnswer((_) async => [
-                  SimpleRankingPolicy(
-                    id: 'rp1',
-                    name: 'Std',
-                    leagueId: 'l1',
-                    categoryIds: const ['cat_custom_league_001'],
-                  )
-                ]);
+        when(() => mockRepo.getByCategory(any())).thenAnswer((_) async => [
+              SimpleRankingPolicy(
+                id: 'rp1',
+                name: 'Std',
+                leagueId: 'l1',
+                categoryIds: const ['cat_custom_league_001'],
+              )
+            ]);
 
-        final result =
-            await container.read(rankingPolicyTypesForCategoryProvider(id).future);
+        final result = await container
+            .read(rankingPolicyTypesForCategoryProvider(id).future);
 
         expect(result, isEmpty, reason: '$id should yield empty list');
         // Verify repo not called for non-custom (early return)
@@ -69,7 +70,8 @@ void main() {
       });
     }
 
-    test('should return [] for unknown category (not custom) without repo call', () async {
+    test('should return [] for unknown category (not custom) without repo call',
+        () async {
       final result = await container
           .read(rankingPolicyTypesForCategoryProvider('cat_unknown').future);
       expect(result, isEmpty);
@@ -77,19 +79,21 @@ void main() {
     });
 
     test('should return [] for empty categoryId without repo call', () async {
-      final result =
-          await container.read(rankingPolicyTypesForCategoryProvider('').future);
+      final result = await container
+          .read(rankingPolicyTypesForCategoryProvider('').future);
       expect(result, isEmpty);
       verifyNever(() => mockRepo.getByCategory(any()));
     });
 
     group('custom category (kFallbackCategoryId)', () {
-      test('should return fallback values when repo returns empty (seed fallback)', () async {
+      test(
+          'should return fallback values when repo returns empty (seed fallback)',
+          () async {
         when(() => mockRepo.getByCategory(kFallbackCategoryId))
             .thenAnswer((_) async => []);
 
-        final result = await container
-            .read(rankingPolicyTypesForCategoryProvider(kFallbackCategoryId).future);
+        final result = await container.read(
+            rankingPolicyTypesForCategoryProvider(kFallbackCategoryId).future);
 
         expect(result, containsAll(RankingPolicyType.values));
         expect(result.length, RankingPolicyType.values.length);
@@ -100,17 +104,19 @@ void main() {
         when(() => mockRepo.getByCategory(kFallbackCategoryId))
             .thenThrow(Exception('db failure'));
 
-        final result = await container
-            .read(rankingPolicyTypesForCategoryProvider(kFallbackCategoryId).future);
+        final result = await container.read(
+            rankingPolicyTypesForCategoryProvider(kFallbackCategoryId).future);
 
         expect(result, containsAll(RankingPolicyType.values));
         expect(result.length, RankingPolicyType.values.length);
         verify(() => mockRepo.getByCategory(kFallbackCategoryId)).called(1);
       });
 
-      test('should return fallback values when repo returns unsupported policy types only', () async {
-        when(() => mockRepo.getByCategory(kFallbackCategoryId)).thenAnswer(
-            (_) async => [
+      test(
+          'should return fallback values when repo returns unsupported policy types only',
+          () async {
+        when(() => mockRepo.getByCategory(kFallbackCategoryId))
+            .thenAnswer((_) async => [
                   FakeRankingPolicy(
                     id: 'fake1',
                     name: 'Fake',
@@ -119,16 +125,18 @@ void main() {
                   )
                 ]);
 
-        final result = await container
-            .read(rankingPolicyTypesForCategoryProvider(kFallbackCategoryId).future);
+        final result = await container.read(
+            rankingPolicyTypesForCategoryProvider(kFallbackCategoryId).future);
 
         expect(result, containsAll(RankingPolicyType.values));
         expect(result.length, RankingPolicyType.values.length);
       });
 
-      test('should return [simple] when repo has only Simple policies (populated)', () async {
-        when(() => mockRepo.getByCategory(kFallbackCategoryId)).thenAnswer(
-            (_) async => [
+      test(
+          'should return [simple] when repo has only Simple policies (populated)',
+          () async {
+        when(() => mockRepo.getByCategory(kFallbackCategoryId))
+            .thenAnswer((_) async => [
                   SimpleRankingPolicy(
                     id: 'rp_simple',
                     name: 'Std',
@@ -137,15 +145,17 @@ void main() {
                   )
                 ]);
 
-        final result = await container
-            .read(rankingPolicyTypesForCategoryProvider(kFallbackCategoryId).future);
+        final result = await container.read(
+            rankingPolicyTypesForCategoryProvider(kFallbackCategoryId).future);
 
         expect(result, [RankingPolicyType.simple]);
       });
 
-      test('should return [goalDifference] when repo has only GD policies (populated)', () async {
-        when(() => mockRepo.getByCategory(kFallbackCategoryId)).thenAnswer(
-            (_) async => [
+      test(
+          'should return [goalDifference] when repo has only GD policies (populated)',
+          () async {
+        when(() => mockRepo.getByCategory(kFallbackCategoryId))
+            .thenAnswer((_) async => [
                   GoalDifferenceRankingPolicy(
                     id: 'rp_gd',
                     name: 'GD',
@@ -154,15 +164,17 @@ void main() {
                   )
                 ]);
 
-        final result = await container
-            .read(rankingPolicyTypesForCategoryProvider(kFallbackCategoryId).future);
+        final result = await container.read(
+            rankingPolicyTypesForCategoryProvider(kFallbackCategoryId).future);
 
         expect(result, [RankingPolicyType.goalDifference]);
       });
 
-      test('should return both types when repo has both Simple and GD (populated)', () async {
-        when(() => mockRepo.getByCategory(kFallbackCategoryId)).thenAnswer(
-            (_) async => [
+      test(
+          'should return both types when repo has both Simple and GD (populated)',
+          () async {
+        when(() => mockRepo.getByCategory(kFallbackCategoryId))
+            .thenAnswer((_) async => [
                   SimpleRankingPolicy(
                     id: 'rp_simple',
                     name: 'Std',
@@ -177,17 +189,19 @@ void main() {
                   ),
                 ]);
 
-        final result = await container
-            .read(rankingPolicyTypesForCategoryProvider(kFallbackCategoryId).future);
+        final result = await container.read(
+            rankingPolicyTypesForCategoryProvider(kFallbackCategoryId).future);
 
         expect(result, contains(RankingPolicyType.simple));
         expect(result, contains(RankingPolicyType.goalDifference));
         expect(result.length, 2);
       });
 
-      test('should deduplicate types when multiple policies of same type (populated)', () async {
-        when(() => mockRepo.getByCategory(kFallbackCategoryId)).thenAnswer(
-            (_) async => [
+      test(
+          'should deduplicate types when multiple policies of same type (populated)',
+          () async {
+        when(() => mockRepo.getByCategory(kFallbackCategoryId))
+            .thenAnswer((_) async => [
                   SimpleRankingPolicy(
                     id: 'rp_s1',
                     name: 'Std1',
@@ -202,19 +216,20 @@ void main() {
                   ),
                 ]);
 
-        final result = await container
-            .read(rankingPolicyTypesForCategoryProvider(kFallbackCategoryId).future);
+        final result = await container.read(
+            rankingPolicyTypesForCategoryProvider(kFallbackCategoryId).future);
 
         expect(result, [RankingPolicyType.simple]);
         expect(result.length, 1);
       });
 
-      test('should call repo exactly once for custom and return values', () async {
+      test('should call repo exactly once for custom and return values',
+          () async {
         when(() => mockRepo.getByCategory(kFallbackCategoryId))
             .thenAnswer((_) async => []);
 
-        await container
-            .read(rankingPolicyTypesForCategoryProvider(kFallbackCategoryId).future);
+        await container.read(
+            rankingPolicyTypesForCategoryProvider(kFallbackCategoryId).future);
 
         verify(() => mockRepo.getByCategory(kFallbackCategoryId)).called(1);
       });

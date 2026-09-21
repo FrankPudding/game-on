@@ -49,7 +49,8 @@ void main() {
     await tempDir.delete(recursive: true);
   });
 
-  group('HiveRankingPolicyRepository (real box) - custom category enforcement', () {
+  group('HiveRankingPolicyRepository (real box) - custom category enforcement',
+      () {
     final nonCustomCases = {
       'cat_boardgames': ['cat_boardgames'],
       'cat_sports': ['cat_sports'],
@@ -90,7 +91,8 @@ void main() {
 
     test('Simple with [custom, boardgames] should throw ArgumentError',
         () async {
-      final box = await Hive.openBox<RankingPolicyHiveModel>('ranking_policies');
+      final box =
+          await Hive.openBox<RankingPolicyHiveModel>('ranking_policies');
       final repo = HiveRankingPolicyRepository(box);
       final policy = SimpleRankingPolicy(
         id: 'rp_mixed_simple',
@@ -104,7 +106,8 @@ void main() {
 
     test('GoalDifference with [custom, boardgames] should throw ArgumentError',
         () async {
-      final box = await Hive.openBox<RankingPolicyHiveModel>('ranking_policies');
+      final box =
+          await Hive.openBox<RankingPolicyHiveModel>('ranking_policies');
       final repo = HiveRankingPolicyRepository(box);
       final policy = GoalDifferenceRankingPolicy(
         id: 'rp_mixed_gd',
@@ -117,7 +120,8 @@ void main() {
     });
 
     test('Simple with only custom should succeed (real Hive)', () async {
-      final box = await Hive.openBox<RankingPolicyHiveModel>('ranking_policies');
+      final box =
+          await Hive.openBox<RankingPolicyHiveModel>('ranking_policies');
       final repo = HiveRankingPolicyRepository(box);
       final policy = SimpleRankingPolicy(
         id: 'rp_ok_simple',
@@ -132,8 +136,10 @@ void main() {
       await box.close();
     });
 
-    test('GoalDifference with only custom should succeed (real Hive)', () async {
-      final box = await Hive.openBox<RankingPolicyHiveModel>('ranking_policies');
+    test('GoalDifference with only custom should succeed (real Hive)',
+        () async {
+      final box =
+          await Hive.openBox<RankingPolicyHiveModel>('ranking_policies');
       final repo = HiveRankingPolicyRepository(box);
       final policy = GoalDifferenceRankingPolicy(
         id: 'rp_ok_gd',
@@ -170,7 +176,8 @@ void main() {
         );
       });
 
-      test('repo put with empty categoryIds via fake should throw ArgumentError',
+      test(
+          'repo put with empty categoryIds via fake should throw ArgumentError',
           () async {
         final box =
             await Hive.openBox<RankingPolicyHiveModel>('ranking_policies');
@@ -186,7 +193,8 @@ void main() {
         await box.close();
       });
 
-      test('repo put with FakeRankingPolicy empty should also be rejected', () async {
+      test('repo put with FakeRankingPolicy empty should also be rejected',
+          () async {
         // FakeRankingPolicy that overrides to return empty via constructor bypass is not possible
         // since super validates; instead test that creating Fake with empty throws at ctor
         expect(
@@ -201,8 +209,11 @@ void main() {
       });
     });
 
-    test('unsupported policy type still throws UnimplementedError when valid custom', () async {
-      final box = await Hive.openBox<RankingPolicyHiveModel>('ranking_policies');
+    test(
+        'unsupported policy type still throws UnimplementedError when valid custom',
+        () async {
+      final box =
+          await Hive.openBox<RankingPolicyHiveModel>('ranking_policies');
       final repo = HiveRankingPolicyRepository(box);
       final fake = FakeRankingPolicy(
         id: 'f1',

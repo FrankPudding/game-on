@@ -217,7 +217,8 @@ void main() {
         () async {
       when(() => mockCategoryRepository.existsAll(any()))
           .thenAnswer((_) async => true);
-      final policy = simpleWith(const ['cat_custom_league_001', 'cat_boardgames']);
+      final policy =
+          simpleWith(const ['cat_custom_league_001', 'cat_boardgames']);
       expect(
         () => service.execute(
           id: tLeagueId,
@@ -249,7 +250,8 @@ void main() {
         () async {
       when(() => mockCategoryRepository.existsAll(any()))
           .thenAnswer((_) async => true);
-      final policy = simpleWith(const ['cat_custom_league_001', 'cat_boardgames']);
+      final policy =
+          simpleWith(const ['cat_custom_league_001', 'cat_boardgames']);
       expect(
         () => service.execute(
           id: tLeagueId,
