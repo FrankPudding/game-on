@@ -22,6 +22,8 @@ import '../domain/repositories/ranking_policy_repository.dart';
 import '../application/services/create_league_service.dart';
 import '../application/services/delete_user_service.dart';
 import '../application/services/update_user_service.dart';
+import '../data/repositories/hive/hive_sort_preference_repository.dart';
+import '../domain/repositories/preferences/sort_preference_repository.dart';
 import '../data/services/hive/hive_database_migration_service.dart';
 import 'config.dart';
 
@@ -81,6 +83,17 @@ Future<void> _initHive() async {
       await Hive.openBox<SimpleMatchHiveModel>('simple_matches');
   final rankingPolicyBox =
       await Hive.openBox<RankingPolicyHiveModel>('ranking_policies');
+  final Box<String> appPreferencesBox;
+  if (Hive.isBoxOpen(HiveSortPreferenceRepository.boxName)) {
+    appPreferencesBox = Hive.box<String>(HiveSortPreferenceRepository.boxName);
+  } else {
+    appPreferencesBox = await Hive.openBox<String>(HiveSortPreferenceRepository.boxName);
+  }
+  if (!sl.isRegistered<SortPreferenceRepository>()) {
+    sl.registerLazySingleton<SortPreferenceRepository>(
+      () => HiveSortPreferenceRepository(appPreferencesBox),
+    );
+  }
 
   // 2. Register Repositories
   if (!sl.isRegistered<LeagueRepository>()) {

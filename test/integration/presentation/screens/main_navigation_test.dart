@@ -10,6 +10,9 @@ import 'package:game_on/domain/entities/matches/simple_match.dart';
 import 'package:game_on/domain/entities/user.dart';
 import 'package:game_on/providers/league_detail_provider.dart';
 import 'package:game_on/providers/leagues_provider.dart';
+import 'package:game_on/providers/sorted_leagues_provider.dart';
+import 'package:game_on/providers/sort_preference_provider.dart';
+import 'package:game_on/application/preferences/sort_preference.dart';
 import 'package:game_on/providers/users_provider.dart';
 import 'package:game_on/presentation/screens/home/home_screen.dart';
 import 'package:game_on/presentation/screens/history/history_screen.dart';
@@ -105,6 +108,20 @@ class FakeUsersNotifier extends UsersNotifier {
   Future<List<User>> build() async => _users;
 }
 
+class FakeSortedLeaguesNotifier extends SortedLeaguesNotifier {
+  FakeSortedLeaguesNotifier(this.leagues);
+  final List<League> leagues;
+  @override
+  Future<List<SortedLeague>> build() async {
+    return leagues.map((l) => SortedLeague(league: l, lastPlayed: null)).toList();
+  }
+}
+
+class FakeSortPrefNotifier extends LeagueSortPreferenceNotifier {
+  @override
+  LeagueSortPreference build() => LeagueSortPreference.defaultPreference;
+}
+
 Widget createTestApp({
   required LeagueDetailState leagueState,
   required List<League> leagues,
@@ -119,6 +136,8 @@ Widget createTestApp({
   return ProviderScope(
     overrides: [
       leaguesProvider.overrideWith(() => fakeLeaguesNotifier),
+      sortedLeaguesProvider.overrideWith(() => FakeSortedLeaguesNotifier(leagues)),
+      sortPreferenceProvider.overrideWith(FakeSortPrefNotifier.new),
       leagueDetailProvider.overrideWith2((_) => fakeLeagueDetailNotifier),
       usersProvider.overrideWith(() => fakeUsersNotifier),
     ],

@@ -33,3 +33,79 @@ Users and league players are presented **alphabetically** wherever they appear a
 - **League standings** — ranked by position: points → (goal difference → goals for for GD leagues) → `id`. `LeagueDetailState.players` carries this order and **never** uses name as a tie-breaker; the stable `id` fallback is the only tie-break beyond the ranking policy. Only the standings table may use `players`. `players` and `playersByName` always contain the same set, only differing in order.
 
 Hive repositories remain unsorted — ordering is an in-memory presentation concern at the provider layer.
+
+## Ordering — My Leagues (Recency vs Alphabetical)
+
+`HomeScreen` ("My Leagues") presents leagues in one of **four** user-selectable
+states driven by `LeagueSortPreference` (`lib/application/preferences/sort_preference.dart`):
+
+| Mode | Direction | Behaviour |
+|------|-----------|-----------|
+| `lastPlayed` | descending `true` — **default** | Most recent first, `null` ("Never") last |
+| `lastPlayed` | ascending `false` | Oldest first, `null` last |
+| `alphabetical` | ascending `false` | A→Z via `compareNames` then `id` |
+| `alphabetical` | ascending `true` (labelled Z→A) | Z→A (negated `compareNames` + negated `id`) |
+
+The default on first launch (and before the persisted preference has been
+loaded from Hive) is **lastPlayed descending** — no flicker, no empty flash;
+`LeagueSortPreferenceNotifier` returns `LeagueSortPreference.defaultPreference`
+synchronously from `build()` and only updates state if the async `repo.get()`
+returns a different value.
+
+### Definition of `lastPlayed`
+
+`lastPlayed` is the **most recent `playedAt` among completed matches** for that
+league, or `null` when no completed match exists (UI renders "Last played:
+Never"). Derivation:
+
+- Pure helper `maxCompletePlayedAt(Iterable<SimpleMatch>)` in
+  `lib/domain/services/match_stats.dart` — filters `isComplete == true`,
+  returns `max(playedAt)` or `null`.
+- Production `SortedLeaguesNotifier` inlines an equivalent `O(M)` groupBy scan
+  (single loop over all matches, `maxMap[leagueId] = max(playedAt)`) for
+  bulk `O(M + L log L)` performance; the helper defines the contract.
+- Incomplete matches (`isComplete == false`) are **ignored** even when their
+  `playedAt` is later than any complete match.
+
+### Comparator & determinism
+
+- **Recency mode**: uses `lib/core/sorting/date_sort.dart:compareNullableDateNullLast`
+  (null always last regardless of direction) then deterministic tie-break
+  `compareNames(league.name)` → `league.id`. Implemented as
+  `lib/application/services/sorted_leagues_service.dart:compareLeagues` /
+  `sortLeagues` (copy, never mutates input).
+- **Alphabetical mode**: `compareNames` primary (trim, empty-first,
+  case-insensitive primary + case-sensitive secondary), `id` secondary; both
+  negated when `descending` (Z→A).
+- `lib/core/sorting/league_sort.dart` and
+  `lib/core/preferences/sort_preference.dart` are re-export aliases for the
+  canonical `application/` locations to keep `core` domain-free (DDD boundary).
+
+### UI & persistence
+
+- `HomeScreen` (`lib/presentation/screens/home/home_screen.dart`) watches
+  `sortedLeaguesProvider` (bulk `SortedLeague` list) and
+  `sortPreferenceProvider`; `AppBar.actions` exposes a **single**
+  `PopupMenuButton<LeagueSortPreference>` (`tooltip: 'Sort'`) whose child is
+  `Row(Icon(Icons.swap_vert) + Text('Sort'))`. The menu has four items —
+  `Latest` (`LeagueSortPreference.latest` = `lastPlayed` descending `true`,
+  **default**), `Oldest` (`oldest` = `lastPlayed` descending `false`),
+  `A-Z` (`aToZ` = `alphabetical` descending `false`), `Z-A` (`zToA` =
+  `alphabetical` descending `true`) — defined as const helpers in
+  `lib/application/preferences/sort_preference.dart`; the active item shows
+  `Icons.check` (size 18) via `==` equality. `onSelected` calls
+  `sortPreferenceProvider.notifier.setPreference` (write-then-invalidate
+  `sortedLeaguesProvider`). List is rendered by
+  `Stateless _SortedLeagueCard` (`Last played: Never` vs
+  `DateFormat('MMM d, yyyy')`).
+- Preference is persisted in Hive `Box<String>` `app_preferences` under keys
+  `sort_mode` (`lastPlayed` | `alphabetical`) and `sort_descending`
+  (`true` | `false`) via `HiveSortPreferenceRepository`
+  (`lib/data/repositories/hive/hive_sort_preference_repository.dart`);
+  write-then-invalidate (`await repo.set` → `state = pref` →
+  `ref.invalidate(sortedLeaguesProvider)`). See `docs/architecture/sorting.md`
+  and `docs/architecture/provider-invalidation.md`.
+- Error handling: `sortedLeaguesProvider` propagates repo failures as
+  `AsyncError` → HomeScreen shows `Error: ...` (degraded, not silent empty);
+  `sortPreferenceProvider` keeps the default on read errors and never blocks
+  first frame.

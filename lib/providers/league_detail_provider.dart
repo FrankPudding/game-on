@@ -18,6 +18,7 @@ import '../core/injection_container.dart';
 import 'leagues_provider.dart';
 import 'users_provider.dart';
 import 'user_detail_provider.dart';
+import 'sorted_leagues_provider.dart';
 
 // Match Repository Provider
 final simpleMatchRepositoryProvider = Provider<SimpleMatchRepository>((ref) {
@@ -345,6 +346,7 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
         ref.invalidate(userDetailProvider(loserPlayer.userId));
       }
       ref.invalidate(leagueLastPlayedProvider(_leagueId));
+      ref.invalidate(sortedLeaguesProvider);
 
       return _fetchData();
     });
@@ -395,6 +397,7 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
         ref.invalidate(userDetailProvider(loserPlayer.userId));
       }
       ref.invalidate(leagueLastPlayedProvider(_leagueId));
+      ref.invalidate(sortedLeaguesProvider);
 
       return _fetchData();
     });
@@ -424,6 +427,7 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
         ref.invalidate(userDetailProvider(userId));
       }
       ref.invalidate(leagueLastPlayedProvider(_leagueId));
+      ref.invalidate(sortedLeaguesProvider);
 
       return _fetchData();
     });
