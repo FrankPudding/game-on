@@ -356,7 +356,7 @@ class _StandingsTab extends StatelessWidget {
                         SizedBox(
                           width: 50,
                           child: Text(
-                            '${(fargo.winRate * 100).toStringAsFixed(1)}%',
+                            '${(fargo.winRate * 100).round()}%',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: AppTheme.textSecondary,
