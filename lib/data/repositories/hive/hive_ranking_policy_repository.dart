@@ -3,6 +3,7 @@ import 'package:synchronized/synchronized.dart';
 import '../../../../domain/entities/ranking_policy.dart';
 import '../../../../domain/entities/ranking_policies/simple_ranking_policy.dart';
 import '../../../../domain/entities/ranking_policies/goal_difference_ranking_policy.dart';
+import '../../../../domain/entities/ranking_policies/fargo_rate_ranking_policy.dart';
 import '../../../../domain/repositories/ranking_policy_repository.dart';
 import '../../../../domain/repositories/category_repository.dart';
 import '../../../core/constants/hive_box_names.dart';
@@ -10,6 +11,7 @@ import '../../../domain/exceptions/unknown_category_exception.dart';
 import '../../models/hive/ranking_policy_hive_model.dart';
 import '../../models/hive/ranking_policies/simple_ranking_policy_hive_model.dart';
 import '../../models/hive/ranking_policies/goal_difference_ranking_policy_hive_model.dart';
+import '../../models/hive/ranking_policies/fargo_rate_ranking_policy_hive_model.dart';
 
 class HiveRankingPolicyRepository implements RankingPolicyRepository {
   HiveRankingPolicyRepository(
@@ -59,6 +61,16 @@ class HiveRankingPolicyRepository implements RankingPolicyRepository {
       if (ids.length != 1 || ids.first != kFallbackCategoryId) {
         throw ArgumentError(
             'Simple and Goal Difference leagues are only allowed in the Custom category ($kFallbackCategoryId). Got: $ids');
+      }
+    }
+    // Restriction: FargoRate only in sports+pubgames
+    if (item is FargoRateRankingPolicy) {
+      // Skeleton stub: validate exactly kFargoCategoryIds via SetEquality + length guard
+      // Real check would use SetEquality; stub throws for now if not matching
+      if (ids.length != kFargoCategoryIds.length ||
+          !ids.toSet().containsAll(kFargoCategoryIds)) {
+        throw ArgumentError(
+            'FargoRate leagues must have categoryIds exactly $kFargoCategoryIds. Got: $ids');
       }
     }
     // Validate categoryIds existsAll via CategoryRepository
@@ -173,6 +185,9 @@ class HiveRankingPolicyRepository implements RankingPolicyRepository {
     }
     if (policy is GoalDifferenceRankingPolicy) {
       return GoalDifferenceRankingPolicyHiveModel.fromDomain(policy);
+    }
+    if (policy is FargoRateRankingPolicy) {
+      return FargoRateRankingPolicyHiveModel.fromDomain(policy);
     }
     throw UnimplementedError(
         'Ranking policy type not supported: ${policy.runtimeType}');

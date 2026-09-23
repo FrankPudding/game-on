@@ -7,18 +7,21 @@ void main() {
       expect(RankingPolicyType.values, [
         RankingPolicyType.simple,
         RankingPolicyType.goalDifference,
+        RankingPolicyType.fargoRate,
       ]);
     });
 
     test('displayName should return friendly labels', () {
       expect(RankingPolicyType.simple.displayName, 'Simple Scoring');
       expect(RankingPolicyType.goalDifference.displayName, 'Goal Difference');
+      expect(RankingPolicyType.fargoRate.displayName, 'Pool');
     });
 
     test('description should return helpful descriptions', () {
       expect(RankingPolicyType.simple.description, contains('3 for Win'));
       expect(RankingPolicyType.goalDifference.description,
           contains('goal difference'));
+      expect(RankingPolicyType.fargoRate.description, 'FargoRate Rankings');
     });
   });
 }

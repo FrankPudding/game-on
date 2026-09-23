@@ -54,7 +54,8 @@ Future<void> _initHive() async {
       !Hive.isAdapterRegistered(8) ||
       !Hive.isAdapterRegistered(9) ||
       !Hive.isAdapterRegistered(10) ||
-      !Hive.isAdapterRegistered(11)) {
+      !Hive.isAdapterRegistered(11) ||
+      !Hive.isAdapterRegistered(12)) {
     try {
       Hive.registerAdapters();
     } catch (e) {

@@ -1,10 +1,11 @@
-# League Presentation — Player Editing
+# League Presentation — Player Editing, Standings & Match Logging
 
 ## Purpose
 
-Documents the league-scoped player-editing UI: where it lives, how it is reused,
-and why it visually distinguishes the global `User` from the league-scoped
-`LeaguePlayer`.
+Documents the league-scoped UI: player editing (where it lives, how it is reused,
+why it visually distinguishes the global `User` from the league-scoped
+`LeaguePlayer`), **standings presentation** (ranked vs alphabetical, Fargo columns
+and sorting), and **match logging** (Fargo draw-hiding).
 
 ## Canonical Locations
 
@@ -144,12 +145,36 @@ The title is informational only. It does not navigate, does not open `UserDetail
 
 `LeagueDetailState` exposes two views of the same player set (see `docs/architecture/sorting.md`):
 
-- `players` — **ranked** (`points → GD → GF → id`). Never uses `name` as a tie-breaker; only `id` is the stable fallback. Only `_StandingsTab` may use this list.
+- `players` — **ranked**. Never uses `name` as a tie-breaker; only `id` is the stable fallback. Only `_StandingsTab` may use this list.
+  - Simple: `points → id`
+  - GoalDifference: `points → goalDifference → goalsFor → id`
+  - **FargoRate (Pool): `rating DESC → wins DESC → id ASC`** — computed by `FargoRateCalculator` (initial `500`, `K=32`, `playedAt ASC + id ASC` replay). `fargoStats[playerId]?.rating ?? 500` and `wins` are the sort keys. See `docs/architecture/scoring-system-categories.md` → FargoRate Domain.
 - `playersByName` — **alphabetical** (`compareNames(name) → id`, via `lib/core/sorting/name_sort.dart`). Trim/empty-first/case-insensitive primary + case-sensitive secondary, then `id`. Pickers, selectors and dropdowns must use this list.
 
 `LeagueDetailScreen` passes ranked `state.players` to both `_StandingsTab` and `_MatchesTab` for display; all pickers in `LogMatchScreen` (two-player auto-select, `_PlayerSelector` sheets, winner dropdown and score labels) use `state.playersByName` and carry a `// Use alphabetical list for pickers — never ranked list.` comment. `_AddPlayerDialog` inherits alphabetical order from `usersProvider` (already `compareNames`-sorted) filtered by `existingUserIds` — it does not re-sort locally.
 
 **Ban:** Never use `players` for a picker/selector and never add name as a tie-breaker to the ranked sort. Tests assert the two lists are same-elements-different-order and that a player with top points (`Bob`) still sorts after `Alice` alphabetically — standings must stay ranked.
+
+## Standings — Fargo Columns
+
+`_StandingsTab` (`lib/presentation/screens/league/league_detail_screen.dart`) branches on `state.isFargo` (`rankingPolicy is FargoRateRankingPolicy`) and `state.fargoStats: Map<String, FargoPlayerStats>`:
+
+| Mode | Header | Row cells | Sort |
+|------|--------|-----------|------|
+| `isFargo == false` (Simple) | `P \| Pts` | `matchesPlayed \| points` | points→id |
+| `isFargo == false` + `isGoalDifference` | `P \| GF \| GA \| GD \| Pts` | `matchesPlayed \| goalsFor \| goalsAgainst \| goalDifference (+/-) \| points` | points→GD→GF→id |
+| **`isFargo == true`** | **`P \| W \| L \| Win% \| Fargo`** | **`matchesPlayed \| wins \| losses \| winRate*100 (1dp, %) \| rating`** | **`rating DESC → wins DESC → id ASC`** |
+
+`isTop3` bold/accent styling applies regardless of mode. Missing `fargoStats` falls back to `FargoPlayerStats(matchesPlayed:0, wins:0, losses:0, rating:500)` so the table never crashes on partial data. See `lib/domain/value_objects/fargo_player_stats.dart` (`winRate = wins/matchesPlayed`, `0` if none).
+
+## Match Logging — Fargo Hides Draw
+
+`LogMatchScreen` (`lib/presentation/screens/match/log_match_screen.dart`) derives `isFargo = state.isFargo` from `LeagueDetailState`:
+
+* `_buildWinnerSection` builds `DropdownButtonFormField` items `[player1, player2, if (!isFargo) Draw]`. For Fargo the Draw option is omitted — the UI prevents selecting a draw. The domain `FargoRateCalculator` would throw `ArgumentError` on `isDraw` anyway, but the hiding is the primary guard.
+* `_submit` validates players/winner before calling `leagueDetailProvider.notifier.logSimpleMatch` / `updateSimpleMatch`; the notifier writes a `SimpleMatch` with `isComplete: true`, `winnerSideId` set, and `playedAt` defaulting to today.
+
+`CreateFargoRateLeagueScreen` (`lib/presentation/screens/league/create_fargo_rate_league_screen.dart`, default `categoryId = kSportsCategoryId`) always constructs `FargoRateRankingPolicy(categoryIds: kFargoCategoryIds)` (both sports+pubgames) and calls `leaguesProvider.notifier.addLeague`; the service/repo guards enforce the exact-two invariant.
 
 ## Invalidation Ownership
 
@@ -170,8 +195,12 @@ PlayerEditDialog
 ## Related Files
 
 - `lib/presentation/screens/league/widgets/player_edit_dialog.dart`
-- `lib/presentation/screens/league/league_detail_screen.dart`
+- `lib/presentation/screens/league/league_detail_screen.dart` (`_StandingsTab` Fargo `P W L Win% Fargo`, `fargoStats`, `isFargo`)
+- `lib/presentation/screens/league/create_fargo_rate_league_screen.dart` (Fargo creation, `kFargoCategoryIds`)
+- `lib/presentation/screens/match/log_match_screen.dart` (hide draw when `isFargo`, alphabetical pickers)
 - `lib/presentation/screens/settings/user_detail_screen.dart` (reuses dialog with `showRemoveAction: false`)
-- `lib/providers/league_detail_provider.dart` — invalidation owner
-- `docs/domain-language.md` — User vs LeaguePlayer
+- `lib/providers/league_detail_provider.dart` — invalidation owner, `isFargo`/`fargoStats`, Fargo sorting `rating→wins→id`, `isGoalDifference`
+- `lib/domain/services/fargo_rate_calculator.dart` + `lib/domain/value_objects/fargo_player_stats.dart` — pure domain, `kFargoInitialRating=500`, `K=32`
+- `docs/domain-language.md` — User vs LeaguePlayer, FargoRate
 - `docs/architecture/provider-invalidation.md` — invalidation ownership rule
+- `docs/architecture/scoring-system-categories.md` — categories, Fargo whitelist, migration V3

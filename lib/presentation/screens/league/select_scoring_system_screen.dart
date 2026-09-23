@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/hive_box_names.dart';
+import '../../../domain/entities/ranking_policies/fargo_rate_ranking_policy.dart';
 import '../../../domain/entities/ranking_policies/goal_difference_ranking_policy.dart';
 import '../../../domain/entities/ranking_policies/simple_ranking_policy.dart';
 import '../../../domain/entities/ranking_policy_type.dart';
@@ -8,19 +9,29 @@ import '../../../providers/leagues_provider.dart';
 import '../../theme/app_theme.dart';
 import 'create_simple_league_screen.dart';
 import 'create_goal_difference_league_screen.dart';
+import 'create_fargo_rate_league_screen.dart';
 
 /// Repo-driven provider: allowed [RankingPolicyType] for a category.
 /// Queries [RankingPolicyRepository.getByCategory] and maps to types.
 ///
 /// Simple and Goal Difference are only available in the custom category
-/// ([kFallbackCategoryId]). For any other category this provider returns
-/// an empty list, causing the UI to show "No scoring systems available".
-/// Falls back to all types for custom when repo is empty or fails
-/// (seed-only map is not runtime truth; custom is the only category
-/// that supports these types).
+/// ([kFallbackCategoryId]). FargoRate is only available in sports/pubgames
+/// ([kSportsCategoryId]/[kPubGamesCategoryId]) via unconditional whitelist
+/// — always returns [fargoRate] regardless of repo state (Pool must always
+/// be available under Sports + Pub Games per kSeedCategoryPolicyTypes).
+/// For other categories this provider returns an empty list.
+/// Falls back to all types for custom when repo is empty or fails.
+/// Bootstrap vs corruption distinction applies only to Custom fallback, not Fargo.
 final rankingPolicyTypesForCategoryProvider =
     FutureProvider.family<List<RankingPolicyType>, String>(
         (ref, categoryId) async {
+  // Fargo whitelist: sports/pubgames — unconditional Pool availability.
+  // Pool (FargoRate) must ALWAYS be available under Sports + Pub Games via
+  // whitelist from kSeedCategoryPolicyTypes, regardless of repo state.
+  // Bootstrap vs corruption distinction applies only to Custom fallback, not Fargo.
+  if (categoryId == kSportsCategoryId || categoryId == kPubGamesCategoryId) {
+    return [RankingPolicyType.fargoRate];
+  }
   // Enforcement: only custom category supports simple / goalDifference.
   if (categoryId != kFallbackCategoryId) {
     return <RankingPolicyType>[];
@@ -35,6 +46,8 @@ final rankingPolicyTypesForCategoryProvider =
         types.add(RankingPolicyType.simple);
       } else if (p is GoalDifferenceRankingPolicy) {
         types.add(RankingPolicyType.goalDifference);
+      } else if (p is FargoRateRankingPolicy) {
+        types.add(RankingPolicyType.fargoRate);
       }
     }
     if (types.isEmpty) return RankingPolicyType.values;
@@ -110,6 +123,16 @@ class SelectScoringSystemScreen extends ConsumerWidget {
                               MaterialPageRoute(
                                 builder: (context) =>
                                     CreateGoalDifferenceLeagueScreen(
+                                        categoryId: effectiveCategoryId),
+                              ),
+                            );
+                            break;
+                          case RankingPolicyType.fargoRate:
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    CreateFargoRateLeagueScreen(
                                         categoryId: effectiveCategoryId),
                               ),
                             );

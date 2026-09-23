@@ -10,8 +10,9 @@ import '../../domain/entities/ranking_policy_type.dart';
 const Map<String, List<RankingPolicyType>> kSeedCategoryPolicyTypes = {
   'cat_boardgames': [],
   'cat_cardgames': [],
-  'cat_sports': [],
+  'cat_sports': [RankingPolicyType.fargoRate],
   'cat_videogames': [],
+  'cat_pubgames': [RankingPolicyType.fargoRate],
   'cat_custom_league_001': [
     RankingPolicyType.simple,
     RankingPolicyType.goalDifference

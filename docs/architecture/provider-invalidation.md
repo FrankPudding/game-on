@@ -45,17 +45,17 @@ userDetailProvider(userId) (user's leagues, players, matches)
   └── Depends on explicit invalidation from usersProvider and leagueDetailProvider
 
 categoriesProvider (all categories ordered by parentId + sortOrder)
-  └── reads: CategoryRepository.getAllOrdered() — rebuilt from truth on each read; no mutation invalidation (categories are seed-only, HiveCategoryRepository.put/delete mutate derived slug/parent indexes under shared Lock)
+  └── reads: CategoryRepository.getAllOrdered() — rebuilt from truth on each read; no mutation invalidation (categories are seed-only, HiveCategoryRepository.put/delete mutate derived slug/parent indexes under shared Lock; V3 added cat_pubgames at 3500 with gap<2 normalize)
 
 categoriesRootsProvider (roots only, sorted by sortOrder)
-  └── reads: CategoryRepository.getRoots()
+  └── reads: CategoryRepository.getRoots() — six roots (Board/Card/Sports/Video/PubGames/Custom) after V3
 
 rankingPolicyTypesForCategoryProvider(categoryId) (FutureProvider.family)
-  ├── reads: RankingPolicyRepository.getByCategory(categoryId) — scans truth box (categoryIds.contains), falls back to categoryPolicyIndex cache
-  ├── custom-only branch: if categoryId != kFallbackCategoryId (cat_custom_league_001) → immediately returns [] (no repo query) → SelectScoringSystemScreen shows “No scoring systems available for this category”
-  ├── for kFallbackCategoryId only: empty/error → all RankingPolicyType.values (custom remains usable even with empty box)
-  ├── reads: rankingPolicyRepositoryProvider (no watch, via ref.read inside provider)
-  └── used by: SelectScoringSystemScreen(categoryId) — category existence validated via categoriesProvider; invalid categoryId → SnackBar + fallback to kFallbackCategoryId; valid non-custom → empty state (see above)
+  ├── Fargo whitelist (sports/pubgames): if categoryId in {kSportsCategoryId, kPubGamesCategoryId} → unconditional [fargoRate] (no repo query, via kSeedCategoryPolicyTypes whitelist; always available regardless of repo state)
+  ├── Custom branch (only repo-driven category): if categoryId == kFallbackCategoryId (cat_custom_league_001)
+  │     └── reads RankingPolicyRepository.getByCategory(categoryId) — scans truth box (categoryIds.contains), falls back to categoryPolicyIndex cache; no watch (ref.read); empty/error → RankingPolicyType.values fallback (bootstrap vs corruption distinction lives here: empty box → all types for usability, populated → map Simple/GoalDifference/FargoRate); else map Simple/GoalDifference/FargoRate
+  ├── Other (board/card/video): immediately returns [] (no repo query) → SelectScoringSystemScreen empty state
+  └── used by: SelectScoringSystemScreen(categoryId) — category existence validated via categoriesProvider; invalid categoryId → SnackBar + fallback to kFallbackCategoryId; valid non-Fargo/non-Custom → empty state
 
 categoryRepositoryProvider / rankingPolicyRepositoryProvider (Provider<repo>)
   └── expose: HiveCategoryRepository / HiveRankingPolicyRepository (shared Lock via GetIt; derived indexes are rebuildable caches, repaired by CategoryIndexRebuilder.rebuildIfNeeded after openBox)
@@ -335,9 +335,15 @@ Sorting does not affect invalidation. Alphabetical ordering (`lib/core/sorting/n
 
 ## Categories — Read-Only Providers, No Cross-Invalidation
 
-Categories are currently **seed-only** (five built-ins upserted by `HiveDatabaseMigrationService._migrateToV2`, `isBuiltIn: true`). There is no user-facing mutation flow that writes categories through a provider, so `categoriesProvider` / `categoriesRootsProvider` have no invalidation owners — they re-read truth on next `ref.watch` after the box changes. Repository-level writes (`HiveCategoryRepository.put`/`delete`) maintain derived indexes (`categorySlugIndex`, `categoryParentIndex`, `categoryPolicyIndex`) under the shared `Lock`; `CategoryIndexRebuilder.rebuildIfNeeded` repairs drift after `openBox`.
+Categories are currently **seed-only** (six built-ins upserted by `HiveDatabaseMigrationService._migrateToV2` + `_migrateToV3`, `isBuiltIn: true`; V3 added `cat_pubgames` at 3500 with midpoint + gap<2 normalize). There is no user-facing mutation flow that writes categories through a provider, so `categoriesProvider` / `categoriesRootsProvider` have no invalidation owners — they re-read truth on next `ref.watch` after the box changes. Repository-level writes (`HiveCategoryRepository.put`/`delete`) maintain derived indexes (`categorySlugIndex`, `categoryParentIndex`, `categoryPolicyIndex`) under the shared `Lock`; `CategoryIndexRebuilder.rebuildIfNeeded` repairs drift after `openBox` and V3 rebuilds slug/parent/policy indexes from truth.
 
-`rankingPolicyTypesForCategoryProvider(categoryId)` is a `FutureProvider.family` over `RankingPolicyRepository.getByCategory`. It does **not** watch other providers; it reads the repository each time. **Custom-only:** if `categoryId != kFallbackCategoryId` it returns `[]` immediately (no repo query) and `SelectScoringSystemScreen` shows the empty state `No scoring systems available for this category`. Only for `kFallbackCategoryId` (Custom) does it query `getByCategory`; if that returns empty or throws, it falls back to `RankingPolicyType.values` so the custom category remains usable (see `docs/architecture/scoring-system-categories.md` → Scoring System Availability, Provider Graph and UI Flow).
+`rankingPolicyTypesForCategoryProvider(categoryId)` is a `FutureProvider.family` with an unconditional Fargo whitelist and a single repo-driven branch (Custom). It does **not** watch other providers; Custom reads the repository via `ref.read` each time.
+
+* **Fargo whitelist (sports/pubgames):** `categoryId in {kSportsCategoryId, kPubGamesCategoryId}` → **unconditional** `[fargoRate]` (no `getByCategory`/`getAll` query) via `kSeedCategoryPolicyTypes` whitelist. Always available under Sports + Pub Games regardless of repo state — fresh install, populated repo, or after Custom leagues exist. Bootstrap vs corruption distinction does **not** apply to Fargo. See `docs/architecture/scoring-system-categories.md` → Scoring System Availability (Whitelist).
+* **Custom (only repo-driven category):** `kFallbackCategoryId` queries `getByCategory`; empty/error → `RankingPolicyType.values` fallback (bootstrap vs corruption distinction lives here: empty box → all types for usability, populated → map `Simple`/`GoalDifference`/`FargoRate`) so custom remains usable even with an empty box.
+* **Other (board/card/video):** immediately returns `[]` (no repo query) → empty state `No scoring systems available for this category`.
+
+Only for the allowed categories does the provider query the repo; otherwise the empty state is correct. Invalid `categoryId` deep links are handled by `SelectScoringSystemScreen` validating against `categoriesProvider` and falling back to `kFallbackCategoryId` with a SnackBar.
 
 If a future feature adds user-mutable categories, add explicit `ref.invalidate(categoriesProvider)` / `ref.invalidate(categoriesRootsProvider)` and `ref.invalidate(rankingPolicyTypesForCategoryProvider(...))` at the mutation site — after the repository write succeeds — following the write-then-invalidate rule.
 

@@ -44,7 +44,6 @@ void main() {
     final nonCustomIds = [
       'cat_boardgames',
       'cat_cardgames',
-      'cat_sports',
       'cat_videogames',
     ];
 

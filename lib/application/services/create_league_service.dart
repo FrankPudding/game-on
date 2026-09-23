@@ -3,6 +3,7 @@ import '../../domain/entities/league.dart';
 import '../../domain/entities/ranking_policy.dart';
 import '../../domain/entities/ranking_policies/goal_difference_ranking_policy.dart';
 import '../../domain/entities/ranking_policies/simple_ranking_policy.dart';
+import '../../domain/entities/ranking_policies/fargo_rate_ranking_policy.dart';
 import '../../domain/repositories/league_repository.dart';
 import '../../domain/repositories/ranking_policy_repository.dart';
 import '../../domain/repositories/category_repository.dart';
@@ -53,6 +54,14 @@ class CreateLeagueService {
           idsToValidate.first != kFallbackCategoryId) {
         throw ArgumentError(
             'Simple and Goal Difference leagues are only allowed in the Custom category ($kFallbackCategoryId). Got: $idsToValidate');
+      }
+    }
+    // Restriction: FargoRate only in sports+pubgames
+    if (rankingPolicy is FargoRateRankingPolicy) {
+      if (idsToValidate.length != kFargoCategoryIds.length ||
+          !idsToValidate.toSet().containsAll(kFargoCategoryIds)) {
+        throw ArgumentError(
+            'FargoRate leagues must have categoryIds exactly $kFargoCategoryIds. Got: $idsToValidate');
       }
     }
     // If categoryIds param differs, ensure policy matches (propagation)

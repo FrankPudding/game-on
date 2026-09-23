@@ -10,10 +10,12 @@ void main() {
           reason: 'boardgames should have no allowed types');
       expect(kSeedCategoryPolicyTypes['cat_cardgames'], isEmpty,
           reason: 'cardgames should have no allowed types');
-      expect(kSeedCategoryPolicyTypes['cat_sports'], isEmpty,
-          reason: 'sports should have no allowed types');
+      expect(kSeedCategoryPolicyTypes['cat_sports'], [RankingPolicyType.fargoRate],
+          reason: 'sports should have fargoRate');
       expect(kSeedCategoryPolicyTypes['cat_videogames'], isEmpty,
           reason: 'videogames should have no allowed types');
+      expect(kSeedCategoryPolicyTypes['cat_pubgames'], [RankingPolicyType.fargoRate],
+          reason: 'pubgames should have fargoRate');
     });
 
     test('custom category should contain both simple and goalDifference', () {
@@ -29,6 +31,9 @@ void main() {
       for (final entry in kSeedCategoryPolicyTypes.entries) {
         if (entry.key == kFallbackCategoryId) {
           expect(entry.value, isNotEmpty);
+        } else if (entry.key == 'cat_sports' || entry.key == 'cat_pubgames') {
+          expect(entry.value, [RankingPolicyType.fargoRate],
+              reason: '${entry.key} should be [fargoRate]');
         } else {
           expect(entry.value, isEmpty,
               reason: '${entry.key} should be empty but was ${entry.value}');
@@ -37,7 +42,7 @@ void main() {
     });
 
     test('map should contain exactly 5 entries', () {
-      expect(kSeedCategoryPolicyTypes.length, 5);
+      expect(kSeedCategoryPolicyTypes.length, 6);
       expect(
           kSeedCategoryPolicyTypes.keys,
           containsAll([
@@ -45,6 +50,7 @@ void main() {
             'cat_cardgames',
             'cat_sports',
             'cat_videogames',
+            'cat_pubgames',
             kFallbackCategoryId,
           ]));
     });
@@ -56,7 +62,8 @@ void main() {
         'cat_boardgames',
         'cat_cardgames',
         'cat_sports',
-        'cat_videogames'
+        'cat_videogames',
+        'cat_pubgames'
       ]) {
         expect(kSeedCategoryPolicyTypes[id],
             isNot(contains(RankingPolicyType.simple)));

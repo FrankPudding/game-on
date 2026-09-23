@@ -45,6 +45,7 @@ void main() {
 
       expect(find.text('Simple Scoring'), findsOneWidget);
       expect(find.text('Goal Difference'), findsOneWidget);
+      expect(find.text('Pool'), findsOneWidget);
       expect(
           find.text(
               'Standard points for Match outcomes (e.g. 3 for Win, 1 for Draw, 0 for Loss).'),
@@ -53,7 +54,8 @@ void main() {
           find.text(
               'Enter the score for each match and rank by points, goal difference, then goals for (e.g. Ping Pong, Table Football).'),
           findsOneWidget);
-      expect(find.byType(Card), findsNWidgets(2));
+      expect(find.text('FargoRate Rankings'), findsOneWidget);
+      expect(find.byType(Card), findsNWidgets(3));
     });
 
     testWidgets(
@@ -85,11 +87,11 @@ void main() {
     testWidgets('should handle empty policies list', (tester) async {
       // Test with a custom widget that has no policies
       // Since the screen uses RankingPolicyType.values directly, we can't easily mock it empty.
-      // But we can verify the current behavior has 2 policies.
+      // But we can verify the current behavior has 3 policies.
       await openScreen(tester);
       await tester.pump();
 
-      expect(find.byType(Card), findsNWidgets(2));
+      expect(find.byType(Card), findsNWidgets(3));
     });
   });
 }

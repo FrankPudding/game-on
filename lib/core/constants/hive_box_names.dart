@@ -17,3 +17,8 @@ class HiveBoxNames {
 const String kFallbackCategoryId = 'cat_custom_league_001';
 
 const int kMaxCategoryDepth = 1;
+
+const String kSportsCategoryId = 'cat_sports';
+const String kPubGamesCategoryId = 'cat_pubgames';
+const List<String> kFargoCategoryIds = [kSportsCategoryId, kPubGamesCategoryId];
+const int kFargoInitialRating = 500;
