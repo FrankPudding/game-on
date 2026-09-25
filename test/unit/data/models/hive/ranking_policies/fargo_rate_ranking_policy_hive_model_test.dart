@@ -12,11 +12,11 @@ void main() {
 
     test('fromDomain maps all fields with defensive List.from copy', () {
       final policy = FargoRateRankingPolicy(
-        id: 'rp1',
-        name: 'Pool',
-        leagueId: 'l1',
-        categoryIds: const [kSportsCategoryId, kPubGamesCategoryId],
-      );
+          id: 'rp1',
+          name: 'Pool',
+          leagueId: 'l1',
+          categoryIds: const [kSportsCategoryId, kPubGamesCategoryId],
+          initialRating: 500);
       final model = FargoRateRankingPolicyHiveModel.fromDomain(policy);
       expect(model.id, 'rp1');
       expect(model.name, 'Pool');
@@ -24,7 +24,12 @@ void main() {
       expect(model.categoryIds, [kSportsCategoryId, kPubGamesCategoryId]);
       // defensive copy: mutating original list should not affect model
       final mutable = [kSportsCategoryId, kPubGamesCategoryId];
-      final p2 = FargoRateRankingPolicy(id: 'rp2', name: 'Pool', leagueId: 'l1', categoryIds: mutable);
+      final p2 = FargoRateRankingPolicy(
+          id: 'rp2',
+          name: 'Pool',
+          leagueId: 'l1',
+          categoryIds: mutable,
+          initialRating: 500);
       final m2 = FargoRateRankingPolicyHiveModel.fromDomain(p2);
       mutable.add('extra');
       expect(m2.categoryIds, isNot(contains('extra')));
@@ -42,7 +47,8 @@ void main() {
       expect(policy.name, 'Pool');
       expect(policy.leagueId, 'l1');
       expect(policy.categoryIds, [kSportsCategoryId, kPubGamesCategoryId]);
-      expect(() => (policy.categoryIds as List).add('x'), throwsUnsupportedError);
+      expect(
+          () => (policy.categoryIds as List).add('x'), throwsUnsupportedError);
     });
 
     test('toDomain throws StateError when categoryIds empty (corruption)', () {
@@ -55,7 +61,9 @@ void main() {
       expect(() => model.toDomain(), throwsStateError);
     });
 
-    test('fromDomain with reversed order preserves order but toDomain validates set-equality still passes', () {
+    test(
+        'fromDomain with reversed order preserves order but toDomain validates set-equality still passes',
+        () {
       final model = FargoRateRankingPolicyHiveModel(
         id: 'rp1',
         name: 'Pool',

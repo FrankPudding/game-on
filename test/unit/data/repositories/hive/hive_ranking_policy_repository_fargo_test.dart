@@ -9,8 +9,11 @@ import 'package:game_on/domain/entities/ranking_policies/simple_ranking_policy.d
 import 'package:game_on/domain/repositories/category_repository.dart';
 
 class MockCategoryRepository extends Mock implements CategoryRepository {}
+
 class MockBox extends Mock implements Box<RankingPolicyHiveModel> {}
-class FakeRankingPolicyHiveModel extends Fake implements RankingPolicyHiveModel {}
+
+class FakeRankingPolicyHiveModel extends Fake
+    implements RankingPolicyHiveModel {}
 
 void main() {
   late MockCategoryRepository mockCategoryRepo;
@@ -20,48 +23,104 @@ void main() {
     mockCategoryRepo = MockCategoryRepository();
     mockBox = MockBox();
     registerFallbackValue(FakeRankingPolicyHiveModel());
-    registerFallbackValue(FargoRateRankingPolicy(id: 'x', name: 'y', leagueId: 'z', categoryIds: const [kSportsCategoryId, kPubGamesCategoryId]));
+    registerFallbackValue(FargoRateRankingPolicy(
+        id: 'x',
+        name: 'y',
+        leagueId: 'z',
+        categoryIds: const [kSportsCategoryId, kPubGamesCategoryId],
+        initialRating: 500));
     when(() => mockBox.put(any(), any())).thenAnswer((_) async => {});
     when(() => mockCategoryRepo.existsAll(any())).thenAnswer((_) async => true);
   });
 
   group('HiveRankingPolicyRepository.put – Fargo guards', () {
     test('accepts exact Fargo ids', () async {
-      final repo = HiveRankingPolicyRepository(mockBox, categoryRepository: mockCategoryRepo);
-      final policy = FargoRateRankingPolicy(id: 'rp1', name: 'Pool', leagueId: 'l1', categoryIds: const [kSportsCategoryId, kPubGamesCategoryId]);
+      final repo = HiveRankingPolicyRepository(mockBox,
+          categoryRepository: mockCategoryRepo);
+      final policy = FargoRateRankingPolicy(
+          id: 'rp1',
+          name: 'Pool',
+          leagueId: 'l1',
+          categoryIds: const [kSportsCategoryId, kPubGamesCategoryId],
+          initialRating: 500);
       await repo.put(policy);
-      verify(() => mockBox.put('rp1', any(that: isA<RankingPolicyHiveModel>()))).called(1);
+      verify(() => mockBox.put('rp1', any(that: isA<RankingPolicyHiveModel>())))
+          .called(1);
     });
 
     test('accepts reversed order', () async {
-      final repo = HiveRankingPolicyRepository(mockBox, categoryRepository: mockCategoryRepo);
-      final policy = FargoRateRankingPolicy(id: 'rp1', name: 'Pool', leagueId: 'l1', categoryIds: const [kPubGamesCategoryId, kSportsCategoryId]);
+      final repo = HiveRankingPolicyRepository(mockBox,
+          categoryRepository: mockCategoryRepo);
+      final policy = FargoRateRankingPolicy(
+          id: 'rp1',
+          name: 'Pool',
+          leagueId: 'l1',
+          categoryIds: const [kPubGamesCategoryId, kSportsCategoryId],
+          initialRating: 500);
       await repo.put(policy);
       verify(() => mockBox.put('rp1', any())).called(1);
     });
 
     test('rejects only sports', () async {
-      expect(() => FargoRateRankingPolicy(id: 'rp1', name: 'Pool', leagueId: 'l1', categoryIds: const [kSportsCategoryId]), throwsArgumentError);
+      expect(
+          () => FargoRateRankingPolicy(
+              id: 'rp1',
+              name: 'Pool',
+              leagueId: 'l1',
+              categoryIds: const [kSportsCategoryId],
+              initialRating: 500),
+          throwsArgumentError);
     });
 
     test('rejects duplicate', () async {
-      expect(() => FargoRateRankingPolicy(id: 'rp1', name: 'Pool', leagueId: 'l1', categoryIds: const [kSportsCategoryId, kSportsCategoryId]), throwsArgumentError);
+      expect(
+          () => FargoRateRankingPolicy(
+              id: 'rp1',
+              name: 'Pool',
+              leagueId: 'l1',
+              categoryIds: const [kSportsCategoryId, kSportsCategoryId],
+              initialRating: 500),
+          throwsArgumentError);
     });
 
     test('rejects extra', () async {
-      expect(() => FargoRateRankingPolicy(id: 'rp1', name: 'Pool', leagueId: 'l1', categoryIds: const [kSportsCategoryId, kPubGamesCategoryId, 'extra']), throwsArgumentError);
+      expect(
+          () => FargoRateRankingPolicy(
+              id: 'rp1',
+              name: 'Pool',
+              leagueId: 'l1',
+              categoryIds: const [
+                kSportsCategoryId,
+                kPubGamesCategoryId,
+                'extra'
+              ],
+              initialRating: 500),
+          throwsArgumentError);
     });
 
     test('rejects Simple with Fargo ids (Simple only custom)', () async {
-      final repo = HiveRankingPolicyRepository(mockBox, categoryRepository: mockCategoryRepo);
-      final simple = SimpleRankingPolicy(id: 'rp1', name: 'Simple', leagueId: 'l1', categoryIds: const [kSportsCategoryId, kPubGamesCategoryId]);
+      final repo = HiveRankingPolicyRepository(mockBox,
+          categoryRepository: mockCategoryRepo);
+      final simple = SimpleRankingPolicy(
+          id: 'rp1',
+          name: 'Simple',
+          leagueId: 'l1',
+          categoryIds: const [kSportsCategoryId, kPubGamesCategoryId]);
       expect(() => repo.put(simple), throwsArgumentError);
     });
 
-    test('throws UnknownCategoryException when category does not exist', () async {
-      final repo = HiveRankingPolicyRepository(mockBox, categoryRepository: mockCategoryRepo);
-      when(() => mockCategoryRepo.existsAll(any())).thenAnswer((_) async => false);
-      final policy = FargoRateRankingPolicy(id: 'rp1', name: 'Pool', leagueId: 'l1', categoryIds: const [kSportsCategoryId, kPubGamesCategoryId]);
+    test('throws UnknownCategoryException when category does not exist',
+        () async {
+      final repo = HiveRankingPolicyRepository(mockBox,
+          categoryRepository: mockCategoryRepo);
+      when(() => mockCategoryRepo.existsAll(any()))
+          .thenAnswer((_) async => false);
+      final policy = FargoRateRankingPolicy(
+          id: 'rp1',
+          name: 'Pool',
+          leagueId: 'l1',
+          categoryIds: const [kSportsCategoryId, kPubGamesCategoryId],
+          initialRating: 500);
       expect(() => repo.put(policy), throwsA(isA<Exception>()));
     });
   });

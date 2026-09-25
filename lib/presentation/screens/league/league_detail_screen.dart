@@ -6,6 +6,8 @@ import '../../../domain/entities/league_player.dart';
 import '../../../domain/entities/side.dart';
 import '../../../domain/entities/matches/simple_match.dart';
 import '../../../domain/entities/user.dart';
+import '../../../domain/entities/ranking_policies/elo_ranking_policy.dart';
+import '../../../domain/value_objects/elo_player_stats.dart';
 import '../../../domain/value_objects/fargo_player_stats.dart';
 import '../../../providers/league_detail_provider.dart';
 import '../../../providers/leagues_provider.dart';
@@ -142,6 +144,9 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
               fargoStats: state.fargoStats,
               isGoalDifference: state.isGoalDifference,
               isFargo: state.isFargo,
+              isElo: state.isElo,
+              eloStats: state.eloStats,
+              rankingPolicy: state.rankingPolicy,
               onAddPlayer: _showAddPlayerDialog,
               onEditPlayer: _showEditPlayerDialog,
             ),
@@ -179,15 +184,21 @@ class _StandingsTab extends StatelessWidget {
     required this.onEditPlayer,
     this.isGoalDifference = false,
     this.isFargo = false,
+    this.isElo = false,
     this.fargoStats = const {},
+    this.eloStats = const {},
+    this.rankingPolicy,
   });
   final List<LeaguePlayer> players;
   final Map<String, PlayerStats> playerStats;
   final Map<String, FargoPlayerStats> fargoStats;
+  final Map<String, EloPlayerStats> eloStats;
+  final dynamic rankingPolicy;
   final VoidCallback onAddPlayer;
   final Function(LeaguePlayer) onEditPlayer;
   final bool isGoalDifference;
   final bool isFargo;
+  final bool isElo;
 
   @override
   Widget build(BuildContext context) {
@@ -224,12 +235,12 @@ class _StandingsTab extends StatelessWidget {
             children: [
               const SizedBox(width: 32, child: Text('#', style: _headerStyle)),
               const Expanded(child: Text('PLAYER', style: _headerStyle)),
-              if (isFargo) ...[
+              if (isFargo || isElo) ...[
                 _buildHeaderCell('P', 'Matches Played'),
                 _buildHeaderCell('W', 'Wins'),
                 _buildHeaderCell('L', 'Losses'),
-                _buildHeaderCell('Win%', 'Win Percentage'),
-                _buildHeaderCell('Fargo', 'Fargo Rating'),
+                _buildHeaderCell('Win%', 'Win Percentage', width: 50),
+                _buildHeaderCell('Fargo', 'Fargo Rating', width: 50),
               ] else ...[
                 _buildHeaderCell('P', 'Matches Played'),
                 if (isGoalDifference) ...[
@@ -256,9 +267,19 @@ class _StandingsTab extends StatelessWidget {
               final player = players[index];
               final stats = playerStats[player.id] ??
                   const PlayerStats(points: 0, matchesPlayed: 0);
-              final fargo = fargoStats[player.id] ??
-                  const FargoPlayerStats(
-                      matchesPlayed: 0, wins: 0, losses: 0, rating: 500);
+              final fallbackRating = rankingPolicy is EloRankingPolicy
+                  ? (rankingPolicy as EloRankingPolicy).initialRating
+                  : 500;
+              final effectiveStats = isElo || isFargo
+                  ? (eloStats.isNotEmpty ? eloStats : fargoStats)
+                  : const <String, EloPlayerStats>{};
+              final fargo = effectiveStats[player.id] ??
+                  fargoStats[player.id] ??
+                  EloPlayerStats(
+                      matchesPlayed: 0,
+                      wins: 0,
+                      losses: 0,
+                      rating: fallbackRating);
               final isTop3 = index < 3;
 
               return InkWell(
@@ -319,7 +340,7 @@ class _StandingsTab extends StatelessWidget {
                           ],
                         ),
                       ),
-                      if (isFargo) ...[
+                      if (isFargo || isElo) ...[
                         SizedBox(
                           width: 40,
                           child: Text(

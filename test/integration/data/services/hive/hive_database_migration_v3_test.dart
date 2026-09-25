@@ -13,7 +13,9 @@ void main() {
     tempDir = await Directory.systemTemp.createTemp();
     Hive.init(tempDir.path);
     if (!Hive.isAdapterRegistered(11)) {
-      try { Hive.registerAdapters(); } catch (_) {}
+      try {
+        Hive.registerAdapters();
+      } catch (_) {}
     }
     if (!Hive.isAdapterRegistered(12)) {
       // ensure not double registered
@@ -26,7 +28,8 @@ void main() {
   });
 
   group('Migration V3 – cat_pubgames', () {
-    test('0->3 fresh installs 6 categories including cat_pubgames at 3500', () async {
+    test('0->3 fresh installs 6 categories including cat_pubgames at 3500',
+        () async {
       final service = HiveDatabaseMigrationService();
       await service.migrate(3);
       final box = Hive.box<CategoryHiveModel>(HiveBoxNames.categories);
@@ -35,7 +38,8 @@ void main() {
       expect(pub, isNotNull, reason: 'cat_pubgames missing after V3');
       expect(pub!.isBuiltIn, isTrue);
       expect(pub.parentId, isNull);
-      expect(pub.sortOrder, 3500, reason: 'midpoint 3500 between 3000 and 4000');
+      expect(pub.sortOrder, 3500,
+          reason: 'midpoint 3500 between 3000 and 4000');
       expect(pub.name, isNotEmpty);
       expect(pub.slug, isNotEmpty);
       // adapter guard
@@ -52,7 +56,9 @@ void main() {
       expect(rootsRaw!.split(',').contains('cat_pubgames'), isTrue);
     });
 
-    test('2->3 upgrade preserves existing sortOrder if cat_pubgames already exists', () async {
+    test(
+        '2->3 upgrade preserves existing sortOrder if cat_pubgames already exists',
+        () async {
       final service = HiveDatabaseMigrationService();
       await service.migrate(2);
       final box = Hive.box<CategoryHiveModel>(HiveBoxNames.categories);
@@ -75,7 +81,9 @@ void main() {
       expect(box.length, 6);
     });
 
-    test('gap<2 triggers normalize to 0,1000,2000… sorted by current order then id', () async {
+    test(
+        'gap<2 triggers normalize to 0,1000,2000… sorted by current order then id',
+        () async {
       final service = HiveDatabaseMigrationService();
       await service.migrate(2);
       final box = Hive.box<CategoryHiveModel>(HiveBoxNames.categories);
@@ -96,13 +104,16 @@ void main() {
         await box.put(cat.id, updated);
       }
       await service.migrate(3);
-      final sorted = box.values.toList()..sort((a,b)=> a.sortOrder.compareTo(b.sortOrder));
+      final sorted = box.values.toList()
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
       // After normalize, gaps should be 1000
       // Check that pubgames inserted at midpoint then normalize happened -> deterministic 0,1000...
-      expect(sorted.map((c)=>c.sortOrder).toList(), containsAll([0,1000,2000,3000,4000,5000]));
+      expect(sorted.map((c) => c.sortOrder).toList(),
+          containsAll([0, 1000, 2000, 3000, 4000, 5000]));
       // Verify gap >=1000
-      for (int j=1; j<sorted.length; j++) {
-        expect(sorted[j].sortOrder - sorted[j-1].sortOrder, greaterThanOrEqualTo(1000));
+      for (int j = 1; j < sorted.length; j++) {
+        expect(sorted[j].sortOrder - sorted[j - 1].sortOrder,
+            greaterThanOrEqualTo(1000));
       }
     });
 
@@ -119,7 +130,8 @@ void main() {
       expect(parentIndex.get('__roots__'), isNotNull);
     });
 
-    test('adapter typeId 12 guard present and not duplicate registration', () async {
+    test('adapter typeId 12 guard present and not duplicate registration',
+        () async {
       final service = HiveDatabaseMigrationService();
       await service.migrate(3);
       expect(Hive.isAdapterRegistered(12), isTrue);
@@ -132,7 +144,7 @@ void main() {
       final service = HiveDatabaseMigrationService();
       await service.migrate(3);
       final box = Hive.box<CategoryHiveModel>(HiveBoxNames.categories);
-      final before = { for (var c in box.values) c.id: c.sortOrder };
+      final before = {for (var c in box.values) c.id: c.sortOrder};
       await service.migrate(3);
       for (var c in box.values) {
         expect(c.sortOrder, before[c.id]);
@@ -142,7 +154,9 @@ void main() {
       expect(meta.get('db_version'), 3);
     });
 
-    test('crash-retry: if V3 throws before bump, retry succeeds (meta not bumped)', () async {
+    test(
+        'crash-retry: if V3 throws before bump, retry succeeds (meta not bumped)',
+        () async {
       final service = HiveDatabaseMigrationService();
       await service.migrate(2);
       final meta = Hive.box('meta');

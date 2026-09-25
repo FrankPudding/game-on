@@ -31,7 +31,10 @@ class HiveRankingPolicyRepository implements RankingPolicyRepository {
   @override
   Future<RankingPolicy?> get(String id) async {
     final model = _box.get(id);
-    return model?.toDomain();
+    if (model == null) return null;
+    // Skeleton: should propagate corruption errors (StateError/ArgumentError from toDomain), not swallow.
+    // For now delegates to toDomain which stub throws UnimplementedError.
+    return model.toDomain();
   }
 
   @override
@@ -46,6 +49,10 @@ class HiveRankingPolicyRepository implements RankingPolicyRepository {
   /// Defensive copies via [List.from] and [List.unmodifiable] per domain invariant.
   @override
   Future<void> put(RankingPolicy item) async {
+    // Skeleton upfront validation for FargoRate initialRating
+    if (item is FargoRateRankingPolicy) {
+      FargoRateRankingPolicy.validateInitialRating(item.initialRating);
+    }
     // Defensive copy
     final ids = List<String>.from(item.categoryIds);
     if (ids.isEmpty) {
@@ -147,14 +154,16 @@ class HiveRankingPolicyRepository implements RankingPolicyRepository {
 
   @override
   Future<RankingPolicy?> getByLeagueId(String leagueId) async {
+    // Skeleton: split not-found vs propagation — firstWhere StateError → null, toDomain corruption propagates.
+    final RankingPolicyHiveModel model;
     try {
-      final model = _box.values.firstWhere(
+      model = _box.values.firstWhere(
         (model) => model.leagueId == leagueId,
       );
-      return model.toDomain();
-    } catch (_) {
+    } on StateError {
       return null;
     }
+    return model.toDomain();
   }
 
   @override

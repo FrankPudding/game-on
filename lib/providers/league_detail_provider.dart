@@ -6,9 +6,13 @@ import '../domain/entities/side.dart';
 import '../domain/entities/matches/simple_match.dart';
 import '../domain/entities/ranking_policies/simple_ranking_policy.dart';
 import '../domain/entities/ranking_policies/goal_difference_ranking_policy.dart';
+import '../domain/entities/ranking_policies/elo_ranking_policy.dart';
 import '../domain/entities/ranking_policies/fargo_rate_ranking_policy.dart';
 import '../domain/entities/ranking_policy.dart';
+import '../domain/value_objects/elo_player_stats.dart';
 import '../domain/value_objects/fargo_player_stats.dart';
+import '../domain/services/elo_calculator.dart';
+// ignore: unused_import
 import '../domain/services/fargo_rate_calculator.dart';
 import '../domain/entities/user.dart';
 import '../domain/repositories/league_repository.dart';
@@ -96,6 +100,8 @@ class LeagueDetailState {
 
   bool get isGoalDifference => rankingPolicy is GoalDifferenceRankingPolicy;
   bool get isFargo => rankingPolicy is FargoRateRankingPolicy;
+  bool get isElo => rankingPolicy is EloRankingPolicy;
+  Map<String, EloPlayerStats> get eloStats => fargoStats;
 }
 
 // Notifier
@@ -142,9 +148,12 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
     final policy = await _policyRepo.getByLeagueId(_leagueId);
 
     Map<String, FargoPlayerStats> fargoStats = {};
-    if (policy is FargoRateRankingPolicy) {
-      const calculator = FargoRateCalculator();
-      fargoStats = calculator.calculate(matches: matches, players: rawPlayers);
+    int? fargoInitial;
+    if (policy is EloRankingPolicy) {
+      const calculator = EloCalculator();
+      fargoInitial = policy.initialRating;
+      fargoStats = calculator.calculate(
+          matches: matches, players: rawPlayers, initialRating: fargoInitial);
     } else if (policy is GoalDifferenceRankingPolicy) {
       for (final match in matches) {
         if (!match.isComplete) continue;
@@ -200,8 +209,9 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
     final sortedPlayers = List<LeaguePlayer>.from(rawPlayers)
       ..sort((a, b) {
         if (policy is FargoRateRankingPolicy) {
-          final ra = fargoStats[a.id]?.rating ?? 500;
-          final rb = fargoStats[b.id]?.rating ?? 500;
+          final initial = fargoInitial!;
+          final ra = fargoStats[a.id]?.rating ?? initial;
+          final rb = fargoStats[b.id]?.rating ?? initial;
           var result = rb.compareTo(ra);
           if (result != 0) return result;
           final wa = fargoStats[a.id]?.wins ?? 0;

@@ -10,11 +10,15 @@ import '../../domain/entities/ranking_policy_type.dart';
 const Map<String, List<RankingPolicyType>> kSeedCategoryPolicyTypes = {
   'cat_boardgames': [],
   'cat_cardgames': [],
-  'cat_sports': [RankingPolicyType.fargoRate],
+  'cat_sports': [RankingPolicyType.elo],
   'cat_videogames': [],
-  'cat_pubgames': [RankingPolicyType.fargoRate],
+  'cat_pubgames': [RankingPolicyType.elo],
   'cat_custom_league_001': [
     RankingPolicyType.simple,
     RankingPolicyType.goalDifference
   ],
 };
+
+@Deprecated('Use kSeedCategoryPolicyTypes with elo')
+const Map<String, List<RankingPolicyType>> kSeedCategoryPolicyTypesFargo =
+    kSeedCategoryPolicyTypes;

@@ -27,6 +27,7 @@ dependencies:
   package_info_plus: ^8.0.0
   synchronized: ^3.4.0
 
+  collection: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

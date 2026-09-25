@@ -10,12 +10,12 @@ void main() {
           reason: 'boardgames should have no allowed types');
       expect(kSeedCategoryPolicyTypes['cat_cardgames'], isEmpty,
           reason: 'cardgames should have no allowed types');
-      expect(kSeedCategoryPolicyTypes['cat_sports'], [RankingPolicyType.fargoRate],
-          reason: 'sports should have fargoRate');
+      expect(kSeedCategoryPolicyTypes['cat_sports'], [RankingPolicyType.elo],
+          reason: 'sports should have elo');
       expect(kSeedCategoryPolicyTypes['cat_videogames'], isEmpty,
           reason: 'videogames should have no allowed types');
-      expect(kSeedCategoryPolicyTypes['cat_pubgames'], [RankingPolicyType.fargoRate],
-          reason: 'pubgames should have fargoRate');
+      expect(kSeedCategoryPolicyTypes['cat_pubgames'], [RankingPolicyType.elo],
+          reason: 'pubgames should have elo');
     });
 
     test('custom category should contain both simple and goalDifference', () {
@@ -32,8 +32,8 @@ void main() {
         if (entry.key == kFallbackCategoryId) {
           expect(entry.value, isNotEmpty);
         } else if (entry.key == 'cat_sports' || entry.key == 'cat_pubgames') {
-          expect(entry.value, [RankingPolicyType.fargoRate],
-              reason: '${entry.key} should be [fargoRate]');
+          expect(entry.value, [RankingPolicyType.elo],
+              reason: '${entry.key} should be [elo]');
         } else {
           expect(entry.value, isEmpty,
               reason: '${entry.key} should be empty but was ${entry.value}');

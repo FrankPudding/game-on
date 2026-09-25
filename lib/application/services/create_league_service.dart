@@ -25,6 +25,11 @@ class CreateLeagueService {
     required RankingPolicy rankingPolicy,
     List<String>? categoryIds,
   }) async {
+    // Skeleton upfront validation before any IO
+    if (rankingPolicy is FargoRateRankingPolicy) {
+      FargoRateRankingPolicy.validateInitialRating(rankingPolicy.initialRating);
+    }
+
     final league = League(
       id: id,
       name: name,
@@ -74,7 +79,16 @@ class CreateLeagueService {
       }
     }
 
+    // Skeleton: compensation delete league on policy put failure
     await _leagueRepository.put(league);
-    await _rankingPolicyRepository.put(rankingPolicy);
+    try {
+      await _rankingPolicyRepository.put(rankingPolicy);
+    } catch (e) {
+      // Compensation: delete league if policy put fails
+      try {
+        await _leagueRepository.delete(league.id);
+      } catch (_) {}
+      rethrow;
+    }
   }
 }

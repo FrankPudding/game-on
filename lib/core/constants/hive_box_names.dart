@@ -20,5 +20,11 @@ const int kMaxCategoryDepth = 1;
 
 const String kSportsCategoryId = 'cat_sports';
 const String kPubGamesCategoryId = 'cat_pubgames';
-const List<String> kFargoCategoryIds = [kSportsCategoryId, kPubGamesCategoryId];
+const List<String> kEloCategoryIds = [kSportsCategoryId, kPubGamesCategoryId];
+
+@Deprecated('Use kEloCategoryIds')
+const List<String> kFargoCategoryIds = kEloCategoryIds;
+
+@Deprecated(
+    'Use kEloDefaultInitialRating / kEloLegacyInitialRating from elo_constants.dart')
 const int kFargoInitialRating = 500;

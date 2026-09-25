@@ -42,6 +42,15 @@ class SelectRankingPolicyScreen extends StatelessWidget {
                       ),
                     );
                     break;
+                  case RankingPolicyType.elo:
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const CreateFargoRateLeagueScreen(),
+                      ),
+                    );
+                    break;
                   case RankingPolicyType.fargoRate:
                     Navigator.push(
                       context,

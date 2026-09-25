@@ -439,8 +439,9 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
   }
 
   Widget _buildWinnerSection(LeagueDetailState state) {
-    // Fargo hides draw option
-    final isFargo = state.isFargo;
+    // Fargo/Elo hides draw option
+    final isElo = (state as dynamic).isElo as bool? ?? false;
+    final isFargo = state.isFargo || isElo;
     return Column(
       children: [
         const Text('WINNER',

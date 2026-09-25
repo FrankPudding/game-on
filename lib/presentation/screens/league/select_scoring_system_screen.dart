@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/hive_box_names.dart';
-import '../../../domain/entities/ranking_policies/fargo_rate_ranking_policy.dart';
+import '../../../domain/entities/ranking_policies/elo_ranking_policy.dart';
 import '../../../domain/entities/ranking_policies/goal_difference_ranking_policy.dart';
 import '../../../domain/entities/ranking_policies/simple_ranking_policy.dart';
 import '../../../domain/entities/ranking_policy_type.dart';
@@ -30,7 +30,7 @@ final rankingPolicyTypesForCategoryProvider =
   // whitelist from kSeedCategoryPolicyTypes, regardless of repo state.
   // Bootstrap vs corruption distinction applies only to Custom fallback, not Fargo.
   if (categoryId == kSportsCategoryId || categoryId == kPubGamesCategoryId) {
-    return [RankingPolicyType.fargoRate];
+    return [RankingPolicyType.elo];
   }
   // Enforcement: only custom category supports simple / goalDifference.
   if (categoryId != kFallbackCategoryId) {
@@ -46,6 +46,8 @@ final rankingPolicyTypesForCategoryProvider =
         types.add(RankingPolicyType.simple);
       } else if (p is GoalDifferenceRankingPolicy) {
         types.add(RankingPolicyType.goalDifference);
+      } else if (p is EloRankingPolicy) {
+        types.add(RankingPolicyType.elo);
       } else if (p is FargoRateRankingPolicy) {
         types.add(RankingPolicyType.fargoRate);
       }
@@ -123,6 +125,16 @@ class SelectScoringSystemScreen extends ConsumerWidget {
                               MaterialPageRoute(
                                 builder: (context) =>
                                     CreateGoalDifferenceLeagueScreen(
+                                        categoryId: effectiveCategoryId),
+                              ),
+                            );
+                            break;
+                          case RankingPolicyType.elo:
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    CreateFargoRateLeagueScreen(
                                         categoryId: effectiveCategoryId),
                               ),
                             );
