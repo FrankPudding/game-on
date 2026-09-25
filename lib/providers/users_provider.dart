@@ -9,6 +9,9 @@ import '../core/injection_container.dart';
 import 'leagues_provider.dart';
 import 'league_detail_provider.dart';
 import 'user_detail_provider.dart';
+// TODO(skeleton): sortedLeaguesProvider invalidation not owned by usersProvider
+// Users mutations already invalidate leaguesProvider which transitively may require
+// sortedLeaguesProvider refresh — documented in AGENTS.md boundary.
 
 void _sortUsers(List<User> users) {
   users.sort((a, b) {
