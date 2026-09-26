@@ -6,7 +6,7 @@ import '../../../providers/sorted_leagues_provider.dart';
 import '../../../providers/sort_preference_provider.dart';
 
 import '../../theme/app_theme.dart';
-import '../league/select_ranking_policy_screen.dart';
+import '../league/select_category_screen.dart';
 import '../league/league_detail_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -144,8 +144,7 @@ class HomeScreen extends ConsumerWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              const SelectRankingPolicyScreen(),
+                          builder: (context) => const SelectCategoryScreen(),
                         ),
                       );
                     },
@@ -176,7 +175,7 @@ class HomeScreen extends ConsumerWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const SelectRankingPolicyScreen(),
+              builder: (context) => const SelectCategoryScreen(),
             ),
           );
         },

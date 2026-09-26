@@ -15,7 +15,7 @@ import 'package:game_on/providers/sort_preference_provider.dart';
 import 'package:game_on/application/preferences/sort_preference.dart';
 import 'package:game_on/presentation/screens/home/home_screen.dart';
 import 'package:game_on/presentation/screens/league/league_detail_screen.dart';
-import 'package:game_on/presentation/screens/league/select_ranking_policy_screen.dart';
+import 'package:game_on/presentation/screens/league/select_category_screen.dart';
 
 class MockLeagueRepository extends Mock implements LeagueRepository {}
 
@@ -245,8 +245,8 @@ void main() {
           .tap(find.widgetWithText(ElevatedButton, 'Create First League'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(SelectRankingPolicyScreen), findsOneWidget);
-      expect(find.text('Select Scoring System'), findsOneWidget);
+      expect(find.byType(SelectCategoryScreen), findsOneWidget);
+      expect(find.text('Select Category'), findsOneWidget);
     });
 
     testWidgets('should show FAB that navigates to SelectRankingPolicyScreen',
@@ -260,7 +260,7 @@ void main() {
       await tester.tap(find.byType(FloatingActionButton));
       await tester.pumpAndSettle();
 
-      expect(find.byType(SelectRankingPolicyScreen), findsOneWidget);
+      expect(find.byType(SelectCategoryScreen), findsOneWidget);
     });
 
     testWidgets('should display league list when leagues exist',

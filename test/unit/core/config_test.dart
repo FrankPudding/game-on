@@ -7,7 +7,7 @@ void main() {
       final config = AppConfig();
 
       expect(config.dataSourceType, DataSourceType.hive);
-      expect(config.hiveDbVersion, 1);
+      expect(config.hiveDbVersion, 3);
     });
 
     test('should accept custom values', () {

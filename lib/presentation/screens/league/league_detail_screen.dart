@@ -6,6 +6,9 @@ import '../../../domain/entities/league_player.dart';
 import '../../../domain/entities/side.dart';
 import '../../../domain/entities/matches/simple_match.dart';
 import '../../../domain/entities/user.dart';
+import '../../../domain/entities/ranking_policies/elo_ranking_policy.dart';
+import '../../../domain/value_objects/elo_player_stats.dart';
+import '../../../domain/value_objects/fargo_player_stats.dart';
 import '../../../providers/league_detail_provider.dart';
 import '../../../providers/leagues_provider.dart';
 import '../../../providers/users_provider.dart';
@@ -138,7 +141,12 @@ class _LeagueDetailScreenState extends ConsumerState<LeagueDetailScreen>
             _StandingsTab(
               players: state.players,
               playerStats: state.playerStats,
+              fargoStats: state.fargoStats,
               isGoalDifference: state.isGoalDifference,
+              isFargo: state.isFargo,
+              isElo: state.isElo,
+              eloStats: state.eloStats,
+              rankingPolicy: state.rankingPolicy,
               onAddPlayer: _showAddPlayerDialog,
               onEditPlayer: _showEditPlayerDialog,
             ),
@@ -175,12 +183,22 @@ class _StandingsTab extends StatelessWidget {
     required this.onAddPlayer,
     required this.onEditPlayer,
     this.isGoalDifference = false,
+    this.isFargo = false,
+    this.isElo = false,
+    this.fargoStats = const {},
+    this.eloStats = const {},
+    this.rankingPolicy,
   });
   final List<LeaguePlayer> players;
   final Map<String, PlayerStats> playerStats;
+  final Map<String, FargoPlayerStats> fargoStats;
+  final Map<String, EloPlayerStats> eloStats;
+  final dynamic rankingPolicy;
   final VoidCallback onAddPlayer;
   final Function(LeaguePlayer) onEditPlayer;
   final bool isGoalDifference;
+  final bool isFargo;
+  final bool isElo;
 
   @override
   Widget build(BuildContext context) {
@@ -217,15 +235,23 @@ class _StandingsTab extends StatelessWidget {
             children: [
               const SizedBox(width: 32, child: Text('#', style: _headerStyle)),
               const Expanded(child: Text('PLAYER', style: _headerStyle)),
-              _buildHeaderCell('P', 'Matches Played'),
-              if (isGoalDifference) ...[
-                _buildHeaderCell('GF', 'Goals For'),
-                _buildHeaderCell('GA', 'Goals Against'),
-                _buildHeaderCell('GD', 'Goal Difference'),
+              if (isFargo || isElo) ...[
+                _buildHeaderCell('P', 'Matches Played'),
+                _buildHeaderCell('W', 'Wins'),
+                _buildHeaderCell('L', 'Losses'),
+                _buildHeaderCell('Win%', 'Win Percentage', width: 50),
+                _buildHeaderCell('Fargo', 'Fargo Rating', width: 50),
+              ] else ...[
+                _buildHeaderCell('P', 'Matches Played'),
+                if (isGoalDifference) ...[
+                  _buildHeaderCell('GF', 'Goals For'),
+                  _buildHeaderCell('GA', 'Goals Against'),
+                  _buildHeaderCell('GD', 'Goal Difference'),
+                ],
+                const SizedBox(width: 4),
+                _buildHeaderCell('Pts', 'Total Points',
+                    width: 40, align: TextAlign.center),
               ],
-              const SizedBox(width: 4),
-              _buildHeaderCell('Pts', 'Total Points',
-                  width: 40, align: TextAlign.center),
             ],
           ),
         ),
@@ -241,6 +267,19 @@ class _StandingsTab extends StatelessWidget {
               final player = players[index];
               final stats = playerStats[player.id] ??
                   const PlayerStats(points: 0, matchesPlayed: 0);
+              final fallbackRating = rankingPolicy is EloRankingPolicy
+                  ? (rankingPolicy as EloRankingPolicy).initialRating
+                  : 500;
+              final effectiveStats = isElo || isFargo
+                  ? (eloStats.isNotEmpty ? eloStats : fargoStats)
+                  : const <String, EloPlayerStats>{};
+              final fargo = effectiveStats[player.id] ??
+                  fargoStats[player.id] ??
+                  EloPlayerStats(
+                      matchesPlayed: 0,
+                      wins: 0,
+                      losses: 0,
+                      rating: fallbackRating);
               final isTop3 = index < 3;
 
               return InkWell(
@@ -301,22 +340,11 @@ class _StandingsTab extends StatelessWidget {
                           ],
                         ),
                       ),
-                      SizedBox(
-                        width: 40,
-                        child: Text(
-                          '${stats.matchesPlayed}',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      if (isGoalDifference) ...[
+                      if (isFargo || isElo) ...[
                         SizedBox(
                           width: 40,
                           child: Text(
-                            '${stats.goalsFor}',
+                            '${fargo.matchesPlayed}',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: AppTheme.textSecondary,
@@ -327,7 +355,7 @@ class _StandingsTab extends StatelessWidget {
                         SizedBox(
                           width: 40,
                           child: Text(
-                            '${stats.goalsAgainst}',
+                            '${fargo.wins}',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: AppTheme.textSecondary,
@@ -338,28 +366,98 @@ class _StandingsTab extends StatelessWidget {
                         SizedBox(
                           width: 40,
                           child: Text(
-                            _formatGoalDifference(stats.goalDifference),
+                            '${fargo.losses}',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: AppTheme.textSecondary,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 50,
+                          child: Text(
+                            '${(fargo.winRate * 100).round()}%',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 50,
+                          child: Text(
+                            '${fargo.rating}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: AppTheme.accentRed,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ] else ...[
+                        SizedBox(
+                          width: 40,
+                          child: Text(
+                            '${stats.matchesPlayed}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        if (isGoalDifference) ...[
+                          SizedBox(
+                            width: 40,
+                            child: Text(
+                              '${stats.goalsFor}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 40,
+                            child: Text(
+                              '${stats.goalsAgainst}',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 40,
+                            child: Text(
+                              _formatGoalDifference(stats.goalDifference),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(width: 4),
+                        SizedBox(
+                          width: 40,
+                          child: Text(
+                            '${stats.points}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: AppTheme.accentRed,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
                           ),
                         ),
                       ],
-                      const SizedBox(width: 4),
-                      SizedBox(
-                        width: 40,
-                        child: Text(
-                          '${stats.points}',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: AppTheme.accentRed,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),

@@ -27,7 +27,10 @@ import 'package:game_on/hive_registrar.g.dart';
 
 class FakeRankingPolicy extends RankingPolicy<SimpleMatch> {
   FakeRankingPolicy(
-      {required super.id, required super.name, required super.leagueId});
+      {required super.id,
+      required super.name,
+      required super.leagueId,
+      required super.categoryIds});
 }
 
 void main() {
@@ -111,13 +114,17 @@ void main() {
               id: 'rp1',
               name: 'Standard',
               leagueId: 'l1',
+              categoryIds: const ['cat_custom_league_001'],
               pointsForWin: 3,
               pointsForDraw: 1,
               pointsForLoss: 0));
       await policyBox.put(
           'rp2',
           GoalDifferenceRankingPolicyHiveModel(
-              id: 'rp2', name: 'GD', leagueId: 'l2'));
+              id: 'rp2',
+              name: 'GD',
+              leagueId: 'l2',
+              categoryIds: const ['cat_custom_league_001']));
 
       // Close and reopen boxes to force deserialization from disk.
       await userBox.close();
@@ -323,10 +330,16 @@ void main() {
       final box =
           await Hive.openBox<RankingPolicyHiveModel>('ranking_policies');
       final repo = HiveRankingPolicyRepository(box);
-      final simple =
-          SimpleRankingPolicy(id: 'rp1', name: 'Standard', leagueId: 'l1');
-      final gd =
-          GoalDifferenceRankingPolicy(id: 'rp2', name: 'GD', leagueId: 'l2');
+      final simple = SimpleRankingPolicy(
+          id: 'rp1',
+          name: 'Standard',
+          leagueId: 'l1',
+          categoryIds: const ['cat_custom_league_001']);
+      final gd = GoalDifferenceRankingPolicy(
+          id: 'rp2',
+          name: 'GD',
+          leagueId: 'l2',
+          categoryIds: const ['cat_custom_league_001']);
 
       await repo.put(simple);
       await repo.put(gd);
@@ -348,8 +361,11 @@ void main() {
       final box =
           await Hive.openBox<RankingPolicyHiveModel>('ranking_policies');
       final repo = HiveRankingPolicyRepository(box);
-      await repo.put(
-          SimpleRankingPolicy(id: 'rp1', name: 'Standard', leagueId: 'l1'));
+      await repo.put(SimpleRankingPolicy(
+          id: 'rp1',
+          name: 'Standard',
+          leagueId: 'l1',
+          categoryIds: const ['cat_custom_league_001']));
 
       expect(await repo.getByLeagueId('missing'), isNull);
     });
@@ -358,7 +374,11 @@ void main() {
       final box =
           await Hive.openBox<RankingPolicyHiveModel>('ranking_policies');
       final repo = HiveRankingPolicyRepository(box);
-      final fake = FakeRankingPolicy(id: 'f1', name: 'Fake', leagueId: 'l1');
+      final fake = FakeRankingPolicy(
+          id: 'f1',
+          name: 'Fake',
+          leagueId: 'l1',
+          categoryIds: const ['cat_custom_league_001']);
 
       expect(() => repo.put(fake), throwsUnimplementedError);
     });

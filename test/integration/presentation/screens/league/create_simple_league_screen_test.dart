@@ -33,6 +33,7 @@ class FakeLeaguesNotifier extends LeaguesNotifier {
     required String id,
     required String name,
     required RankingPolicy rankingPolicy,
+    List<String>? categoryIds,
   }) async {
     addLeagueCalls.add({
       'id': id,
@@ -60,13 +61,13 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(SimpleRankingPolicy(
-      id: '',
-      name: '',
-      leagueId: '',
-      pointsForWin: 3,
-      pointsForDraw: 1,
-      pointsForLoss: 0,
-    ));
+        id: '',
+        name: '',
+        leagueId: '',
+        pointsForWin: 3,
+        pointsForDraw: 1,
+        pointsForLoss: 0,
+        categoryIds: const ['cat_custom_league_001']));
     registerFallbackValue(League(id: '', name: '', createdAt: DateTime.now()));
   });
 
@@ -89,6 +90,7 @@ void main() {
           id: any(named: 'id'),
           name: any(named: 'name'),
           rankingPolicy: any(named: 'rankingPolicy'),
+          categoryIds: any(named: 'categoryIds'),
         )).thenAnswer((_) async => {});
     when(() => mockLeagueRepo.getAll()).thenAnswer((_) async => []);
   });
@@ -316,6 +318,7 @@ void main() {
             id: any(named: 'id'),
             name: any(named: 'name'),
             rankingPolicy: any(named: 'rankingPolicy'),
+            categoryIds: any(named: 'categoryIds'),
           )).thenThrow(Exception('Service error'));
 
       await openScreenWithRealNotifier(tester);
@@ -345,6 +348,7 @@ void main() {
             id: any(named: 'id'),
             name: any(named: 'name'),
             rankingPolicy: any(named: 'rankingPolicy'),
+            categoryIds: any(named: 'categoryIds'),
           )).thenAnswer((_) => completer.future);
 
       await openScreenWithRealNotifier(tester);

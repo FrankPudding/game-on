@@ -5,8 +5,11 @@ import 'package:game_on/domain/entities/ranking_policies/goal_difference_ranking
 void main() {
   group('SimpleRankingPolicy', () {
     test('should default to standard scoring', () {
-      final policy =
-          SimpleRankingPolicy(id: 'rp1', name: 'Standard', leagueId: 'l1');
+      final policy = SimpleRankingPolicy(
+          id: 'rp1',
+          name: 'Standard',
+          leagueId: 'l1',
+          categoryIds: const ['cat_custom_league_001']);
 
       expect(policy.id, 'rp1');
       expect(policy.name, 'Standard');
@@ -18,13 +21,13 @@ void main() {
 
     test('should accept custom point values', () {
       final policy = SimpleRankingPolicy(
-        id: 'rp2',
-        name: 'Custom',
-        leagueId: 'l2',
-        pointsForWin: 5,
-        pointsForDraw: 2,
-        pointsForLoss: -1,
-      );
+          id: 'rp2',
+          name: 'Custom',
+          leagueId: 'l2',
+          pointsForWin: 5,
+          pointsForDraw: 2,
+          pointsForLoss: -1,
+          categoryIds: const ['cat_custom_league_001']);
 
       expect(policy.pointsForWin, 5);
       expect(policy.pointsForDraw, 2);
@@ -34,8 +37,11 @@ void main() {
 
   group('GoalDifferenceRankingPolicy', () {
     test('should default to standard scoring', () {
-      final policy =
-          GoalDifferenceRankingPolicy(id: 'rp3', name: 'GD', leagueId: 'l3');
+      final policy = GoalDifferenceRankingPolicy(
+          id: 'rp3',
+          name: 'GD',
+          leagueId: 'l3',
+          categoryIds: const ['cat_custom_league_001']);
 
       expect(policy.pointsForWin, 3);
       expect(policy.pointsForDraw, 1);
@@ -44,13 +50,13 @@ void main() {
 
     test('should accept custom point values', () {
       final policy = GoalDifferenceRankingPolicy(
-        id: 'rp4',
-        name: 'GD',
-        leagueId: 'l4',
-        pointsForWin: 5,
-        pointsForDraw: 2,
-        pointsForLoss: -1,
-      );
+          id: 'rp4',
+          name: 'GD',
+          leagueId: 'l4',
+          pointsForWin: 5,
+          pointsForDraw: 2,
+          pointsForLoss: -1,
+          categoryIds: const ['cat_custom_league_001']);
 
       expect(policy.pointsForWin, 5);
       expect(policy.pointsForDraw, 2);

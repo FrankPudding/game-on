@@ -56,21 +56,21 @@ void main() {
   const tLeagueId = 'l1';
   const tLeagueId2 = 'l2';
   final tRankingPolicy = SimpleRankingPolicy(
-    id: 'rp1',
-    name: 'Standard',
-    leagueId: tLeagueId,
-    pointsForWin: 3,
-    pointsForDraw: 1,
-    pointsForLoss: 0,
-  );
+      id: 'rp1',
+      name: 'Standard',
+      leagueId: tLeagueId,
+      pointsForWin: 3,
+      pointsForDraw: 1,
+      pointsForLoss: 0,
+      categoryIds: const ['cat_custom_league_001']);
   final tRankingPolicy2 = SimpleRankingPolicy(
-    id: 'rp2',
-    name: 'Standard',
-    leagueId: tLeagueId2,
-    pointsForWin: 3,
-    pointsForDraw: 1,
-    pointsForLoss: 0,
-  );
+      id: 'rp2',
+      name: 'Standard',
+      leagueId: tLeagueId2,
+      pointsForWin: 3,
+      pointsForDraw: 1,
+      pointsForLoss: 0,
+      categoryIds: const ['cat_custom_league_001']);
 
   final tLeague = League(
     id: tLeagueId,
@@ -111,6 +111,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(FakeRankingPolicy());
+    registerFallbackValue(<String>[]);
     registerFallbackValue(SimpleMatch(
         id: '',
         leagueId: '',
@@ -185,6 +186,7 @@ void main() {
           id: any(named: 'id'),
           name: any(named: 'name'),
           rankingPolicy: any(named: 'rankingPolicy'),
+          categoryIds: any(named: 'categoryIds'),
         )).thenAnswer((_) async => {});
     when(() => mockDeleteService.execute(any()))
         .thenAnswer((_) async => DeleteUserResult(affectedLeagueIds: {}));
@@ -204,8 +206,11 @@ void main() {
       // Add new league
       final newLeague =
           League(id: 'l3', name: 'League 3', createdAt: DateTime.now());
-      final newPolicy =
-          SimpleRankingPolicy(id: 'rp3', name: 'Standard', leagueId: 'l3');
+      final newPolicy = SimpleRankingPolicy(
+          id: 'rp3',
+          name: 'Standard',
+          leagueId: 'l3',
+          categoryIds: const ['cat_custom_league_001']);
       when(() => mockLeagueRepo.getAll())
           .thenAnswer((_) async => [tLeague, tLeague2, newLeague]);
 

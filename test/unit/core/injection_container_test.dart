@@ -52,7 +52,7 @@ void main() {
       await initInjection(AppConfig());
 
       expect(sl<AppConfig>().dataSourceType, DataSourceType.hive);
-      expect(sl<AppConfig>().hiveDbVersion, 1);
+      expect(sl<AppConfig>().hiveDbVersion, 3);
 
       expect(sl.isRegistered<LeagueRepository>(), isTrue);
       expect(sl.isRegistered<LeaguePlayerRepository>(), isTrue);

@@ -1,10 +1,11 @@
-# League Presentation — Player Editing
+# League Presentation — Player Editing, Standings & Match Logging
 
 ## Purpose
 
-Documents the league-scoped player-editing UI: where it lives, how it is reused,
-and why it visually distinguishes the global `User` from the league-scoped
-`LeaguePlayer`.
+Documents the league-scoped UI: player editing (where it lives, how it is reused,
+why it visually distinguishes the global `User` from the league-scoped
+`LeaguePlayer`), **standings presentation** (ranked vs alphabetical, Elo columns
+and sorting), and **match logging** (Elo draw-hiding).
 
 ## Canonical Locations
 
@@ -12,6 +13,7 @@ and why it visually distinguishes the global `User` from the league-scoped
 |-----------|------|-------|
 | `PlayerEditDialog` | `lib/presentation/screens/league/widgets/player_edit_dialog.dart` | Unified dialog — **sole** player-edit dialog. Requires `showRemoveAction: bool`. |
 | `LeagueDetailScreen` | `lib/presentation/screens/league/league_detail_screen.dart` | Calls `PlayerEditDialog.show(..., showRemoveAction: true)`. |
+| `CreateFargoRateLeagueScreen` | `lib/presentation/screens/league/create_fargo_rate_league_screen.dart` | Elo (Pool) league creation — legacy `FargoRate` name retained as shim; `TextFormField` for `Starting Elo Rating` pre-filled `kEloDefaultInitialRating=400` (alias `kFargoDefaultInitialRating`), validator → `EloRankingPolicy.validateInitialRating` (100..500, `FargoRateRankingPolicy` alias), `EloRankingPolicy(categoryIds:kEloCategoryIds, initialRating)` via `CreateLeagueService` (`kFargoCategoryIds` is deprecated alias). UI title still `New FargoRate League` for compat; `displayName` is `Pool` / `Elo Rankings`. |
 
 ### Former locations (deleted — do not reintroduce)
 
@@ -144,12 +146,40 @@ The title is informational only. It does not navigate, does not open `UserDetail
 
 `LeagueDetailState` exposes two views of the same player set (see `docs/architecture/sorting.md`):
 
-- `players` — **ranked** (`points → GD → GF → id`). Never uses `name` as a tie-breaker; only `id` is the stable fallback. Only `_StandingsTab` may use this list.
+- `players` — **ranked**. Never uses `name` as a tie-breaker; only `id` is the stable fallback. Only `_StandingsTab` may use this list.
+  - Simple: `points → id`
+  - GoalDifference: `points → goalDifference → goalsFor → id`
+  - **Elo (Pool): `rating DESC → wins DESC → id ASC`** — computed by `EloCalculator` (`K=20` was `32` — breaking global recalc, `playedAt ASC + id ASC` replay) seeded from `EloRankingPolicy.initialRating` (100..500, default `400` for new leagues, legacy `500` via `@HiveField(7, defaultValue:500)` literal). `eloStats[playerId]?.rating ?? policy.initialRating` (fallback to `policy.initialRating`, never hard-coded `500`; `fargoStats` deprecated alias delegates to `eloStats`) and `wins` are the sort keys. See `docs/architecture/scoring-system-categories.md` → Elo Domain.
 - `playersByName` — **alphabetical** (`compareNames(name) → id`, via `lib/core/sorting/name_sort.dart`). Trim/empty-first/case-insensitive primary + case-sensitive secondary, then `id`. Pickers, selectors and dropdowns must use this list.
 
 `LeagueDetailScreen` passes ranked `state.players` to both `_StandingsTab` and `_MatchesTab` for display; all pickers in `LogMatchScreen` (two-player auto-select, `_PlayerSelector` sheets, winner dropdown and score labels) use `state.playersByName` and carry a `// Use alphabetical list for pickers — never ranked list.` comment. `_AddPlayerDialog` inherits alphabetical order from `usersProvider` (already `compareNames`-sorted) filtered by `existingUserIds` — it does not re-sort locally.
 
 **Ban:** Never use `players` for a picker/selector and never add name as a tie-breaker to the ranked sort. Tests assert the two lists are same-elements-different-order and that a player with top points (`Bob`) still sorts after `Alice` alphabetically — standings must stay ranked.
+
+## Standings — Elo Columns
+
+`_StandingsTab` (`lib/presentation/screens/league/league_detail_screen.dart`) branches on `state.isElo` (`rankingPolicy is EloRankingPolicy`, `isFargo` is deprecated alias `=> isElo`) and `state.eloStats: Map<String, EloPlayerStats>` (`fargoStats` deprecated alias):
+
+| Mode | Header | Row cells | Sort |
+|------|--------|-----------|------|
+| `isElo == false` (Simple) | `P \| Pts` | `matchesPlayed \| points` | points→id |
+| `isElo == false` + `isGoalDifference` | `P \| GF \| GA \| GD \| Pts` | `matchesPlayed \| goalsFor \| goalsAgainst \| goalDifference (+/-) \| points` | points→GD→GF→id |
+| **`isElo == true`** | **`P \| W \| L \| Win% \| Elo`** | **`matchesPlayed \| wins \| losses \| winRate*100 (1dp, %) \| rating`** | **`rating DESC → wins DESC → id ASC`** |
+
+Implementation notes:
+
+* `lib/presentation/screens/league/league_detail_screen.dart` renders header via `if (isFargo || isElo) ... _buildHeaderCell('Elo', ...)` (header was `Fargo`, now `Elo`; `isFargo` retained as alias). Row cells use `effectiveStats = isElo||isFargo ? (eloStats.isNotEmpty ? eloStats : fargoStats) : ...` then `EloPlayerStats(matchesPlayed:0, wins:0, losses:0, rating: fallbackRating)` where `fallbackRating = rankingPolicy is EloRankingPolicy ? policy.initialRating : 500` (policy-derived, never hard-coded `500` for Elo leagues; `500` only for non-Elo fallback).
+* `isTop3` bold/accent styling applies regardless of mode. Missing `eloStats` falls back via `policy.initialRating` so the table never crashes on partial data and legacy vs default ratings are respected (400 new, 500 legacy via `HiveField(7, defaultValue:500)` literal).
+* See `lib/domain/value_objects/elo_player_stats.dart` (`winRate = wins/matchesPlayed`, `0` if none; `FargoPlayerStats` is deprecated `typedef`).
+
+## Match Logging — Elo Hides Draw
+
+`LogMatchScreen` (`lib/presentation/screens/match/log_match_screen.dart`) derives `isElo`/`isFargo` from `LeagueDetailState` (`isElo` primary, `isFargo` deprecated alias `=> isElo`):
+
+* `_buildWinnerSection` builds `DropdownButtonFormField` items `[player1, player2, if (!isElo) Draw]` (code checks `isFargo` alias `final isElo = (state as dynamic).isElo...; final isFargo = state.isFargo || isElo; if (!isFargo) Draw`). For Elo the Draw option is omitted — the UI prevents selecting a draw. The domain `EloCalculator` (`FargoRateCalculator` deprecated alias) would throw `ArgumentError` on `isDraw` anyway, but the hiding is the primary guard.
+* `_submit` validates players/winner before calling `leagueDetailProvider.notifier.logSimpleMatch` / `updateSimpleMatch`; the notifier writes a `SimpleMatch` with `isComplete: true`, `winnerSideId` set, and `playedAt` defaulting to today.
+
+`CreateFargoRateLeagueScreen` (`lib/presentation/screens/league/create_fargo_rate_league_screen.dart`, default `categoryId = kSportsCategoryId`, legacy name) always constructs `EloRankingPolicy(categoryIds: kEloCategoryIds, initialRating: 100..500)` (both sports+pubgames; `FargoRateRankingPolicy`/`kFargoCategoryIds` are deprecated aliases) and calls `leaguesProvider.notifier.addLeague`; the UI adds a `TextFormField` for `Starting Elo Rating` pre-filled `400` (`kEloDefaultInitialRating`, alias `kFargoDefaultInitialRating`) with validator delegating to `EloRankingPolicy.validateInitialRating` (not inline range check), `int.tryParse` fallback to `400`, and the service/repo guards enforce both the exact-two `categoryIds` and `100..500` `initialRating` invariants (with compensation delete of the league on policy failure).
 
 ## Invalidation Ownership
 
@@ -170,8 +200,12 @@ PlayerEditDialog
 ## Related Files
 
 - `lib/presentation/screens/league/widgets/player_edit_dialog.dart`
-- `lib/presentation/screens/league/league_detail_screen.dart`
+- `lib/presentation/screens/league/league_detail_screen.dart` (`_StandingsTab` Elo `P W L Win% Elo` via `isElo`/`eloStats` + deprecated `isFargo`/`fargoStats` alias, fallback `policy.initialRating`)
+- `lib/presentation/screens/league/create_fargo_rate_league_screen.dart` (Elo creation via `EloRankingPolicy`/`kEloCategoryIds`, legacy Fargo name)
+- `lib/presentation/screens/match/log_match_screen.dart` (hide draw when `isElo` / `isFargo` alias, alphabetical pickers)
 - `lib/presentation/screens/settings/user_detail_screen.dart` (reuses dialog with `showRemoveAction: false`)
-- `lib/providers/league_detail_provider.dart` — invalidation owner
-- `docs/domain-language.md` — User vs LeaguePlayer
-- `docs/architecture/provider-invalidation.md` — invalidation ownership rule
+- `lib/providers/league_detail_provider.dart` — invalidation owner, `isElo`/`eloStats` + deprecated `isFargo`/`fargoStats` alias, Elo sorting `rating→wins→id` (fallback `?? policy.initialRating`), `isGoalDifference`; captures `eloInitial = policy.initialRating` and passes to `EloCalculator.calculate(required initialRating)` (`K=20` was `32`)
+- `lib/domain/services/elo_calculator.dart` + `lib/domain/value_objects/elo_player_stats.dart` — pure domain, `K=20` was `32` (`FargoRateCalculator`/`FargoPlayerStats` deprecated aliases), `initialRating` 100..500 (default 400, legacy 500 via `lib/domain/constants/elo_constants.dart` + deprecated `hive_box_names.dart:kFargoInitialRating` literal + `@HiveField(7, defaultValue:500)`)
+- `docs/domain-language.md` — User vs LeaguePlayer, Elo (was FargoRate)
+- `docs/architecture/provider-invalidation.md` — invalidation ownership rule + Elo whitelist
+- `docs/architecture/scoring-system-categories.md` — categories, Elo whitelist, migration V3 (typeId 12 retained), `hiveDbVersion` stays 3, `K 32→20` breaking recalc

@@ -1,7 +1,7 @@
 name: game_on
 description: "Track competitive games and leagues with friends"
 publish_to: 'none'
-version: 0.1.2
+version: 0.2.0
 
 environment:
   sdk: ^3.5.4
@@ -25,7 +25,9 @@ dependencies:
   json_annotation: ^4.9.0
   get_it: ^9.2.0
   package_info_plus: ^8.0.0
+  synchronized: ^3.4.0
 
+  collection: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
