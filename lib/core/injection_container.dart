@@ -23,6 +23,8 @@ import '../domain/repositories/category_repository.dart';
 import '../application/services/create_league_service.dart';
 import '../application/services/delete_user_service.dart';
 import '../application/services/update_user_service.dart';
+import '../data/repositories/hive/hive_sort_preference_repository.dart';
+import '../domain/repositories/preferences/sort_preference_repository.dart';
 import '../data/services/hive/hive_database_migration_service.dart';
 import '../data/services/hive/category_index_rebuilder.dart';
 import 'config.dart';
@@ -104,6 +106,19 @@ Future<void> _initHive() async {
   // rebuildIfNeeded after openBox drift check
   final rebuilder = CategoryIndexRebuilder();
   await rebuilder.rebuildIfNeeded();
+
+  final Box<String> appPreferencesBox;
+  if (Hive.isBoxOpen(HiveSortPreferenceRepository.boxName)) {
+    appPreferencesBox = Hive.box<String>(HiveSortPreferenceRepository.boxName);
+  } else {
+    appPreferencesBox =
+        await Hive.openBox<String>(HiveSortPreferenceRepository.boxName);
+  }
+  if (!sl.isRegistered<SortPreferenceRepository>()) {
+    sl.registerLazySingleton<SortPreferenceRepository>(
+      () => HiveSortPreferenceRepository(appPreferencesBox),
+    );
+  }
 
   // 2. Register Repositories
   if (!sl.isRegistered<LeagueRepository>()) {

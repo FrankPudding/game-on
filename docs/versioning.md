@@ -219,12 +219,92 @@ If upload fails with "Version code X has already been used":
 3. Next build must use `highest + 1` at minimum
 4. Use manual workflow with `--build-number=<next_available>`
 
+## Hive Persistence — Boxes, Versions & `app_preferences`
+
+This project persists domain entities in typed Hive boxes (adapters with
+`@HiveType(typeId: ...)`) and, since the sort preference feature, a primitive
+`Box<String>` for UI preferences. The two versioning concerns are independent:
+
+### `hiveDbVersion` (`lib/core/config.dart` + `HiveDatabaseMigrationService`)
+
+- `hiveDbVersion` (currently `1`) tracks **schema migrations** for typed boxes
+  (`HiveDatabaseMigrationService._migrations`). Bump it only when a migration
+  script is required (field type change, box move, `typeId` rename, computed
+  field). See `CONTRIBUTING.md` → *Database Migrations*.
+- The migration map in `lib/data/services/hive/hive_database_migration_service.dart`
+  is currently empty; `migrate(targetVersion)` no-ops when no entries exist
+  beyond bumping the `meta` box `db_version`.
+
+### Box inventory
+
+| Box name | Type | Adapter `typeId` | Versioned? |
+|----------|------|------------------|------------|
+| `users` | `UserHiveModel` | `0` | yes |
+| `league_players` | `LeaguePlayerHiveModel` | `1` | yes |
+| `leagues` | `LeagueHiveModel` | `3` | yes |
+| `simple_matches` | `SimpleMatchHiveModel` | `6` | yes |
+| `side` (embedded) | `SideHiveModel` | `8` | yes |
+| `ranking_policies` | `SimpleRankingPolicyHiveModel` / `GoalDifferenceRankingPolicyHiveModel` | `9`, `10` | yes |
+| `league_players_unique_index` | `String` | — (primitive) | no |
+| `app_preferences` | `String` (primitive `Box<String>`) | — (no adapter) | no |
+| `meta` | `int` | — (primitive) | no |
+
+### `app_preferences` — why no version bump
+
+Added in the *Sort my leagues* feature (`lib/data/repositories/hive/hive_sort_preference_repository.dart`):
+
+- `Box<String>` `app_preferences` (constant `HiveSortPreferenceRepository.boxName`)
+  stores two **primitive string** keys: `sort_mode` (`lastPlayed` | `alphabetical`)
+  and `sort_descending` (`true` | `false`). Representative persistence path:
+  `Box<String>` via `Hive.openBox<String>(boxName)` — no `TypeAdapter`, no
+  `@HiveType` annotation.
+- Because the box holds primitives, no `typeId` is consumed and no schema
+  migration is needed — existing installs simply open an empty box and read
+  defaults. `hiveDbVersion` therefore **stays at 1**; `injection_container`
+  opens the box idempotently:
+
+  ```dart
+  final Box<String> appPreferencesBox;
+  if (Hive.isBoxOpen(HiveSortPreferenceRepository.boxName)) {
+    appPreferencesBox = Hive.box<String>(HiveSortPreferenceRepository.boxName);
+  } else {
+    appPreferencesBox = await Hive.openBox<String>(HiveSortPreferenceRepository.boxName);
+  }
+  ```
+
+  The `Hive.isBoxOpen` guard makes `initInjection` / `_initHive` safe to call
+  multiple times (tests, hot restart) without `HiveError: Box already open`.
+
+- `TypeId 11` was **reserved but not used** — it was set aside for a potential
+  typed preference model (`SortPreferenceHiveModel`) that was discarded in favour
+  of the simpler `Box<String>`. No adapter is registered at `11`; do not reuse
+  it without checking `lib/data/models/hive/` for future collisions. Current
+  highest consumed `typeId` remains `10`.
+
+- Keys and defaults are documented in the repository and service:
+  `sort_mode` / `sort_descending` (see `lib/data/repositories/hive/hive_sort_preference_repository.dart:sortModeKey` / `sortDescendingKey`),
+  `LeagueSortPreference.defaultPreference` (`lastPlayed` descending) in
+  `lib/application/preferences/sort_preference.dart`. Malformed values fallback
+  to `defaultPreference` (full default if mode is unknown, mode kept + descending
+  default if only `sort_descending` is malformed).
+
+- Related persistence files:
+  `lib/domain/repositories/preferences/sort_preference_repository.dart`
+  (abstract `get`/`set` + `getPreference`/`setPreference` aliases),
+  `lib/providers/sort_preference_provider.dart` (write-then-invalidate),
+  `lib/providers/sorted_leagues_provider.dart` (reads preference via `ref.read`).
+
 ## Related Files
 
 - `pubspec.yaml` — Version name source
 - `.github/workflows/release.yml` — Release automation (when created)
 - `android/app/build.gradle.kts` — Version code/name injection
 - `android/app/src/main/AndroidManifest.xml` — Package name for adb commands
+- `lib/core/config.dart` — `hiveDbVersion` (currently `1`)
+- `lib/data/services/hive/hive_database_migration_service.dart` — migration runner (`_migrations` map)
+- `lib/core/injection_container.dart` — `Hive.isBoxOpen` idempotent guard, `app_preferences` `Box<String>` open
+- `lib/data/repositories/hive/hive_sort_preference_repository.dart` — `Box<String>` `app_preferences`, keys `sort_mode` / `sort_descending`, `boxName` constant
+- `lib/hive_registrar.g.dart` — generated adapter registrars (`typeId` `0`, `1`, `3`, `6`, `8`, `9`, `10`; `11` unused reserved)
 
 ## Quick Reference
 

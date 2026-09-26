@@ -4,9 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:intl/intl.dart';
 import 'package:game_on/domain/entities/league.dart';
+import 'package:game_on/domain/entities/matches/simple_match.dart';
+import 'package:game_on/domain/entities/side.dart';
 import 'package:game_on/domain/repositories/league_repository.dart';
 import 'package:game_on/providers/leagues_provider.dart';
+import 'package:game_on/providers/sorted_leagues_provider.dart';
+import 'package:game_on/providers/sort_preference_provider.dart';
+import 'package:game_on/application/preferences/sort_preference.dart';
 import 'package:game_on/presentation/screens/home/home_screen.dart';
 import 'package:game_on/presentation/screens/league/league_detail_screen.dart';
 import 'package:game_on/presentation/screens/league/select_category_screen.dart';
@@ -39,12 +45,32 @@ class FakeLeaguesNotifier extends LeaguesNotifier {
   }
 }
 
+class FakeSortedLeaguesNotifier extends SortedLeaguesNotifier {
+  FakeSortedLeaguesNotifier(this.sortedLeagues,
+      {this.shouldThrow = false, this.onBuild});
+  final List<SortedLeague> sortedLeagues;
+  final bool shouldThrow;
+  final Future<List<SortedLeague>> Function()? onBuild;
+  @override
+  Future<List<SortedLeague>> build() async {
+    if (onBuild != null) return onBuild!();
+    if (shouldThrow) throw Exception('Load failed');
+    return sortedLeagues;
+  }
+}
+
+class FakeSortPrefNotifier extends LeagueSortPreferenceNotifier {
+  @override
+  LeagueSortPreference build() => LeagueSortPreference.defaultPreference;
+}
+
 class RefreshingLeaguesNotifier extends FakeLeaguesNotifier {
   RefreshingLeaguesNotifier(
       {required super.leagues, this.onRefresh, super.shouldThrow});
   final Future<List<League>> Function()? onRefresh;
   int refreshCount = 0;
 
+  @override
   Future<void> refresh() async {
     refreshCount++;
     if (onRefresh != null) {
@@ -73,6 +99,14 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(League(id: '', name: '', createdAt: DateTime.now()));
+    registerFallbackValue(SimpleMatch(
+        id: '',
+        leagueId: '',
+        playedAt: DateTime.now(),
+        isComplete: false,
+        sides: []));
+    registerFallbackValue(Side(id: '', playerIds: []));
+    Intl.defaultLocale = 'en_US';
   });
 
   setUp(() {
@@ -107,10 +141,27 @@ void main() {
     } else {
       notifier = fakeLeaguesNotifier;
     }
+    final sortedLeagues = (leagues ?? fakeLeaguesNotifier.leagues)
+        .map((l) => SortedLeague(league: l, lastPlayed: null))
+        .toList();
+    late final FakeSortedLeaguesNotifier sortedNotifier;
+    if (onBuild != null) {
+      sortedNotifier = FakeSortedLeaguesNotifier([], onBuild: () async {
+        final result = await onBuild();
+        return result
+            .map((l) => SortedLeague(league: l, lastPlayed: null))
+            .toList();
+      });
+    } else {
+      sortedNotifier =
+          FakeSortedLeaguesNotifier(sortedLeagues, shouldThrow: shouldThrow);
+    }
     return ProviderScope(
       retry: (_, __) => null,
       overrides: [
         leaguesProvider.overrideWith(() => notifier),
+        sortedLeaguesProvider.overrideWith(() => sortedNotifier),
+        sortPreferenceProvider.overrideWith(FakeSortPrefNotifier.new),
         leagueRepositoryProvider.overrideWithValue(mockLeagueRepo),
       ],
       child: MaterialApp(
@@ -268,6 +319,9 @@ void main() {
           retry: (_, __) => null,
           overrides: [
             leaguesProvider.overrideWith(() => refreshingNotifier),
+            sortedLeaguesProvider.overrideWith(() => FakeSortedLeaguesNotifier(
+                [SortedLeague(league: tLeague1, lastPlayed: null)])),
+            sortPreferenceProvider.overrideWith(FakeSortPrefNotifier.new),
             leagueRepositoryProvider.overrideWithValue(mockLeagueRepo),
           ],
           child: MaterialApp(

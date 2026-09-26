@@ -950,4 +950,184 @@ void main() {
       verify(() => mockLeagueRepo.getAll()).called(greaterThanOrEqualTo(3));
     });
   });
+
+  group('leagueLastPlayedProvider invalidation (my leagues last played fix)',
+      () {
+    test(
+        'logSimpleMatch invalidates leagueLastPlayedProvider and next read returns newest date',
+        () async {
+      final oldMatch = SimpleMatch(
+        id: 'm0',
+        leagueId: tLeagueId,
+        playedAt: DateTime(2023, 1, 1),
+        isComplete: true,
+        isDraw: false,
+        sides: [
+          Side(id: 's1', playerIds: ['p1']),
+          Side(id: 's2', playerIds: ['p2'])
+        ],
+        winnerSideId: 's1',
+      );
+      when(() => mockMatchRepo.getByLeague(tLeagueId))
+          .thenAnswer((_) async => [oldMatch]);
+      final initial =
+          await container.read(leagueLastPlayedProvider(tLeagueId).future);
+      expect(initial, DateTime(2023, 1, 1));
+
+      // Prepare invalidate verification via listener
+      var invalidateCount = 0;
+      final sub =
+          container.listen(leagueLastPlayedProvider(tLeagueId), (_, __) {
+        invalidateCount++;
+      });
+
+      final newDate = DateTime(2023, 6, 15);
+      final newMatch = SimpleMatch(
+        id: 'm_new',
+        leagueId: tLeagueId,
+        playedAt: newDate,
+        isComplete: true,
+        isDraw: false,
+        sides: [
+          Side(id: 's3', playerIds: ['p1']),
+          Side(id: 's4', playerIds: ['p2'])
+        ],
+        winnerSideId: 's3',
+      );
+      // After log, repository will return both matches
+      when(() => mockMatchRepo.getByLeague(tLeagueId))
+          .thenAnswer((_) async => [oldMatch, newMatch]);
+      when(() => mockMatchRepo.logSimpleMatch(match: any(named: 'match')))
+          .thenAnswer((_) async => {});
+
+      final notifier = container.read(leagueDetailProvider(tLeagueId).notifier);
+      await notifier.logSimpleMatch(
+          winnerId: 'p1', loserId: 'p2', isDraw: false, playedAt: newDate);
+
+      // leagueLastPlayedProvider should have been invalidated at least once by logSimpleMatch
+      // ref.invalidate triggers a rebuild; listen fires on state change
+      // Give microtask a chance
+      await Future<void>.delayed(Duration.zero);
+      expect(invalidateCount, greaterThanOrEqualTo(1));
+
+      final after =
+          await container.read(leagueLastPlayedProvider(tLeagueId).future);
+      expect(after, newDate);
+      verify(() => mockMatchRepo.getByLeague(tLeagueId))
+          .called(greaterThanOrEqualTo(2));
+      sub.close();
+    });
+
+    test('updateSimpleMatch invalidates leagueLastPlayedProvider', () async {
+      final matchV1 = SimpleMatch(
+        id: 'm1',
+        leagueId: tLeagueId,
+        playedAt: DateTime(2023, 1, 1),
+        isComplete: true,
+        isDraw: false,
+        sides: [
+          Side(id: 's1', playerIds: ['p1']),
+          Side(id: 's2', playerIds: ['p2'])
+        ],
+        winnerSideId: 's1',
+      );
+      when(() => mockMatchRepo.get('m1')).thenAnswer((_) async => matchV1);
+      when(() => mockMatchRepo.getByLeague(tLeagueId))
+          .thenAnswer((_) async => [matchV1]);
+      await container.read(leagueLastPlayedProvider(tLeagueId).future);
+
+      final newDate = DateTime(2023, 7, 20);
+      final matchV2 = SimpleMatch(
+        id: 'm1',
+        leagueId: tLeagueId,
+        playedAt: newDate,
+        isComplete: true,
+        isDraw: false,
+        sides: [
+          Side(id: 's3', playerIds: ['p1']),
+          Side(id: 's4', playerIds: ['p2'])
+        ],
+        winnerSideId: 's3',
+      );
+      when(() => mockMatchRepo.getByLeague(tLeagueId))
+          .thenAnswer((_) async => [matchV2]);
+      when(() => mockMatchRepo.logSimpleMatch(match: any(named: 'match')))
+          .thenAnswer((_) async => {});
+
+      final notifier = container.read(leagueDetailProvider(tLeagueId).notifier);
+      await notifier.updateSimpleMatch(
+          matchId: 'm1',
+          winnerId: 'p1',
+          loserId: 'p2',
+          isDraw: false,
+          playedAt: newDate);
+
+      final after =
+          await container.read(leagueLastPlayedProvider(tLeagueId).future);
+      expect(after, newDate);
+    });
+
+    test(
+        'deleteMatch invalidates leagueLastPlayedProvider and returns null when no completes remain',
+        () async {
+      final onlyMatch = SimpleMatch(
+        id: 'm1',
+        leagueId: tLeagueId,
+        playedAt: DateTime(2023, 6, 15),
+        isComplete: true,
+        isDraw: false,
+        sides: [
+          Side(id: 's1', playerIds: ['p1']),
+          Side(id: 's2', playerIds: ['p2'])
+        ],
+        winnerSideId: 's1',
+      );
+      when(() => mockMatchRepo.get('m1')).thenAnswer((_) async => onlyMatch);
+      when(() => mockMatchRepo.getByLeague(tLeagueId))
+          .thenAnswer((_) async => [onlyMatch]);
+      final before =
+          await container.read(leagueLastPlayedProvider(tLeagueId).future);
+      expect(before, DateTime(2023, 6, 15));
+
+      when(() => mockMatchRepo.delete('m1')).thenAnswer((_) async => {});
+      when(() => mockMatchRepo.getByLeague(tLeagueId))
+          .thenAnswer((_) async => []);
+
+      final notifier = container.read(leagueDetailProvider(tLeagueId).notifier);
+      await notifier.deleteMatch('m1');
+
+      final after =
+          await container.read(leagueLastPlayedProvider(tLeagueId).future);
+      expect(after, isNull);
+    });
+
+    test(
+        'only incomplete matches after log still yields null (filter isComplete)',
+        () async {
+      when(() => mockMatchRepo.getByLeague(tLeagueId))
+          .thenAnswer((_) async => []);
+      final before =
+          await container.read(leagueLastPlayedProvider(tLeagueId).future);
+      expect(before, isNull);
+
+      // Simulate that after some operation, only incomplete matches exist
+      final incomplete = SimpleMatch(
+        id: 'm2',
+        leagueId: tLeagueId,
+        playedAt: DateTime(2023, 8, 1),
+        isComplete: false,
+        isDraw: false,
+        sides: [
+          Side(id: 's3', playerIds: ['p1']),
+          Side(id: 's4', playerIds: ['p2'])
+        ],
+      );
+      when(() => mockMatchRepo.getByLeague(tLeagueId))
+          .thenAnswer((_) async => [incomplete]);
+      container.invalidate(leagueLastPlayedProvider(tLeagueId));
+      final after =
+          await container.read(leagueLastPlayedProvider(tLeagueId).future);
+      expect(after, isNull);
+    });
+  });
 }
