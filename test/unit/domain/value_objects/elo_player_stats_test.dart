@@ -67,10 +67,10 @@ void main() {
       expect(c.rating, 410);
     });
 
-    test('deprecated FargoPlayerStats typedef still works', () {
+    test('deprecated EloPlayerStats typedef still works', () {
       // ignore: deprecated_member_use
       const s =
-          FargoPlayerStats(matchesPlayed: 1, wins: 1, losses: 0, rating: 410);
+          EloPlayerStats(matchesPlayed: 1, wins: 1, losses: 0, rating: 410);
       expect(s.rating, 410);
       expect(s.winRate, 1.0);
     });

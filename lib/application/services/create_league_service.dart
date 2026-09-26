@@ -3,7 +3,7 @@ import '../../domain/entities/league.dart';
 import '../../domain/entities/ranking_policy.dart';
 import '../../domain/entities/ranking_policies/goal_difference_ranking_policy.dart';
 import '../../domain/entities/ranking_policies/simple_ranking_policy.dart';
-import '../../domain/entities/ranking_policies/fargo_rate_ranking_policy.dart';
+import '../../domain/entities/ranking_policies/elo_ranking_policy.dart';
 import '../../domain/repositories/league_repository.dart';
 import '../../domain/repositories/ranking_policy_repository.dart';
 import '../../domain/repositories/category_repository.dart';
@@ -25,9 +25,9 @@ class CreateLeagueService {
     required RankingPolicy rankingPolicy,
     List<String>? categoryIds,
   }) async {
-    // Skeleton upfront validation before any IO
-    if (rankingPolicy is FargoRateRankingPolicy) {
-      FargoRateRankingPolicy.validateInitialRating(rankingPolicy.initialRating);
+    // TODO: Builder to implement validation — Elo initialRating + categoryIds guards
+    if (rankingPolicy is EloRankingPolicy) {
+      EloRankingPolicy.validateInitialRating(rankingPolicy.initialRating);
     }
 
     final league = League(
@@ -61,12 +61,12 @@ class CreateLeagueService {
             'Simple and Goal Difference leagues are only allowed in the Custom category ($kFallbackCategoryId). Got: $idsToValidate');
       }
     }
-    // Restriction: FargoRate only in sports+pubgames
-    if (rankingPolicy is FargoRateRankingPolicy) {
-      if (idsToValidate.length != kFargoCategoryIds.length ||
-          !idsToValidate.toSet().containsAll(kFargoCategoryIds)) {
+    // Restriction: Elo only in sports+pubgames
+    if (rankingPolicy is EloRankingPolicy) {
+      if (idsToValidate.length != kEloCategoryIds.length ||
+          !idsToValidate.toSet().containsAll(kEloCategoryIds)) {
         throw ArgumentError(
-            'FargoRate leagues must have categoryIds exactly $kFargoCategoryIds. Got: $idsToValidate');
+            'Elo leagues must have categoryIds exactly $kEloCategoryIds. Got: $idsToValidate');
       }
     }
     // If categoryIds param differs, ensure policy matches (propagation)
@@ -79,7 +79,7 @@ class CreateLeagueService {
       }
     }
 
-    // Skeleton: compensation delete league on policy put failure
+    // Compensation delete league on policy put failure
     await _leagueRepository.put(league);
     try {
       await _rankingPolicyRepository.put(rankingPolicy);

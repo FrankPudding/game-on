@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:game_on/domain/entities/league_player.dart';
 import 'package:game_on/domain/entities/matches/simple_match.dart';
 import 'package:game_on/domain/entities/side.dart';
-import 'package:game_on/domain/services/fargo_rate_calculator.dart';
+import 'package:game_on/domain/services/elo_calculator.dart';
 
 LeaguePlayer _player(String id) => LeaguePlayer(
       id: id,
@@ -521,17 +521,16 @@ void main() {
       expect(result['p1']!.rating.isNaN, isFalse);
     });
 
-    test('FargoRateCalculator typedef still works as EloCalculator with K=20',
+    test('EloCalculator works with K=20',
         () {
-      // ignore: deprecated_member_use
-      const fargoCalc = FargoRateCalculator();
+      const eloCalc = EloCalculator();
       final m = _match(
           id: 'm1',
           playedAt: DateTime(2024, 1, 1),
           winnerSideId: 's_m1_1',
           winnerPlayerId: 'p1',
           loserPlayerId: 'p2');
-      final result = fargoCalc
+      final result = eloCalc
           .calculate(matches: [m], players: [p1, p2], initialRating: 400);
       expect(result['p1']!.rating, 410);
     });

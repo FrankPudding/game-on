@@ -36,14 +36,6 @@ void main() {
       expect(kSeedCategoryPolicyTypes['cat_pubgames']!.length, 1);
     });
 
-    test('kSeedCategoryPolicyTypes does NOT contain fargoRate (renamed to elo)',
-        () {
-      expect(kSeedCategoryPolicyTypes['cat_sports'],
-          isNot(contains(RankingPolicyType.fargoRate)));
-      expect(kSeedCategoryPolicyTypes['cat_pubgames'],
-          isNot(contains(RankingPolicyType.fargoRate)));
-    });
-
     test('custom -> [simple, goalDifference] exactly (no elo)', () {
       expect(
           kSeedCategoryPolicyTypes['cat_custom_league_001'],
@@ -52,9 +44,6 @@ void main() {
       expect(kSeedCategoryPolicyTypes['cat_custom_league_001']!.length, 2);
       expect(kSeedCategoryPolicyTypes['cat_custom_league_001'],
           isNot(contains(RankingPolicyType.elo)));
-      // ignore: deprecated_member_use
-      expect(kSeedCategoryPolicyTypes['cat_custom_league_001'],
-          isNot(contains(RankingPolicyType.fargoRate)));
     });
 
     test('boardgames, cardgames, videogames empty', () {
@@ -93,12 +82,11 @@ void main() {
       }
     });
 
-    test('category_policy_map.dart uses RankingPolicyType.elo not fargoRate',
+    test('category_policy_map.dart uses RankingPolicyType.elo',
         () {
       final file = File('lib/core/constants/category_policy_map.dart');
       final content = file.readAsStringSync();
       expect(content, contains('RankingPolicyType.elo'));
-      // Should not have uncommented fargoRate as primary (deprecated map may contain it)
       expect(content, contains('cat_sports'));
       expect(content, contains('cat_pubgames'));
     });

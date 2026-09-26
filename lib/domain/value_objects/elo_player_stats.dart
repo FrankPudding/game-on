@@ -29,6 +29,3 @@ class EloPlayerStats {
     );
   }
 }
-
-@Deprecated('Use EloPlayerStats')
-typedef FargoPlayerStats = EloPlayerStats;

@@ -132,17 +132,17 @@ void main() {
       final state =
           await container.read(leagueDetailProvider(tLeagueId).future);
       expect(state.players.map((p) => p.id).toList(), ['p1', 'p2', 'p3']);
-      // isElo / isFargo – use dynamic to tolerate skeleton without isElo getter
+      // isElo / isElo – use dynamic to tolerate skeleton without isElo getter
       final dyn = state as dynamic;
       bool isElo = false;
       try {
         isElo = dyn.isElo as bool;
       } catch (_) {
-        isElo = dyn.isFargo as bool;
+        isElo = dyn.isElo as bool;
       }
       expect(isElo, isTrue);
-      // stats may be fargoStats or eloStats – both aliases should be present after builder
-      final stats = (dyn.eloStats ?? dyn.fargoStats) as Map;
+      // stats may be eloStats or eloStats – both aliases should be present after builder
+      final stats = dyn.eloStats as Map;
       expect(stats.length, 3);
     });
 
@@ -179,7 +179,7 @@ void main() {
       expect(state.players.map((p) => p.id).toList(), ['p1', 'p3', 'p2']);
       final dyn2 = state as dynamic;
       final eloStats =
-          (dyn2.eloStats ?? dyn2.fargoStats) as Map<String, dynamic>;
+          dyn2.eloStats as Map<String, dynamic>;
       expect(eloStats['p3']!.rating, 400);
       expect(eloStats['p1']!.rating, 410);
       expect(eloStats['p2']!.rating, 390);
@@ -226,7 +226,7 @@ void main() {
     });
 
     test(
-        'isElo true when policy is EloRankingPolicy, fargoStats alias still populated',
+        'isElo true when policy is EloRankingPolicy, eloStats alias still populated',
         () async {
       final eloPolicy = EloRankingPolicy(
         id: 'rp1',
@@ -246,11 +246,11 @@ void main() {
       try {
         isElo3 = dyn3.isElo as bool;
       } catch (_) {
-        isElo3 = dyn3.isFargo as bool;
+        isElo3 = dyn3.isElo as bool;
       }
       expect(isElo3, isTrue);
       expect(state.rankingPolicy, isA<EloRankingPolicy>());
-      final stats3 = (dyn3.eloStats ?? dyn3.fargoStats) as Map<String, dynamic>;
+      final stats3 = dyn3.eloStats as Map<String, dynamic>;
       expect(stats3.length, 3);
       expect(stats3['p1']!.rating, 400);
     });
@@ -290,11 +290,11 @@ void main() {
       // At least the provider declares isElo
       final providerFile = File('lib/providers/league_detail_provider.dart');
       expect(providerFile.readAsStringSync(), contains('isElo'));
-      // eloStats and fargoStats both present
+      // eloStats and eloStats both present
       expect(providerFile.readAsStringSync(), contains('eloStats'));
     });
 
-    test('eloStats vs fargoStats parity – both computed with K=20', () {
+    test('eloStats vs eloStats parity – both computed with K=20', () {
       // Provider should compute both for compat or at least eloStats
       final file = File('lib/providers/league_detail_provider.dart');
       final content = file.readAsStringSync();

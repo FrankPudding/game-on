@@ -7,13 +7,9 @@ import '../domain/entities/matches/simple_match.dart';
 import '../domain/entities/ranking_policies/simple_ranking_policy.dart';
 import '../domain/entities/ranking_policies/goal_difference_ranking_policy.dart';
 import '../domain/entities/ranking_policies/elo_ranking_policy.dart';
-import '../domain/entities/ranking_policies/fargo_rate_ranking_policy.dart';
 import '../domain/entities/ranking_policy.dart';
 import '../domain/value_objects/elo_player_stats.dart';
-import '../domain/value_objects/fargo_player_stats.dart';
 import '../domain/services/elo_calculator.dart';
-// ignore: unused_import
-import '../domain/services/fargo_rate_calculator.dart';
 import '../domain/entities/user.dart';
 import '../domain/repositories/league_repository.dart';
 import '../domain/repositories/league_player_repository.dart';
@@ -103,7 +99,7 @@ class LeagueDetailState {
     required this.matches,
     required this.playerStats,
     this.rankingPolicy,
-    this.fargoStats = const {},
+    this.eloStats = const {},
   });
   // Ranked order: points → GD → GF → id. Never name.
   final List<LeaguePlayer> players;
@@ -113,13 +109,11 @@ class LeagueDetailState {
   final List<SimpleMatch> matches;
   final Map<String, PlayerStats> playerStats;
   final RankingPolicy? rankingPolicy;
-  // Fargo stats: rating-based when policy is FargoRateRankingPolicy
-  final Map<String, FargoPlayerStats> fargoStats;
+  // Elo stats: rating-based when policy is EloRankingPolicy
+  final Map<String, EloPlayerStats> eloStats;
 
   bool get isGoalDifference => rankingPolicy is GoalDifferenceRankingPolicy;
-  bool get isFargo => rankingPolicy is FargoRateRankingPolicy;
   bool get isElo => rankingPolicy is EloRankingPolicy;
-  Map<String, EloPlayerStats> get eloStats => fargoStats;
 }
 
 // Notifier
@@ -165,13 +159,13 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
 
     final policy = await _policyRepo.getByLeagueId(_leagueId);
 
-    Map<String, FargoPlayerStats> fargoStats = {};
-    int? fargoInitial;
+    Map<String, EloPlayerStats> eloStats = {};
+    int? eloInitial;
     if (policy is EloRankingPolicy) {
       const calculator = EloCalculator();
-      fargoInitial = policy.initialRating;
-      fargoStats = calculator.calculate(
-          matches: matches, players: rawPlayers, initialRating: fargoInitial);
+      eloInitial = policy.initialRating;
+      eloStats = calculator.calculate(
+          matches: matches, players: rawPlayers, initialRating: eloInitial);
     } else if (policy is GoalDifferenceRankingPolicy) {
       for (final match in matches) {
         if (!match.isComplete) continue;
@@ -223,17 +217,17 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
     }
 
     // Ranked order: points → GD → GF → id. Never use name as tie-breaker.
-    // For Fargo: rating DESC → wins DESC → id ASC
+    // For Elo: rating DESC → wins DESC → id ASC
     final sortedPlayers = List<LeaguePlayer>.from(rawPlayers)
       ..sort((a, b) {
-        if (policy is FargoRateRankingPolicy) {
-          final initial = fargoInitial!;
-          final ra = fargoStats[a.id]?.rating ?? initial;
-          final rb = fargoStats[b.id]?.rating ?? initial;
+        if (policy is EloRankingPolicy) {
+          final initial = eloInitial!;
+          final ra = eloStats[a.id]?.rating ?? initial;
+          final rb = eloStats[b.id]?.rating ?? initial;
           var result = rb.compareTo(ra);
           if (result != 0) return result;
-          final wa = fargoStats[a.id]?.wins ?? 0;
-          final wb = fargoStats[b.id]?.wins ?? 0;
+          final wa = eloStats[a.id]?.wins ?? 0;
+          final wb = eloStats[b.id]?.wins ?? 0;
           result = wb.compareTo(wa);
           if (result != 0) return result;
           return a.id.compareTo(b.id);
@@ -268,7 +262,7 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
       matches: matches,
       playerStats: playerStats,
       rankingPolicy: policy,
-      fargoStats: fargoStats,
+      eloStats: eloStats,
     );
   }
 

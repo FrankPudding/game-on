@@ -34,6 +34,24 @@ You must create a migration whenever you make a **breaking change** to the data 
 
 3.  **Verify**: creating a test case in `test/data/services/hive/hive_database_migration_service_test.dart` to verify the migration.
 
+> **Legacy purge (0.3.0) — no migration bump.** `EloRankingPolicyHiveModel` `typeId 12` was retained from legacy with `@HiveField(7, defaultValue:500)` literal (`fields[7] == null ? 500 : fields[7] as int`, hand-patched after `build_runner`). `hiveDbVersion` stays `3` — additive field via literal default is backward-compatible. The hard delete (legacy `RankingPolicyType` value removed, `create_legacy_rate_league_screen.dart` → `create_elo_league_screen.dart`, shims deleted, `isElo`/`eloStats` canonical) is BREAKING at the API level but not at the Hive schema level. Do not bump `hiveDbVersion` for literal-default additions.
+
+## Verification Gate — Legacy Purge
+
+Before pushing, run the purge verifier (must pass in CI and locally):
+
+```bash
+tool/verify_no_fargo.sh
+# PASS: No legacy mentions in content
+# PASS: No legacy in git tracked paths
+```
+
+- Content check: `rg -i <legacy>` excluding `.git/.dart_tool/build/** /AGENTS.md/tool/verify_no_fargo.sh/test/elo_purge_verification_test.dart` (verifier test intentionally contains the legacy string).
+- Path check: `git ls-files | grep -i <legacy>` excluding `tool/verify_no_fargo.sh`.
+- Also verify: `dart analyze` clean and `flutter test` (660 tests).
+
+See `docs/versioning.md` → *Purge verification gate* and `CHANGELOG.md` → `0.3.0`.
+
 ## Running Tests
 
 ### Unit Tests

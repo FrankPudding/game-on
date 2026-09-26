@@ -3,7 +3,7 @@ import '../../theme/app_theme.dart';
 import '../../../domain/entities/ranking_policy_type.dart';
 import 'create_simple_league_screen.dart';
 import 'create_goal_difference_league_screen.dart';
-import 'create_fargo_rate_league_screen.dart';
+import 'create_elo_league_screen.dart';
 
 @Deprecated(
     'Use CategoryFilteredScoringScreen (SelectScoringSystemScreen) with categoryId; kept as fallback until v3')
@@ -47,16 +47,7 @@ class SelectRankingPolicyScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) =>
-                            const CreateFargoRateLeagueScreen(),
-                      ),
-                    );
-                    break;
-                  case RankingPolicyType.fargoRate:
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            const CreateFargoRateLeagueScreen(),
+                            const CreateEloLeagueScreen(),
                       ),
                     );
                     break;

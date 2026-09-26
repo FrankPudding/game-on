@@ -13,7 +13,7 @@ void main() {
     });
 
     test(
-        'typeId keeps 12 (same as Fargo) – file declares @HiveType(typeId: 12)',
+        'typeId keeps 12 (same as Elo) – file declares @HiveType(typeId: 12)',
         () {
       final file = File(
           'lib/data/models/hive/ranking_policies/elo_ranking_policy_hive_model.dart');
@@ -210,19 +210,17 @@ void main() {
           contains('registerAdapter(EloRankingPolicyHiveModelAdapter'));
     });
 
-    test('Fargo typedef still resolves to Elo hive model', () {
-      // ignore: deprecated_member_use
-      final model = FargoRateRankingPolicyHiveModel(
-        id: 'rp1',
-        name: 'Pool',
+    test('Elo hive model creates correctly', () {
+      final model = EloRankingPolicyHiveModel(
+        id: 'elo_l1',
+        name: 'Pool Ranking Policy',
         leagueId: 'l1',
         categoryIds: const [kSportsCategoryId, kPubGamesCategoryId],
         initialRating: 400,
       );
       expect(model, isA<EloRankingPolicyHiveModel>());
       expect(model.initialRating, 400);
-      // ignore: deprecated_member_use
-      final adapter = FargoRateRankingPolicyHiveModelAdapter();
+      final adapter = EloRankingPolicyHiveModelAdapter();
       expect(adapter.typeId, 12);
     });
   });

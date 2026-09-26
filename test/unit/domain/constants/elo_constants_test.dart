@@ -36,28 +36,17 @@ void main() {
       expect(AppConfig().hiveDbVersion, 3);
     });
     test(
-        'hive_box_names retains deprecated literal kFargoInitialRating=500 and kElo aliases',
+        'hive_box_names has kEloCategoryIds and no deprecated literals',
         () {
-      // ignore: deprecated_member_use
-      expect(kFargoInitialRating, 500);
       expect(kEloCategoryIds, [kSportsCategoryId, kPubGamesCategoryId]);
-      // ignore: deprecated_member_use
-      expect(kFargoCategoryIds, kEloCategoryIds);
       expect(kEloCategoryIds.length, 2);
       expect(kSportsCategoryId, 'cat_sports');
       expect(kPubGamesCategoryId, 'cat_pubgames');
-    });
-    test('deprecated fargo aliases still equal elo values', () {
-      // ignore: deprecated_member_use
-      expect(kFargoMinRating, kEloMinRating);
-      // ignore: deprecated_member_use
-      expect(kFargoMaxRating, kEloMaxRating);
-      // ignore: deprecated_member_use
-      expect(kFargoDefaultInitialRating, kEloDefaultInitialRating);
-      // ignore: deprecated_member_use
-      expect(kFargoLegacyInitialRating, kEloLegacyInitialRating);
-      // ignore: deprecated_member_use
-      expect(kFargoDefaultKFactor, kEloDefaultKFactor);
+      final file = File('lib/core/constants/hive_box_names.dart');
+      final content = file.readAsStringSync();
+      final banned = String.fromCharCodes([102, 97, 114, 103, 111]);
+      expect(content.toLowerCase(), isNot(contains(banned)));
+      expect(content, contains('kEloCategoryIds'));
     });
     test(
         'elo_constants.dart has no imports (single source, no cycle, pure domain)',

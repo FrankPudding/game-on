@@ -56,10 +56,3 @@ class EloRankingPolicyHiveModel extends RankingPolicyHiveModel {
     );
   }
 }
-
-@Deprecated('Use EloRankingPolicyHiveModel')
-typedef FargoRateRankingPolicyHiveModel = EloRankingPolicyHiveModel;
-
-@Deprecated('Use EloRankingPolicyHiveModelAdapter')
-typedef FargoRateRankingPolicyHiveModelAdapter
-    = EloRankingPolicyHiveModelAdapter;

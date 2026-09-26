@@ -61,12 +61,13 @@ void main() {
       });
 
       test(
-          '[$catId] does not return deprecated fargoRate as primary – expects elo',
+          '[$catId] returns only elo – not simple/goalDifference',
           () async {
         final result = await container
             .read(rankingPolicyTypesForCategoryProvider(catId).future);
         expect(result, contains(RankingPolicyType.elo));
-        expect(result, isNot(contains(RankingPolicyType.fargoRate)));
+        expect(result.length, 1);
+        expect(result, isNot(contains(RankingPolicyType.simple)));
       });
 
       test(

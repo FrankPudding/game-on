@@ -103,11 +103,9 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
   Future<void> _submit() async {
     final state = ref.read(leagueDetailProvider(widget.leagueId)).value;
     final isGoalDifference = state?.isGoalDifference ?? false;
-    final isFargo = state?.isFargo ?? false;
-    if (isFargo) {
-      // Skeleton stub: Fargo hides draw, should not allow isDraw true
-      // For now throw to indicate unimplemented Fargo match logging
-      // Actual logic would validate and hide draw option in UI
+    final isElo = state?.isElo ?? false;
+    if (isElo) {
+      // Elo hides draw — validated in _buildWinnerSection via isElo
     }
 
     if (_player1Id == null || _player2Id == null) {
@@ -439,9 +437,8 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
   }
 
   Widget _buildWinnerSection(LeagueDetailState state) {
-    // Fargo/Elo hides draw option
-    final isElo = (state as dynamic).isElo as bool? ?? false;
-    final isFargo = state.isFargo || isElo;
+    // Elo hides draw option
+    final isElo = state.isElo;
     return Column(
       children: [
         const Text('WINNER',
@@ -482,7 +479,7 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
                       .name,
                   style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
-            if (!isFargo)
+            if (!isElo)
               const DropdownMenuItem(
                 value: 'draw',
                 child:

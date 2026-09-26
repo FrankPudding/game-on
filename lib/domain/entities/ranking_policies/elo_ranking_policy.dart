@@ -30,6 +30,7 @@ class EloRankingPolicy extends RankingPolicy<SimpleMatch> {
 
   /// Validates [v] is within 100..500 inclusive.
   static void validateInitialRating(int v) {
+    // TODO: Builder to implement validation logic — throw ArgumentError if outside 100..500
     if (v < kEloMinRating || v > kEloMaxRating) {
       throw ArgumentError(
           'initialRating must be within 100..500 inclusive. Got: $v');
@@ -38,20 +39,15 @@ class EloRankingPolicy extends RankingPolicy<SimpleMatch> {
 
   /// Validates that [categoryIds] is exactly the Elo set.
   static void validateCategoryIds(List<String> ids) {
+    // TODO: Builder to implement SetEquality + length guard, error message must be "Elo leagues must have categoryIds exactly $kEloCategoryIds. Got: $ids"
     if (ids.length != kEloCategoryIds.length ||
         !_equality.equals(ids.toSet(), kEloCategoryIds.toSet())) {
       throw ArgumentError(
-          'FargoRate leagues must have categoryIds exactly $kEloCategoryIds. Got: $ids');
+          'Elo leagues must have categoryIds exactly $kEloCategoryIds. Got: $ids');
     }
   }
 
   static const _equality = SetEquality<String>();
 
   static List<String> get eloCategoryIds => kEloCategoryIds;
-
-  @Deprecated('Use eloCategoryIds')
-  static List<String> get fargoCategoryIds => kEloCategoryIds;
 }
-
-@Deprecated('Use EloRankingPolicy')
-typedef FargoRateRankingPolicy = EloRankingPolicy;

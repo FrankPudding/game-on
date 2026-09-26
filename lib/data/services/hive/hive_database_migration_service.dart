@@ -5,7 +5,7 @@ import '../../models/hive/category_hive_model.dart';
 import '../../models/hive/ranking_policy_hive_model.dart';
 import '../../models/hive/ranking_policies/simple_ranking_policy_hive_model.dart';
 import '../../models/hive/ranking_policies/goal_difference_ranking_policy_hive_model.dart';
-import '../../models/hive/ranking_policies/fargo_rate_ranking_policy_hive_model.dart';
+import '../../models/hive/ranking_policies/elo_ranking_policy_hive_model.dart';
 
 class HiveDatabaseMigrationService {
   static const String _metaBoxName = 'meta';
@@ -223,7 +223,7 @@ class HiveDatabaseMigrationService {
   /// meta bump only after success. Adapter typeId 12 guard included.
   Future<void> _migrateToV3() async {
     if (!Hive.isAdapterRegistered(12)) {
-      Hive.registerAdapter(FargoRateRankingPolicyHiveModelAdapter());
+      Hive.registerAdapter(EloRankingPolicyHiveModelAdapter());
     }
     if (!Hive.isAdapterRegistered(11)) {
       Hive.registerAdapter(CategoryHiveModelAdapter());

@@ -254,23 +254,21 @@ void main() {
       expect(EloRankingPolicy.eloCategoryIds, kEloCategoryIds);
     });
 
-    test('fargoCategoryIds deprecated still equals elo', () {
-      // ignore: deprecated_member_use
-      expect(EloRankingPolicy.fargoCategoryIds, kEloCategoryIds);
-      // ignore: deprecated_member_use
-      expect(kFargoCategoryIds, kEloCategoryIds);
+    test('eloCategoryIds equals kEloCategoryIds', () {
+      expect(EloRankingPolicy.eloCategoryIds, kEloCategoryIds);
     });
 
-    test('FargoRateRankingPolicy typedef still works as Elo', () {
-      // ignore: deprecated_member_use
-      final p = FargoRateRankingPolicy(
-          id: 'rp1',
-          name: 'Pool',
+    test('EloRankingPolicy creates with Pool name', () {
+      final p = EloRankingPolicy(
+          id: 'elo_l1',
+          name: 'Pool Ranking Policy',
           leagueId: 'l1',
           categoryIds: const [kSportsCategoryId, kPubGamesCategoryId],
           initialRating: 400);
       expect(p, isA<EloRankingPolicy>());
       expect(p.initialRating, 400);
+      expect(p.name, 'Pool Ranking Policy');
+      expect(p.id, startsWith('elo_'));
     });
 
     test('preserves DDD pure domain – no Flutter/Hive imports', () {

@@ -18,7 +18,3 @@ const Map<String, List<RankingPolicyType>> kSeedCategoryPolicyTypes = {
     RankingPolicyType.goalDifference
   ],
 };
-
-@Deprecated('Use kSeedCategoryPolicyTypes with elo')
-const Map<String, List<RankingPolicyType>> kSeedCategoryPolicyTypesFargo =
-    kSeedCategoryPolicyTypes;

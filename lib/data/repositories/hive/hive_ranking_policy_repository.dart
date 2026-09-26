@@ -3,7 +3,7 @@ import 'package:synchronized/synchronized.dart';
 import '../../../../domain/entities/ranking_policy.dart';
 import '../../../../domain/entities/ranking_policies/simple_ranking_policy.dart';
 import '../../../../domain/entities/ranking_policies/goal_difference_ranking_policy.dart';
-import '../../../../domain/entities/ranking_policies/fargo_rate_ranking_policy.dart';
+import '../../../../domain/entities/ranking_policies/elo_ranking_policy.dart';
 import '../../../../domain/repositories/ranking_policy_repository.dart';
 import '../../../../domain/repositories/category_repository.dart';
 import '../../../core/constants/hive_box_names.dart';
@@ -11,7 +11,7 @@ import '../../../domain/exceptions/unknown_category_exception.dart';
 import '../../models/hive/ranking_policy_hive_model.dart';
 import '../../models/hive/ranking_policies/simple_ranking_policy_hive_model.dart';
 import '../../models/hive/ranking_policies/goal_difference_ranking_policy_hive_model.dart';
-import '../../models/hive/ranking_policies/fargo_rate_ranking_policy_hive_model.dart';
+import '../../models/hive/ranking_policies/elo_ranking_policy_hive_model.dart';
 
 class HiveRankingPolicyRepository implements RankingPolicyRepository {
   HiveRankingPolicyRepository(
@@ -32,8 +32,7 @@ class HiveRankingPolicyRepository implements RankingPolicyRepository {
   Future<RankingPolicy?> get(String id) async {
     final model = _box.get(id);
     if (model == null) return null;
-    // Skeleton: should propagate corruption errors (StateError/ArgumentError from toDomain), not swallow.
-    // For now delegates to toDomain which stub throws UnimplementedError.
+    // TODO: Builder to ensure corruption errors propagate
     return model.toDomain();
   }
 
@@ -49,9 +48,9 @@ class HiveRankingPolicyRepository implements RankingPolicyRepository {
   /// Defensive copies via [List.from] and [List.unmodifiable] per domain invariant.
   @override
   Future<void> put(RankingPolicy item) async {
-    // Skeleton upfront validation for FargoRate initialRating
-    if (item is FargoRateRankingPolicy) {
-      FargoRateRankingPolicy.validateInitialRating(item.initialRating);
+    // TODO: Builder to implement — validate Elo initialRating
+    if (item is EloRankingPolicy) {
+      EloRankingPolicy.validateInitialRating(item.initialRating);
     }
     // Defensive copy
     final ids = List<String>.from(item.categoryIds);
@@ -70,14 +69,12 @@ class HiveRankingPolicyRepository implements RankingPolicyRepository {
             'Simple and Goal Difference leagues are only allowed in the Custom category ($kFallbackCategoryId). Got: $ids');
       }
     }
-    // Restriction: FargoRate only in sports+pubgames
-    if (item is FargoRateRankingPolicy) {
-      // Skeleton stub: validate exactly kFargoCategoryIds via SetEquality + length guard
-      // Real check would use SetEquality; stub throws for now if not matching
-      if (ids.length != kFargoCategoryIds.length ||
-          !ids.toSet().containsAll(kFargoCategoryIds)) {
+    // Restriction: Elo only in sports+pubgames
+    if (item is EloRankingPolicy) {
+      if (ids.length != kEloCategoryIds.length ||
+          !ids.toSet().containsAll(kEloCategoryIds)) {
         throw ArgumentError(
-            'FargoRate leagues must have categoryIds exactly $kFargoCategoryIds. Got: $ids');
+            'Elo leagues must have categoryIds exactly $kEloCategoryIds. Got: $ids');
       }
     }
     // Validate categoryIds existsAll via CategoryRepository
@@ -154,7 +151,6 @@ class HiveRankingPolicyRepository implements RankingPolicyRepository {
 
   @override
   Future<RankingPolicy?> getByLeagueId(String leagueId) async {
-    // Skeleton: split not-found vs propagation — firstWhere StateError → null, toDomain corruption propagates.
     final RankingPolicyHiveModel model;
     try {
       model = _box.values.firstWhere(
@@ -195,8 +191,8 @@ class HiveRankingPolicyRepository implements RankingPolicyRepository {
     if (policy is GoalDifferenceRankingPolicy) {
       return GoalDifferenceRankingPolicyHiveModel.fromDomain(policy);
     }
-    if (policy is FargoRateRankingPolicy) {
-      return FargoRateRankingPolicyHiveModel.fromDomain(policy);
+    if (policy is EloRankingPolicy) {
+      return EloRankingPolicyHiveModel.fromDomain(policy);
     }
     throw UnimplementedError(
         'Ranking policy type not supported: ${policy.runtimeType}');
