@@ -10,6 +10,7 @@ import 'package:game_on/data/models/hive/matches/simple_match_hive_model.dart';
 import 'package:game_on/data/models/hive/ranking_policies/elo_ranking_policy_hive_model.dart';
 import 'package:game_on/data/models/hive/ranking_policies/goal_difference_ranking_policy_hive_model.dart';
 import 'package:game_on/data/models/hive/ranking_policies/simple_ranking_policy_hive_model.dart';
+import 'package:game_on/data/models/hive/ranking_policies/table_tennis_elo_ranking_policy_hive_model.dart';
 import 'package:game_on/data/models/hive/side_hive_model.dart';
 import 'package:game_on/data/models/hive/user_hive_model.dart';
 
@@ -23,6 +24,7 @@ extension HiveRegistrar on HiveInterface {
     registerAdapter(SideHiveModelAdapter());
     registerAdapter(SimpleMatchHiveModelAdapter());
     registerAdapter(SimpleRankingPolicyHiveModelAdapter());
+    registerAdapter(TableTennisEloRankingPolicyHiveModelAdapter());
     registerAdapter(UserHiveModelAdapter());
   }
 }
@@ -37,6 +39,7 @@ extension IsolatedHiveRegistrar on IsolatedHiveInterface {
     registerAdapter(SideHiveModelAdapter());
     registerAdapter(SimpleMatchHiveModelAdapter());
     registerAdapter(SimpleRankingPolicyHiveModelAdapter());
+    registerAdapter(TableTennisEloRankingPolicyHiveModelAdapter());
     registerAdapter(UserHiveModelAdapter());
   }
 }

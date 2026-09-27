@@ -4,6 +4,7 @@ import '../../../../domain/entities/ranking_policy.dart';
 import '../../../../domain/entities/ranking_policies/simple_ranking_policy.dart';
 import '../../../../domain/entities/ranking_policies/goal_difference_ranking_policy.dart';
 import '../../../../domain/entities/ranking_policies/elo_ranking_policy.dart';
+import '../../../../domain/entities/ranking_policies/table_tennis_elo_ranking_policy.dart';
 import '../../../../domain/repositories/ranking_policy_repository.dart';
 import '../../../../domain/repositories/category_repository.dart';
 import '../../../core/constants/hive_box_names.dart';
@@ -12,6 +13,7 @@ import '../../models/hive/ranking_policy_hive_model.dart';
 import '../../models/hive/ranking_policies/simple_ranking_policy_hive_model.dart';
 import '../../models/hive/ranking_policies/goal_difference_ranking_policy_hive_model.dart';
 import '../../models/hive/ranking_policies/elo_ranking_policy_hive_model.dart';
+import '../../models/hive/ranking_policies/table_tennis_elo_ranking_policy_hive_model.dart';
 
 class HiveRankingPolicyRepository implements RankingPolicyRepository {
   HiveRankingPolicyRepository(
@@ -52,6 +54,9 @@ class HiveRankingPolicyRepository implements RankingPolicyRepository {
     if (item is EloRankingPolicy) {
       EloRankingPolicy.validateInitialRating(item.initialRating);
     }
+    if (item is TableTennisEloRankingPolicy) {
+      TableTennisEloRankingPolicy.validateInitialRating(item.initialRating);
+    }
     // Defensive copy
     final ids = List<String>.from(item.categoryIds);
     if (ids.isEmpty) {
@@ -75,6 +80,13 @@ class HiveRankingPolicyRepository implements RankingPolicyRepository {
           !ids.toSet().containsAll(kEloCategoryIds)) {
         throw ArgumentError(
             'Elo leagues must have categoryIds exactly $kEloCategoryIds. Got: $ids');
+      }
+    }
+    if (item is TableTennisEloRankingPolicy) {
+      if (ids.length != kTableTennisCategoryIds.length ||
+          !ids.toSet().containsAll(kTableTennisCategoryIds)) {
+        throw ArgumentError(
+            'Table Tennis leagues must have categoryIds exactly $kTableTennisCategoryIds. Got: $ids');
       }
     }
     // Validate categoryIds existsAll via CategoryRepository
@@ -193,6 +205,9 @@ class HiveRankingPolicyRepository implements RankingPolicyRepository {
     }
     if (policy is EloRankingPolicy) {
       return EloRankingPolicyHiveModel.fromDomain(policy);
+    }
+    if (policy is TableTennisEloRankingPolicy) {
+      return TableTennisEloRankingPolicyHiveModel.fromDomain(policy);
     }
     throw UnimplementedError(
         'Ranking policy type not supported: ${policy.runtimeType}');

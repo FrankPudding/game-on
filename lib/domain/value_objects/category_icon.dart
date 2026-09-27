@@ -3,6 +3,7 @@ enum CategoryIcon {
   playingCards,
   sportsSoccer,
   sportsEsports,
+  sportsTennis,
   categoryOther,
   other,
 }
@@ -18,6 +19,8 @@ extension CategoryIconExtension on CategoryIcon {
         return 'sports_soccer';
       case CategoryIcon.sportsEsports:
         return 'sports_esports';
+      case CategoryIcon.sportsTennis:
+        return 'sports_tennis';
       case CategoryIcon.categoryOther:
         return 'category_other';
       case CategoryIcon.other:
@@ -36,6 +39,8 @@ extension CategoryIconExtension on CategoryIcon {
         return CategoryIcon.sportsSoccer;
       case 'sports_esports':
         return CategoryIcon.sportsEsports;
+      case 'sports_tennis':
+        return CategoryIcon.sportsTennis;
       case 'category_other':
         return CategoryIcon.categoryOther;
       case 'other':

@@ -104,7 +104,8 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
     final state = ref.read(leagueDetailProvider(widget.leagueId)).value;
     final isGoalDifference = state?.isGoalDifference ?? false;
     final isElo = state?.isElo ?? false;
-    if (isElo) {
+    final isTableTennisElo = state?.isTableTennisElo ?? false;
+    if (isElo || isTableTennisElo) {
       // Elo hides draw — validated in _buildWinnerSection via isElo
     }
 
@@ -438,7 +439,7 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
 
   Widget _buildWinnerSection(LeagueDetailState state) {
     // Elo hides draw option
-    final isElo = state.isElo;
+    final isElo = state.isElo || state.isTableTennisElo;
     return Column(
       children: [
         const Text('WINNER',

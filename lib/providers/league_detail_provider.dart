@@ -7,9 +7,11 @@ import '../domain/entities/matches/simple_match.dart';
 import '../domain/entities/ranking_policies/simple_ranking_policy.dart';
 import '../domain/entities/ranking_policies/goal_difference_ranking_policy.dart';
 import '../domain/entities/ranking_policies/elo_ranking_policy.dart';
+import '../domain/entities/ranking_policies/table_tennis_elo_ranking_policy.dart';
 import '../domain/entities/ranking_policy.dart';
 import '../domain/value_objects/elo_player_stats.dart';
 import '../domain/services/elo_calculator.dart';
+import '../domain/services/table_tennis_elo_calculator.dart';
 import '../domain/entities/user.dart';
 import '../domain/repositories/league_repository.dart';
 import '../domain/repositories/league_player_repository.dart';
@@ -114,6 +116,7 @@ class LeagueDetailState {
 
   bool get isGoalDifference => rankingPolicy is GoalDifferenceRankingPolicy;
   bool get isElo => rankingPolicy is EloRankingPolicy;
+  bool get isTableTennisElo => rankingPolicy is TableTennisEloRankingPolicy;
 }
 
 // Notifier
@@ -163,6 +166,11 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
     int? eloInitial;
     if (policy is EloRankingPolicy) {
       const calculator = EloCalculator();
+      eloInitial = policy.initialRating;
+      eloStats = calculator.calculate(
+          matches: matches, players: rawPlayers, initialRating: eloInitial);
+    } else if (policy is TableTennisEloRankingPolicy) {
+      const calculator = TableTennisEloCalculator();
       eloInitial = policy.initialRating;
       eloStats = calculator.calculate(
           matches: matches, players: rawPlayers, initialRating: eloInitial);
@@ -220,7 +228,7 @@ class LeagueDetailNotifier extends AsyncNotifier<LeagueDetailState> {
     // For Elo: rating DESC → wins DESC → id ASC
     final sortedPlayers = List<LeaguePlayer>.from(rawPlayers)
       ..sort((a, b) {
-        if (policy is EloRankingPolicy) {
+        if (policy is EloRankingPolicy || policy is TableTennisEloRankingPolicy) {
           final initial = eloInitial!;
           final ra = eloStats[a.id]?.rating ?? initial;
           final rb = eloStats[b.id]?.rating ?? initial;

@@ -52,8 +52,8 @@ void main() {
       expect(kSeedCategoryPolicyTypes['cat_videogames'], isEmpty);
     });
 
-    test('map contains 6 entries total', () {
-      expect(kSeedCategoryPolicyTypes.length, 6);
+    test('map contains 7 entries total', () {
+      expect(kSeedCategoryPolicyTypes.length, 7);
       expect(
           kSeedCategoryPolicyTypes.keys,
           containsAll([
@@ -61,6 +61,7 @@ void main() {
             'cat_cardgames',
             'cat_sports',
             'cat_videogames',
+            'cat_tabletennis',
             'cat_custom_league_001',
             'cat_pubgames'
           ]));
@@ -75,6 +76,9 @@ void main() {
         } else if (entry.key == 'cat_sports' || entry.key == 'cat_pubgames') {
           expect(entry.value, [RankingPolicyType.elo],
               reason: '${entry.key} should be [elo]');
+        } else if (entry.key == 'cat_tabletennis') {
+          expect(entry.value, [RankingPolicyType.tableTennisElo],
+              reason: 'cat_tabletennis should be [tableTennisElo]');
         } else {
           expect(entry.value, isEmpty,
               reason: '${entry.key} should be empty but was ${entry.value}');

@@ -55,7 +55,7 @@ void main() {
               'Enter the score for each match and rank by points, goal difference, then goals for (e.g. Ping Pong, Table Football).'),
           findsOneWidget);
       expect(find.text('Elo Rankings'), findsOneWidget);
-      expect(find.byType(Card), findsNWidgets(3));
+      expect(find.byType(Card), findsNWidgets(4));
     });
 
     testWidgets(
@@ -87,11 +87,11 @@ void main() {
     testWidgets('should handle empty policies list', (tester) async {
       // Test with a custom widget that has no policies
       // Since the screen uses RankingPolicyType.values directly, we can't easily mock it empty.
-      // But we can verify the current behavior has 3 policies.
+      // But we can verify the current behavior has 4 policies.
       await openScreen(tester);
       await tester.pump();
 
-      expect(find.byType(Card), findsNWidgets(3));
+      expect(find.byType(Card), findsNWidgets(4));
     });
   });
 }

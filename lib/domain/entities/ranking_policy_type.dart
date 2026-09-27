@@ -2,6 +2,7 @@ enum RankingPolicyType {
   simple,
   goalDifference,
   elo,
+  tableTennisElo,
 }
 
 extension RankingPolicyTypeExtension on RankingPolicyType {
@@ -13,6 +14,8 @@ extension RankingPolicyTypeExtension on RankingPolicyType {
         return 'Goal Difference';
       case RankingPolicyType.elo:
         return 'Pool';
+      case RankingPolicyType.tableTennisElo:
+        return 'Table Tennis';
     }
   }
 
@@ -24,6 +27,8 @@ extension RankingPolicyTypeExtension on RankingPolicyType {
         return 'Enter the score for each match and rank by points, goal difference, then goals for (e.g. Ping Pong, Table Football).';
       case RankingPolicyType.elo:
         return 'Elo Rankings';
+      case RankingPolicyType.tableTennisElo:
+        return 'Table Tennis Elo';
     }
   }
 }

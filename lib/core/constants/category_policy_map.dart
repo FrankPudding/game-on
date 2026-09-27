@@ -13,6 +13,7 @@ const Map<String, List<RankingPolicyType>> kSeedCategoryPolicyTypes = {
   'cat_sports': [RankingPolicyType.elo],
   'cat_videogames': [],
   'cat_pubgames': [RankingPolicyType.elo],
+  'cat_tabletennis': [RankingPolicyType.tableTennisElo],
   'cat_custom_league_001': [
     RankingPolicyType.simple,
     RankingPolicyType.goalDifference

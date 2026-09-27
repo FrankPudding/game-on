@@ -16,6 +16,9 @@ void main() {
           reason: 'videogames should have no allowed types');
       expect(kSeedCategoryPolicyTypes['cat_pubgames'], [RankingPolicyType.elo],
           reason: 'pubgames should have elo');
+      expect(kSeedCategoryPolicyTypes['cat_tabletennis'],
+          [RankingPolicyType.tableTennisElo],
+          reason: 'tabletennis should have tableTennisElo');
     });
 
     test('custom category should contain both simple and goalDifference', () {
@@ -34,6 +37,9 @@ void main() {
         } else if (entry.key == 'cat_sports' || entry.key == 'cat_pubgames') {
           expect(entry.value, [RankingPolicyType.elo],
               reason: '${entry.key} should be [elo]');
+        } else if (entry.key == 'cat_tabletennis') {
+          expect(entry.value, [RankingPolicyType.tableTennisElo],
+              reason: 'cat_tabletennis should be [tableTennisElo]');
         } else {
           expect(entry.value, isEmpty,
               reason: '${entry.key} should be empty but was ${entry.value}');
@@ -41,8 +47,8 @@ void main() {
       }
     });
 
-    test('map should contain exactly 5 entries', () {
-      expect(kSeedCategoryPolicyTypes.length, 6);
+    test('map should contain exactly 7 entries', () {
+      expect(kSeedCategoryPolicyTypes.length, 7);
       expect(
           kSeedCategoryPolicyTypes.keys,
           containsAll([
@@ -51,6 +57,7 @@ void main() {
             'cat_sports',
             'cat_videogames',
             'cat_pubgames',
+            'cat_tabletennis',
             kFallbackCategoryId,
           ]));
     });
@@ -63,7 +70,8 @@ void main() {
         'cat_cardgames',
         'cat_sports',
         'cat_videogames',
-        'cat_pubgames'
+        'cat_pubgames',
+        'cat_tabletennis'
       ]) {
         expect(kSeedCategoryPolicyTypes[id],
             isNot(contains(RankingPolicyType.simple)));

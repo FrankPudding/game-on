@@ -196,10 +196,10 @@ void main() {
       expect(content, contains('List.from'));
     });
 
-    test('hiveDbVersion stays 3', () {
+    test('hiveDbVersion is 4', () {
       final file = File('lib/core/config.dart');
       final content = file.readAsStringSync();
-      expect(content, contains('hiveDbVersion = 3'));
+      expect(content, contains('hiveDbVersion = 4'));
     });
 
     test('Hive registrar registers Elo adapter (typeId 12)', () {

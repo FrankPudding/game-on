@@ -4,6 +4,7 @@ import '../../domain/entities/ranking_policy.dart';
 import '../../domain/entities/ranking_policies/goal_difference_ranking_policy.dart';
 import '../../domain/entities/ranking_policies/simple_ranking_policy.dart';
 import '../../domain/entities/ranking_policies/elo_ranking_policy.dart';
+import '../../domain/entities/ranking_policies/table_tennis_elo_ranking_policy.dart';
 import '../../domain/repositories/league_repository.dart';
 import '../../domain/repositories/ranking_policy_repository.dart';
 import '../../domain/repositories/category_repository.dart';
@@ -28,6 +29,9 @@ class CreateLeagueService {
     // TODO: Builder to implement validation — Elo initialRating + categoryIds guards
     if (rankingPolicy is EloRankingPolicy) {
       EloRankingPolicy.validateInitialRating(rankingPolicy.initialRating);
+    }
+    if (rankingPolicy is TableTennisEloRankingPolicy) {
+      TableTennisEloRankingPolicy.validateInitialRating(rankingPolicy.initialRating);
     }
 
     final league = League(
@@ -67,6 +71,14 @@ class CreateLeagueService {
           !idsToValidate.toSet().containsAll(kEloCategoryIds)) {
         throw ArgumentError(
             'Elo leagues must have categoryIds exactly $kEloCategoryIds. Got: $idsToValidate');
+      }
+    }
+    // Restriction: Table Tennis Elo only in tabletennis
+    if (rankingPolicy is TableTennisEloRankingPolicy) {
+      if (idsToValidate.length != kTableTennisCategoryIds.length ||
+          !idsToValidate.toSet().containsAll(kTableTennisCategoryIds)) {
+        throw ArgumentError(
+            'Table Tennis leagues must have categoryIds exactly $kTableTennisCategoryIds. Got: $idsToValidate');
       }
     }
     // If categoryIds param differs, ensure policy matches (propagation)

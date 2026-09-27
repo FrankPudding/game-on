@@ -6,6 +6,7 @@ import '../../models/hive/ranking_policy_hive_model.dart';
 import '../../models/hive/ranking_policies/simple_ranking_policy_hive_model.dart';
 import '../../models/hive/ranking_policies/goal_difference_ranking_policy_hive_model.dart';
 import '../../models/hive/ranking_policies/elo_ranking_policy_hive_model.dart';
+import '../../models/hive/ranking_policies/table_tennis_elo_ranking_policy_hive_model.dart';
 
 class HiveDatabaseMigrationService {
   static const String _metaBoxName = 'meta';
@@ -14,6 +15,7 @@ class HiveDatabaseMigrationService {
   late final Map<int, Future<void> Function()> _migrations = {
     2: _migrateToV2,
     3: _migrateToV3,
+    4: _migrateToV4,
   };
 
   /// Idempotent v2: upsert 5 built-in categories (preserves sortOrder),
@@ -387,6 +389,131 @@ class HiveDatabaseMigrationService {
     }
 
     // Rebuild slug/parent indexes
+    await slugIndexBox.clear();
+    await parentIndexBox.clear();
+    final Map<String, List<String>> byParent = {};
+    for (final c in categoriesBox.values) {
+      await slugIndexBox.put(c.slug, c.id);
+      final key = c.parentId ?? '__roots__';
+      byParent.putIfAbsent(key, () => []).add(c.id);
+    }
+    for (final entry in byParent.entries) {
+      await parentIndexBox.put(entry.key, entry.value.join(','));
+    }
+
+    if (policyIndexBox != null) {
+      await policyIndexBox.clear();
+      final Map<String, List<String>> byCategory = {};
+      for (final rp in rankingBox.values) {
+        for (final catId in rp.categoryIds) {
+          byCategory.putIfAbsent(catId, () => []).add(rp.id);
+        }
+      }
+      for (final entry in byCategory.entries) {
+        await policyIndexBox.put(entry.key, entry.value.join(','));
+      }
+    }
+  }
+
+  /// Idempotent v4: upsert cat_tabletennis under cat_sports,
+  /// rebuild slug/parent/categoryPolicy indexes.
+  Future<void> _migrateToV4() async {
+    if (!Hive.isAdapterRegistered(13)) {
+      Hive.registerAdapter(TableTennisEloRankingPolicyHiveModelAdapter());
+    }
+    if (!Hive.isAdapterRegistered(11)) {
+      Hive.registerAdapter(CategoryHiveModelAdapter());
+    }
+    if (!Hive.isAdapterRegistered(12)) {
+      Hive.registerAdapter(EloRankingPolicyHiveModelAdapter());
+    }
+
+    Box<CategoryHiveModel> categoriesBox;
+    if (Hive.isBoxOpen(HiveBoxNames.categories)) {
+      categoriesBox = Hive.box<CategoryHiveModel>(HiveBoxNames.categories);
+    } else {
+      categoriesBox =
+          await Hive.openBox<CategoryHiveModel>(HiveBoxNames.categories);
+    }
+
+    Box<String> slugIndexBox;
+    if (Hive.isBoxOpen(HiveBoxNames.categorySlugIndex)) {
+      slugIndexBox = Hive.box<String>(HiveBoxNames.categorySlugIndex);
+    } else {
+      slugIndexBox = await Hive.openBox<String>(HiveBoxNames.categorySlugIndex);
+    }
+
+    Box<String> parentIndexBox;
+    if (Hive.isBoxOpen(HiveBoxNames.categoryParentIndex)) {
+      parentIndexBox = Hive.box<String>(HiveBoxNames.categoryParentIndex);
+    } else {
+      parentIndexBox =
+          await Hive.openBox<String>(HiveBoxNames.categoryParentIndex);
+    }
+
+    Box<RankingPolicyHiveModel> rankingBox;
+    if (Hive.isBoxOpen(HiveBoxNames.rankingPolicies)) {
+      rankingBox =
+          Hive.box<RankingPolicyHiveModel>(HiveBoxNames.rankingPolicies);
+    } else {
+      rankingBox = await Hive.openBox<RankingPolicyHiveModel>(
+          HiveBoxNames.rankingPolicies);
+    }
+
+    Box<String>? policyIndexBox;
+    if (Hive.isBoxOpen(HiveBoxNames.categoryPolicyIndex)) {
+      policyIndexBox = Hive.box<String>(HiveBoxNames.categoryPolicyIndex);
+    } else {
+      try {
+        policyIndexBox =
+            await Hive.openBox<String>(HiveBoxNames.categoryPolicyIndex);
+      } catch (_) {
+        policyIndexBox = null;
+      }
+    }
+
+    final now = DateTime.now();
+    const targetId = 'cat_tabletennis';
+    const targetName = 'Table Tennis';
+    const targetSlug = 'table-tennis';
+    const targetIcon = 'sports_tennis';
+    const parentId = 'cat_sports';
+
+    final existing = categoriesBox.get(targetId);
+    if (existing != null) {
+      if (existing.name != targetName ||
+          existing.slug != targetSlug ||
+          existing.iconName != targetIcon ||
+          existing.isBuiltIn != true ||
+          existing.parentId != parentId) {
+        final updated = CategoryHiveModel(
+          id: targetId,
+          name: targetName,
+          slug: targetSlug,
+          iconName: targetIcon,
+          sortOrder: existing.sortOrder,
+          isBuiltIn: true,
+          parentId: parentId,
+          createdAt: existing.createdAt,
+          updatedAt: existing.updatedAt,
+        );
+        await categoriesBox.put(targetId, updated);
+      }
+    } else {
+      final model = CategoryHiveModel(
+        id: targetId,
+        name: targetName,
+        slug: targetSlug,
+        iconName: targetIcon,
+        sortOrder: 2500,
+        isBuiltIn: true,
+        parentId: parentId,
+        createdAt: now,
+        updatedAt: now,
+      );
+      await categoriesBox.put(targetId, model);
+    }
+
     await slugIndexBox.clear();
     await parentIndexBox.clear();
     final Map<String, List<String>> byParent = {};

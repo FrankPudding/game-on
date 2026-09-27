@@ -3,12 +3,13 @@ import 'package:game_on/domain/entities/ranking_policy_type.dart';
 
 void main() {
   group('RankingPolicyType – Elo renaming', () {
-    test('should have 3 variants including elo', () {
+    test('should have 4 variants including elo and tableTennisElo', () {
       expect(RankingPolicyType.values, contains(RankingPolicyType.simple));
       expect(
           RankingPolicyType.values, contains(RankingPolicyType.goalDifference));
       expect(RankingPolicyType.values, contains(RankingPolicyType.elo));
-      expect(RankingPolicyType.values.length, 3);
+      expect(RankingPolicyType.values, contains(RankingPolicyType.tableTennisElo));
+      expect(RankingPolicyType.values.length, 4);
     });
 
     test('displayName should return friendly labels – elo Pool', () {

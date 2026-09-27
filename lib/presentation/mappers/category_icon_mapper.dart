@@ -11,6 +11,8 @@ IconData mapCategoryIconToIconData(CategoryIcon icon) {
       return Icons.sports_soccer;
     case CategoryIcon.sportsEsports:
       return Icons.sports_esports;
+    case CategoryIcon.sportsTennis:
+      return Icons.sports_tennis;
     case CategoryIcon.categoryOther:
       return Icons.category_outlined;
     case CategoryIcon.other:

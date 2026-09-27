@@ -32,8 +32,8 @@ void main() {
       expect(kEloLegacyInitialRating, lessThanOrEqualTo(kEloMaxRating));
       expect(kEloDefaultInitialRating, isNot(kEloLegacyInitialRating));
     });
-    test('hiveDbVersion stays 3 (no bump)', () {
-      expect(AppConfig().hiveDbVersion, 3);
+    test('hiveDbVersion is 4', () {
+      expect(AppConfig().hiveDbVersion, 4);
     });
     test(
         'hive_box_names has kEloCategoryIds and no deprecated literals',

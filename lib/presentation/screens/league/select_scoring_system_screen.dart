@@ -4,12 +4,14 @@ import '../../../core/constants/hive_box_names.dart';
 import '../../../domain/entities/ranking_policies/elo_ranking_policy.dart';
 import '../../../domain/entities/ranking_policies/goal_difference_ranking_policy.dart';
 import '../../../domain/entities/ranking_policies/simple_ranking_policy.dart';
+import '../../../domain/entities/ranking_policies/table_tennis_elo_ranking_policy.dart';
 import '../../../domain/entities/ranking_policy_type.dart';
 import '../../../providers/leagues_provider.dart';
 import '../../theme/app_theme.dart';
 import 'create_simple_league_screen.dart';
 import 'create_goal_difference_league_screen.dart';
 import 'create_elo_league_screen.dart';
+import 'create_table_tennis_league_screen.dart';
 
 /// Repo-driven provider: allowed [RankingPolicyType] for a category.
 /// Queries [RankingPolicyRepository.getByCategory] and maps to types.
@@ -25,10 +27,9 @@ import 'create_elo_league_screen.dart';
 final rankingPolicyTypesForCategoryProvider =
     FutureProvider.family<List<RankingPolicyType>, String>(
         (ref, categoryId) async {
-  // Elo whitelist: sports/pubgames — unconditional Pool availability.
-  // Pool (Elo) must ALWAYS be available under Sports + Pub Games via
-  // whitelist from kSeedCategoryPolicyTypes, regardless of repo state.
-  // Bootstrap vs corruption distinction applies only to Custom fallback, not Elo.
+  if (categoryId == kTableTennisCategoryId) {
+    return [RankingPolicyType.tableTennisElo];
+  }
   if (categoryId == kSportsCategoryId || categoryId == kPubGamesCategoryId) {
     return [RankingPolicyType.elo];
   }
@@ -48,6 +49,8 @@ final rankingPolicyTypesForCategoryProvider =
         types.add(RankingPolicyType.goalDifference);
       } else if (p is EloRankingPolicy) {
         types.add(RankingPolicyType.elo);
+      } else if (p is TableTennisEloRankingPolicy) {
+        types.add(RankingPolicyType.tableTennisElo);
       }
     }
     if (types.isEmpty) return RankingPolicyType.values;
@@ -133,6 +136,16 @@ class SelectScoringSystemScreen extends ConsumerWidget {
                               MaterialPageRoute(
                                 builder: (context) =>
                                     CreateEloLeagueScreen(
+                                        categoryId: effectiveCategoryId),
+                              ),
+                            );
+                            break;
+                          case RankingPolicyType.tableTennisElo:
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    CreateTableTennisLeagueScreen(
                                         categoryId: effectiveCategoryId),
                               ),
                             );

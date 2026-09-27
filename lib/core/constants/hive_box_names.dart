@@ -21,3 +21,7 @@ const int kMaxCategoryDepth = 1;
 const String kSportsCategoryId = 'cat_sports';
 const String kPubGamesCategoryId = 'cat_pubgames';
 const List<String> kEloCategoryIds = [kSportsCategoryId, kPubGamesCategoryId];
+
+const String kTableTennisCategoryId = 'cat_tabletennis';
+const List<String> kTableTennisCategoryIds = [kTableTennisCategoryId];
+const int kTableTennisDefaultInitialRating = 400;

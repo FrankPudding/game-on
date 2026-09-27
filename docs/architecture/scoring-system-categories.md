@@ -4,10 +4,11 @@
 
 Categories provide a taxonomy for scoring systems (ranking policies) and the leagues created from them. League creation is now category-first: pick a **Category** → filter scoring systems via `RankingPolicyRepository.getByCategory` → create the league with `RankingPolicy.categoryIds` via `CreateLeagueService`. This document describes the domain model, persistence schema, indexes, migration, provider graph, UI flow, and invariants.
 
-Currently three category→policy bindings exist:
+Currently four category→policy bindings exist:
 
 * **`Simple` and `GoalDifference` restricted to the Custom category** (`cat_custom_league_001` = `kFallbackCategoryId`).
 * **`Elo` (Pool) restricted to Sports + Pub Games** (`cat_sports` + `cat_pubgames` = `kEloCategoryIds`). The policy extends `RankingPolicy<SimpleMatch>` and must carry exactly those two ids (set-equality, order-insensitive).
+* **`TableTennisElo` (Table Tennis) restricted to the Table Tennis category** (`cat_tabletennis` under `cat_sports`, `kTableTennisCategoryIds = [cat_tabletennis]`). The policy extends `RankingPolicy<SimpleMatch>` and must carry exactly that id.
 * Other built-in categories (`Board Games`, `Card Games`, `Video Games`) intentionally have no allowed scoring systems until future policy types are added.
 
 Restrictions are enforced at three layers: seed map, provider whitelist, and write-path validation (see Scoring System Availability and Invariants).
@@ -32,8 +33,9 @@ Related: `docs/domain-language.md` → Category / RankingPolicy / Elo, `lib/pres
 | `SimpleRankingPolicy` | `RankingPolicy<SimpleMatch>` | `simple` | exactly `[kFallbackCategoryId]` | `lib/domain/entities/ranking_policies/simple_ranking_policy.dart` |
 | `GoalDifferenceRankingPolicy` | `RankingPolicy<SimpleMatch>` | `goalDifference` | exactly `[kFallbackCategoryId]` | `lib/domain/entities/ranking_policies/goal_difference_ranking_policy.dart` |
 | `EloRankingPolicy` | `RankingPolicy<SimpleMatch>` | `elo` (`displayName: 'Pool'`, `description: 'Elo Rankings'`) | exactly `{cat_sports, cat_pubgames}` (set-equality via `SetEquality` + length guard, order-insensitive) + `initialRating` 100..500 inclusive (`validateInitialRating`, `ArgumentError` otherwise) | `lib/domain/entities/ranking_policies/elo_ranking_policy.dart` + `lib/domain/constants/elo_constants.dart` |
+| `TableTennisEloRankingPolicy` | `RankingPolicy<SimpleMatch>` | `tableTennisElo` (`displayName: 'Table Tennis'`, `description: 'Table Tennis Elo'`) | exactly `[cat_tabletennis]` (`kTableTennisCategoryIds`) + `initialRating` 100..500 inclusive (`validateInitialRating`, `ArgumentError` otherwise) | `lib/domain/entities/ranking_policies/table_tennis_elo_ranking_policy.dart` |
 
-`EloRankingPolicy.validateCategoryIds` and `validateInitialRating` are the canonical validators (`ArgumentError` with `Elo leagues must have categoryIds exactly $kEloCategoryIds. Got: ...` and `initialRating must be within 100..500 inclusive. Got: ...`); `CreateLeagueService` (upfront validation before I/O) and `HiveRankingPolicyRepository.put` delegate to the same guards, and `EloRankingPolicyHiveModel.toDomain` validates on read. `RankingPolicyType` is a presentation enum; `rankingPolicyTypesForCategoryProvider` maps repo results to this enum for the UI.
+`EloRankingPolicy.validateCategoryIds`, `TableTennisEloRankingPolicy.validateCategoryIds`, and `validateInitialRating` are the canonical validators (`ArgumentError` with expected ids/ranges); `CreateLeagueService` (upfront validation before I/O) and `HiveRankingPolicyRepository.put` delegate to the same guards, and Hive model `toDomain` methods validate on read. `RankingPolicyType` is a presentation enum; `rankingPolicyTypesForCategoryProvider` maps repo results to this enum for the UI.
 
 `EloPlayerStats` (`lib/domain/value_objects/elo_player_stats.dart`) is the pure domain value object returned by `EloCalculator`:
 
