@@ -30,7 +30,10 @@ final rankingPolicyTypesForCategoryProvider =
   if (categoryId == kTableTennisCategoryId) {
     return [RankingPolicyType.tableTennisElo];
   }
-  if (categoryId == kSportsCategoryId || categoryId == kPubGamesCategoryId) {
+  if (categoryId == kSportsCategoryId) {
+    return [RankingPolicyType.elo, RankingPolicyType.tableTennisElo];
+  }
+  if (categoryId == kPubGamesCategoryId) {
     return [RankingPolicyType.elo];
   }
   // Enforcement: only custom category supports simple / goalDifference.

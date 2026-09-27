@@ -7,13 +7,12 @@ import '../../domain/entities/ranking_policy_type.dart';
 /// Simple and Goal Difference scoring systems are only allowed in the
 /// custom category. Other built-in categories intentionally have no allowed
 /// types until future scoring systems are added.
-const Map<String, List<RankingPolicyType>> kSeedCategoryPolicyTypes = {
+const Map<String, List<RankingPolicyType>> kCategoryPolicyTypes = {
   'cat_boardgames': [],
   'cat_cardgames': [],
-  'cat_sports': [RankingPolicyType.elo],
+  'cat_sports': [RankingPolicyType.elo, RankingPolicyType.tableTennisElo],
   'cat_videogames': [],
   'cat_pubgames': [RankingPolicyType.elo],
-  'cat_tabletennis': [RankingPolicyType.tableTennisElo],
   'cat_custom_league_001': [
     RankingPolicyType.simple,
     RankingPolicyType.goalDifference
