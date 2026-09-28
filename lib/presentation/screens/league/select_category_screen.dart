@@ -56,6 +56,7 @@ class SelectCategoryScreen extends ConsumerWidget {
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
                                 cat.name,
@@ -65,16 +66,6 @@ class SelectCategoryScreen extends ConsumerWidget {
                                     ?.copyWith(
                                       fontWeight: FontWeight.bold,
                                       color: AppTheme.textPrimary,
-                                    ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                cat.slug.value,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      color: AppTheme.textSecondary,
                                     ),
                               ),
                             ],

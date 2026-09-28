@@ -84,12 +84,8 @@ class _CreateEloLeagueScreenState
           );
         }
       } else {
-        // Navigate back on success; use canPop guard for test harness where home is root
-        if (Navigator.of(context).canPop()) {
-          Navigator.of(context).pop();
-        } else {
-          Navigator.of(context).popUntil((route) => route.isFirst);
-        }
+        Navigator.of(context).popUntil((route) => route.isFirst);
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('League created successfully!'),

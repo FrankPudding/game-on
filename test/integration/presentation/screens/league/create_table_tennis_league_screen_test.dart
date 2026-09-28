@@ -157,7 +157,9 @@ void main() {
       await tester.tap(find.text('Create League'));
       await tester.pumpAndSettle();
 
+      expect(find.text('Open'), findsOneWidget); // Verify navigation back to the initial screen
       expect(fakeLeaguesNotifier.addLeagueCalls.length, 1);
+
       expect(fakeLeaguesNotifier.addLeagueCalls[0]['name'], 'Pro TT League');
       expect(fakeLeaguesNotifier.addLeagueCalls[0]['rankingPolicy'], isA<TableTennisEloRankingPolicy>());
     });
