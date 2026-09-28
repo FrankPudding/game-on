@@ -6,6 +6,7 @@ class GoalDifferenceRankingPolicy extends RankingPolicy<SimpleMatch> {
     required super.id,
     required super.name,
     required super.leagueId,
+    required super.categoryIds,
     this.pointsForWin = 3,
     this.pointsForDraw = 1,
     this.pointsForLoss = 0,

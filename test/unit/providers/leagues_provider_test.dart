@@ -39,8 +39,12 @@ void main() {
       ],
     );
 
-    registerFallbackValue(
-        SimpleRankingPolicy(id: 'rp1', name: 'Standard', leagueId: 'l1'));
+    registerFallbackValue(SimpleRankingPolicy(
+        id: 'rp1',
+        name: 'Standard',
+        leagueId: 'l1',
+        categoryIds: const ['cat_custom_league_001']));
+    registerFallbackValue(<String>[]);
   });
 
   tearDown(() {
@@ -64,6 +68,7 @@ void main() {
             id: any(named: 'id'),
             name: any(named: 'name'),
             rankingPolicy: any(named: 'rankingPolicy'),
+            categoryIds: any(named: 'categoryIds'),
           )).thenAnswer((_) async => {});
 
       final notifier = container.read(leaguesProvider.notifier);
@@ -72,8 +77,11 @@ void main() {
 
       final newLeague =
           League(id: 'l3', name: 'League 3', createdAt: DateTime(2023, 3, 3));
-      final newPolicy =
-          SimpleRankingPolicy(id: 'rp3', name: 'Standard', leagueId: 'l3');
+      final newPolicy = SimpleRankingPolicy(
+          id: 'rp3',
+          name: 'Standard',
+          leagueId: 'l3',
+          categoryIds: const ['cat_custom_league_001']);
       // Return the updated list for all subsequent calls (including invalidation rebuild)
       when(() => mockLeagueRepo.getAll())
           .thenAnswer((_) async => [tLeague1, newLeague]);
@@ -87,6 +95,7 @@ void main() {
             id: 'l3',
             name: 'League 3',
             rankingPolicy: newPolicy,
+            categoryIds: const ['cat_custom_league_001'],
           )).called(1);
     });
 
@@ -115,6 +124,7 @@ void main() {
             id: any(named: 'id'),
             name: any(named: 'name'),
             rankingPolicy: any(named: 'rankingPolicy'),
+            categoryIds: any(named: 'categoryIds'),
           )).thenThrow(Exception('Failed to create'));
 
       final notifier = container.read(leaguesProvider.notifier);
@@ -124,8 +134,11 @@ void main() {
       await notifier.addLeague(
         id: 'l3',
         name: 'League 3',
-        rankingPolicy:
-            SimpleRankingPolicy(id: 'rp3', name: 'Standard', leagueId: 'l3'),
+        rankingPolicy: SimpleRankingPolicy(
+            id: 'rp3',
+            name: 'Standard',
+            leagueId: 'l3',
+            categoryIds: const ['cat_custom_league_001']),
       );
 
       expect(container.read(leaguesProvider).hasError, isTrue);

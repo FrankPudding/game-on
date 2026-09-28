@@ -53,6 +53,7 @@ class FakeRankingPolicy extends Fake implements SimpleRankingPolicy {}
 
 void main() {
   setUpAll(() {
+    registerFallbackValue(<String>[]);
     registerFallbackValue(FakePref());
     registerFallbackValue(const LeagueSortPreference(
         mode: LeagueSortMode.lastPlayed, descending: true));
@@ -67,7 +68,11 @@ void main() {
         sides: []));
     registerFallbackValue(Side(id: '', playerIds: []));
     registerFallbackValue(FakeRankingPolicy());
-    registerFallbackValue(SimpleRankingPolicy(id: '', name: '', leagueId: ''));
+    registerFallbackValue(SimpleRankingPolicy(
+        id: '',
+        name: '',
+        leagueId: '',
+        categoryIds: const ['cat_custom_league_001']));
     registerFallbackValue(LeaguePlayer(
         id: '', userId: '', leagueId: '', name: '', avatarColorHex: ''));
     registerFallbackValue(User(id: '', name: '', avatarColorHex: ''));
@@ -85,8 +90,11 @@ void main() {
 
   final tLeague1 = League(id: 'l1', name: 'Alpha', createdAt: DateTime.now());
   final tLeague2 = League(id: 'l2', name: 'Beta', createdAt: DateTime.now());
-  final tPolicy1 =
-      SimpleRankingPolicy(id: 'rp1', name: 'Standard', leagueId: 'l1');
+  final tPolicy1 = SimpleRankingPolicy(
+      id: 'rp1',
+      name: 'Standard',
+      leagueId: 'l1',
+      categoryIds: const ['cat_custom_league_001']);
 
   setUp(() {
     mockLeagueRepo = MockLeagueRepo();
@@ -119,10 +127,11 @@ void main() {
     when(() => mockUserRepo.getAll()).thenAnswer((_) async => []);
     when(() => mockUserRepo.get(any())).thenAnswer((_) async => null);
     when(() => mockCreateService.execute(
-            id: any(named: 'id'),
-            name: any(named: 'name'),
-            rankingPolicy: any(named: 'rankingPolicy')))
-        .thenAnswer((_) async => {});
+          id: any(named: 'id'),
+          name: any(named: 'name'),
+          rankingPolicy: any(named: 'rankingPolicy'),
+          categoryIds: any(named: 'categoryIds'),
+        )).thenAnswer((_) async => {});
     when(() => mockDeleteService.execute(any()))
         .thenAnswer((_) async => DeleteUserResult(affectedLeagueIds: {}));
     when(() => mockUpdateService.execute(any())).thenAnswer((_) async => {});
@@ -159,8 +168,11 @@ void main() {
       await container.read(leaguesProvider.notifier).addLeague(
           id: 'l3',
           name: 'Gamma',
-          rankingPolicy:
-              SimpleRankingPolicy(id: 'rp3', name: 'S', leagueId: 'l3'));
+          rankingPolicy: SimpleRankingPolicy(
+              id: 'rp3',
+              name: 'S',
+              leagueId: 'l3',
+              categoryIds: const ['cat_custom_league_001']));
       await Future.delayed(Duration.zero);
       expect(invalidateCount, greaterThanOrEqualTo(1));
       final after = await container.read(sortedLeaguesProvider.future);

@@ -2,35 +2,44 @@
 // Do not modify
 // Check in to version control
 
-import 'package:hive_ce/hive.dart';
+import 'package:hive_ce/hive_ce.dart';
+import 'package:game_on/data/models/hive/category_hive_model.dart';
 import 'package:game_on/data/models/hive/league_hive_model.dart';
 import 'package:game_on/data/models/hive/league_player_hive_model.dart';
 import 'package:game_on/data/models/hive/matches/simple_match_hive_model.dart';
+import 'package:game_on/data/models/hive/ranking_policies/elo_ranking_policy_hive_model.dart';
 import 'package:game_on/data/models/hive/ranking_policies/goal_difference_ranking_policy_hive_model.dart';
 import 'package:game_on/data/models/hive/ranking_policies/simple_ranking_policy_hive_model.dart';
+import 'package:game_on/data/models/hive/ranking_policies/table_tennis_elo_ranking_policy_hive_model.dart';
 import 'package:game_on/data/models/hive/side_hive_model.dart';
 import 'package:game_on/data/models/hive/user_hive_model.dart';
 
 extension HiveRegistrar on HiveInterface {
   void registerAdapters() {
+    registerAdapter(CategoryHiveModelAdapter());
+    registerAdapter(EloRankingPolicyHiveModelAdapter());
     registerAdapter(GoalDifferenceRankingPolicyHiveModelAdapter());
     registerAdapter(LeagueHiveModelAdapter());
     registerAdapter(LeaguePlayerHiveModelAdapter());
     registerAdapter(SideHiveModelAdapter());
     registerAdapter(SimpleMatchHiveModelAdapter());
     registerAdapter(SimpleRankingPolicyHiveModelAdapter());
+    registerAdapter(TableTennisEloRankingPolicyHiveModelAdapter());
     registerAdapter(UserHiveModelAdapter());
   }
 }
 
 extension IsolatedHiveRegistrar on IsolatedHiveInterface {
   void registerAdapters() {
+    registerAdapter(CategoryHiveModelAdapter());
+    registerAdapter(EloRankingPolicyHiveModelAdapter());
     registerAdapter(GoalDifferenceRankingPolicyHiveModelAdapter());
     registerAdapter(LeagueHiveModelAdapter());
     registerAdapter(LeaguePlayerHiveModelAdapter());
     registerAdapter(SideHiveModelAdapter());
     registerAdapter(SimpleMatchHiveModelAdapter());
     registerAdapter(SimpleRankingPolicyHiveModelAdapter());
+    registerAdapter(TableTennisEloRankingPolicyHiveModelAdapter());
     registerAdapter(UserHiveModelAdapter());
   }
 }

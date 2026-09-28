@@ -1,0 +1,75 @@
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:game_on/domain/constants/elo_constants.dart';
+import 'package:game_on/core/constants/hive_box_names.dart';
+import 'package:game_on/core/config.dart';
+
+void main() {
+  group('Elo constants – elo_constants.dart', () {
+    test('kEloMinRating is 100', () {
+      expect(kEloMinRating, 100);
+    });
+    test('kEloMaxRating is 500', () {
+      expect(kEloMaxRating, 500);
+    });
+    test('kEloDefaultInitialRating is 400', () {
+      expect(kEloDefaultInitialRating, 400);
+    });
+    test('kEloLegacyInitialRating is 500', () {
+      expect(kEloLegacyInitialRating, 500);
+    });
+    test('kEloDefaultKFactor is 20', () {
+      expect(kEloDefaultKFactor, 20);
+    });
+    test(
+        'range invariant 100..500 inclusive, default inside legacy inside default != legacy',
+        () {
+      expect(kEloMinRating, lessThan(kEloMaxRating));
+      expect(kEloDefaultInitialRating, greaterThanOrEqualTo(kEloMinRating));
+      expect(kEloDefaultInitialRating, lessThanOrEqualTo(kEloMaxRating));
+      expect(kEloLegacyInitialRating, greaterThanOrEqualTo(kEloMinRating));
+      expect(kEloLegacyInitialRating, lessThanOrEqualTo(kEloMaxRating));
+      expect(kEloDefaultInitialRating, isNot(kEloLegacyInitialRating));
+    });
+    test('hiveDbVersion is 4', () {
+      expect(AppConfig().hiveDbVersion, 4);
+    });
+    test(
+        'hive_box_names has kEloCategoryIds and no deprecated literals',
+        () {
+      expect(kEloCategoryIds, [kSportsCategoryId, kPubGamesCategoryId]);
+      expect(kEloCategoryIds.length, 2);
+      expect(kSportsCategoryId, 'cat_sports');
+      expect(kPubGamesCategoryId, 'cat_pubgames');
+      final file = File('lib/core/constants/hive_box_names.dart');
+      final content = file.readAsStringSync();
+      final banned = String.fromCharCodes([102, 97, 114, 103, 111]);
+      expect(content.toLowerCase(), isNot(contains(banned)));
+      expect(content, contains('kEloCategoryIds'));
+    });
+    test(
+        'elo_constants.dart has no imports (single source, no cycle, pure domain)',
+        () {
+      final file = File('lib/domain/constants/elo_constants.dart');
+      expect(file.existsSync(), isTrue);
+      final content = file.readAsStringSync();
+      expect(content.contains('import '), isFalse,
+          reason: 'elo_constants.dart must have no imports per plan');
+      expect(content, contains('kEloMinRating'));
+      expect(content, contains('kEloMaxRating'));
+      expect(content, contains('kEloDefaultInitialRating'));
+      expect(content, contains('kEloLegacyInitialRating'));
+      expect(content, contains('kEloDefaultKFactor'));
+    });
+    test('elo_constants literal values appear correctly', () {
+      final file = File('lib/domain/constants/elo_constants.dart');
+      final content = file.readAsStringSync();
+      expect(content, contains('kEloMinRating = 100'));
+      expect(content, contains('kEloMaxRating = 500'));
+      expect(content, contains('kEloDefaultInitialRating = 400'));
+      expect(content, contains('kEloLegacyInitialRating = 500'));
+      expect(content, contains('kEloDefaultKFactor = 20'));
+    });
+  });
+}

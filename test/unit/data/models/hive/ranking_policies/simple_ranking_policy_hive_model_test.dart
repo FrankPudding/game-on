@@ -6,13 +6,13 @@ void main() {
   group('SimpleRankingPolicyHiveModel', () {
     test('fromDomain should map all fields', () {
       final policy = SimpleRankingPolicy(
-        id: 'rp1',
-        name: 'Standard',
-        leagueId: 'l1',
-        pointsForWin: 3,
-        pointsForDraw: 1,
-        pointsForLoss: 0,
-      );
+          id: 'rp1',
+          name: 'Standard',
+          leagueId: 'l1',
+          pointsForWin: 3,
+          pointsForDraw: 1,
+          pointsForLoss: 0,
+          categoryIds: const ['cat_custom_league_001']);
 
       final model = SimpleRankingPolicyHiveModel.fromDomain(policy);
 
@@ -29,6 +29,7 @@ void main() {
         id: 'rp1',
         name: 'Standard',
         leagueId: 'l1',
+        categoryIds: const ['cat_custom_league_001'],
         pointsForWin: 5,
         pointsForDraw: 2,
         pointsForLoss: 1,
@@ -49,6 +50,7 @@ void main() {
         id: 'rp1',
         name: 'Standard',
         leagueId: null,
+        categoryIds: const ['cat_custom_league_001'],
       );
 
       final policy = model.toDomain();
@@ -61,6 +63,7 @@ void main() {
         id: 'rp1',
         name: 'Standard',
         leagueId: 'l1',
+        categoryIds: const ['cat_custom_league_001'],
       );
 
       expect(model.pointsForWin, 3);

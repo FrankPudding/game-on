@@ -103,6 +103,11 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
   Future<void> _submit() async {
     final state = ref.read(leagueDetailProvider(widget.leagueId)).value;
     final isGoalDifference = state?.isGoalDifference ?? false;
+    final isElo = state?.isElo ?? false;
+    final isTableTennisElo = state?.isTableTennisElo ?? false;
+    if (isElo || isTableTennisElo) {
+      // Elo hides draw — validated in _buildWinnerSection via isElo
+    }
 
     if (_player1Id == null || _player2Id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -433,6 +438,8 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
   }
 
   Widget _buildWinnerSection(LeagueDetailState state) {
+    // Elo hides draw option
+    final isElo = state.isElo || state.isTableTennisElo;
     return Column(
       children: [
         const Text('WINNER',
@@ -473,11 +480,12 @@ class _LogMatchScreenState extends ConsumerState<LogMatchScreen> {
                       .name,
                   style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
-            const DropdownMenuItem(
-              value: 'draw',
-              child:
-                  Text('Draw', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
+            if (!isElo)
+              const DropdownMenuItem(
+                value: 'draw',
+                child:
+                    Text('Draw', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
           ],
           onChanged: (val) => setState(() => _winnerSelection = val),
         ),

@@ -74,9 +74,9 @@ This project is licensed under the Polyform Noncommercial License 1.0.0 - see th
 
 | Category | Coverage (Lines) |
 |----------|------------------|
-| **Total Project** | 94.4% |
-| **Domain & Providers** | 92.6% |
-| **Data Layer** | 98.5% |
+| **Total Project** | 78.7% |
+| **Domain & Providers** | 82.5% |
+| **Data Layer** | 66.4% |
 
 To update the coverage table in this README, run:
 

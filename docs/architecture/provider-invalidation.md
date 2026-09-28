@@ -47,6 +47,22 @@ userDetailProvider(userId) (user's leagues, players, matches)
   ├── invalidate: leaguesProvider - removed (was causing unnecessary rebuilds)
   └── Depends on explicit invalidation from usersProvider and leagueDetailProvider
 
+categoriesProvider (all categories ordered by parentId + sortOrder)
+  └── reads: CategoryRepository.getAllOrdered() — rebuilt from truth on each read; no mutation invalidation (categories are seed-only, HiveCategoryRepository.put/delete mutate derived slug/parent indexes under shared Lock; V3 added cat_pubgames at 3500 with gap<2 normalize)
+
+categoriesRootsProvider (roots only, sorted by sortOrder)
+  └── reads: CategoryRepository.getRoots() — six roots (Board/Card/Sports/Video/PubGames/Custom) after V3
+
+rankingPolicyTypesForCategoryProvider(categoryId) (FutureProvider.family)
+  ├── Elo whitelist (sports/pubgames): if categoryId in {kSportsCategoryId, kPubGamesCategoryId} → unconditional [elo] (no repo query, via kSeedCategoryPolicyTypes whitelist; always available regardless of repo state)
+  ├── Custom branch (only repo-driven category): if categoryId == kFallbackCategoryId (cat_custom_league_001)
+  │     └── reads RankingPolicyRepository.getByCategory(categoryId) — scans truth box (categoryIds.contains), falls back to categoryPolicyIndex cache; no watch (ref.read); empty/error → RankingPolicyType.values fallback (bootstrap vs corruption distinction lives here: empty box → all types for usability, populated → map Simple/GoalDifference/Elo); else map Simple/GoalDifference/Elo
+  ├── Other (board/card/video): immediately returns [] (no repo query) → SelectScoringSystemScreen empty state
+  └── used by: SelectScoringSystemScreen(categoryId) — category existence validated via categoriesProvider; invalid categoryId → SnackBar + fallback to kFallbackCategoryId; valid non-Elo/non-Custom → empty state
+
+categoryRepositoryProvider / rankingPolicyRepositoryProvider (Provider<repo>)
+  └── expose: HiveCategoryRepository / HiveRankingPolicyRepository (shared Lock via GetIt; derived indexes are rebuildable caches, repaired by CategoryIndexRebuilder.rebuildIfNeeded after openBox)
+
 leagueLastPlayedProvider(leagueId) (derived FutureProvider<DateTime?> for My Leagues per-league last-played — legacy path)
   ├── No mutation methods — reads SimpleMatchRepository.getByLeague, filters isComplete, returns max playedAt (null → "Never")
   └── Invalidated by: leagueDetailProvider(leagueId) on logSimpleMatch / updateSimpleMatch / deleteMatch
@@ -382,8 +398,24 @@ derived sorted cache is invalidated**. Two ordering concerns are independent:
 
 In both cases sorting is in-memory; repositories never sort. `sortedLeaguesProvider` explicitly uses `ref.read` (no `ref.watch`) — re-sorting after a preference toggle or a write that changes `lastPlayed` / league set is triggered solely by explicit `ref.invalidate(sortedLeaguesProvider)` from the three owners (`LeaguesNotifier`, `LeagueDetailNotifier`, `LeagueSortPreferenceNotifier`). KeepAlive (`AsyncNotifier`, not `autoDispose`) means the sorted cache persists across rebuilds until an owner invalidates it. Degraded error handling: systematic repo failures in `sortedLeaguesProvider.build()` propagate as `AsyncError` and `HomeScreen` renders `Error: ...` (red `AppTheme.errorRed`) rather than a silent empty list; `sortPreferenceProvider` keeps its synchronous `defaultPreference` on read errors so `HomeScreen` never flickers on first frame.
 
+## Categories — Read-Only Providers, No Cross-Invalidation
+
+Categories are currently **seed-only** (six built-ins upserted by `HiveDatabaseMigrationService._migrateToV2` + `_migrateToV3`, `isBuiltIn: true`; V3 added `cat_pubgames` at 3500 with midpoint + gap<2 normalize). There is no user-facing mutation flow that writes categories through a provider, so `categoriesProvider` / `categoriesRootsProvider` have no invalidation owners — they re-read truth on next `ref.watch` after the box changes. Repository-level writes (`HiveCategoryRepository.put`/`delete`) maintain derived indexes (`categorySlugIndex`, `categoryParentIndex`, `categoryPolicyIndex`) under the shared `Lock`; `CategoryIndexRebuilder.rebuildIfNeeded` repairs drift after `openBox` and V3 rebuilds slug/parent/policy indexes from truth.
+
+`rankingPolicyTypesForCategoryProvider(categoryId)` is a `FutureProvider.family` with an unconditional Elo whitelist and a single repo-driven branch (Custom). It does **not** watch other providers; Custom reads the repository via `ref.read` each time.
+
+* **Elo whitelist (sports/pubgames):** `categoryId in {kSportsCategoryId, kPubGamesCategoryId}` → **unconditional** `[elo]` (no `getByCategory`/`getAll` query) via `kSeedCategoryPolicyTypes` whitelist. Always available under Sports + Pub Games regardless of repo state — fresh install, populated repo, or after Custom leagues exist. Bootstrap vs corruption distinction does **not** apply to Elo. `Elo` `initialRating` (100..500, default 400, legacy 500 via `@HiveField(7, defaultValue:500)` literal in `elo_constants.dart`) is league-scoped data inside `EloRankingPolicy`; it does not add provider invalidation branches — `LeagueDetailState` captures `policy.initialRating` and passes it to `EloCalculator.calculate(required initialRating)` (`K=20`, no Hive bump, no global literal read). See `docs/architecture/scoring-system-categories.md` → Scoring System Availability (Whitelist) + Elo Domain.
+* **Custom (only repo-driven category):** `kFallbackCategoryId` queries `getByCategory`; empty/error → `RankingPolicyType.values` fallback (bootstrap vs corruption distinction lives here: empty box → all types for usability, populated → map `Simple`/`GoalDifference`/`Elo`) so custom remains usable even with an empty box.
+* **Other (board/card/video):** immediately returns `[]` (no repo query) → empty state `No scoring systems available for this category`.
+
+Only for the allowed categories does the provider query the repo; otherwise the empty state is correct. Invalid `categoryId` deep links are handled by `SelectScoringSystemScreen` validating against `categoriesProvider` and falling back to `kFallbackCategoryId` with a SnackBar.
+
+If a future feature adds user-mutable categories, add explicit `ref.invalidate(categoriesProvider)` / `ref.invalidate(categoriesRootsProvider)` and `ref.invalidate(rankingPolicyTypesForCategoryProvider(...))` at the mutation site — after the repository write succeeds — following the write-then-invalidate rule.
+
+
 ## Related Files
 
+- `lib/providers/leagues_provider.dart` — also exports `categoriesProvider`, `categoriesRootsProvider`, `rankingPolicyTypesForCategoryProvider`, `categoryRepositoryProvider`, `rankingPolicyRepositoryProvider`
 - `lib/providers/leagues_provider.dart` — `LeaguesNotifier` (`late` fields, `_invalidateSorted()` helper → `ref.invalidate(sortedLeaguesProvider)` on add/delete/archive/rename/refresh)
 - `lib/providers/league_detail_provider.dart` — defines `leagueLastPlayedProvider(leagueId)` (`FutureProvider.family<DateTime?, String>` → `SimpleMatchRepository.getByLeague` + `isComplete` filter + `max playedAt`) and `LeagueDetailNotifier` (sole owner of `userDetailProvider` invalidation for `updatePlayer` / `removePlayer` / match mutations, sole invalidator of `leagueLastPlayedProvider` and co-owner of `sortedLeaguesProvider` on `logSimpleMatch` / `updateSimpleMatch` / `deleteMatch`); also computes `players` (ranked) and `playersByName` (alphabetical) in `_fetchData()`
 - `lib/providers/sorted_leagues_provider.dart` — `SortedLeague` DTO (`league` + `lastPlayed`) + `SortedLeaguesNotifier` (`AsyncNotifier` keepAlive, no mutation methods, `ref.read` bulk `getAll` + `groupBy` `O(M+L log L)` → `sortLeagues`, no `ref.watch`, explicit invalidation only)
@@ -396,7 +428,7 @@ In both cases sorting is in-memory; repositories never sort. `sortedLeaguesProvi
 - `lib/core/sorting/name_sort.dart` — pure comparator (`trim` / empty-first / case-insensitive primary / case-sensitive secondary); not locale-aware (see `docs/architecture/sorting.md`)
 - `lib/domain/services/match_stats.dart` — `maxCompletePlayedAt` (max `playedAt` of `isComplete` matches, `null` if none)
 - `lib/data/repositories/hive/hive_sort_preference_repository.dart` — `Box<String>` `app_preferences` (`sort_mode`/`sort_descending`, `boxName` constant, `Hive.isBoxOpen` guard in `injection_container`, malformed fallback)
-- `lib/core/injection_container.dart` — idempotent `app_preferences` open (`Hive.isBoxOpen` guard), `SortPreferenceRepository` lazy singleton; no `hiveDbVersion` bump for `Box<String>` addition, `TypeId 11` reserved not used
+- `lib/core/injection_container.dart` — idempotent `app_preferences` open (`Hive.isBoxOpen` guard), `SortPreferenceRepository` lazy singleton; no `hiveDbVersion` bump for `Box<String>` addition, `typeId 11` is `CategoryHiveModel`, `typeId 12` is `EloRankingPolicyHiveModel`
 - `lib/domain/repositories/preferences/sort_preference_repository.dart` — abstract `get`/`set` + `getPreference`/`setPreference` aliases (skeleton, resilience R7)
 - `lib/presentation/screens/home/home_screen.dart` — `HomeScreen` (`ConsumerWidget` watching `sortedLeaguesProvider` + `sortPreferenceProvider`; `AppBar.actions` → single `PopupMenuButton<LeagueSortPreference>` `tooltip: 'Sort'` with child `Row(swap_vert + Sort)`; 4 items `Latest`/`Oldest`/`A-Z`/`Z-A` via consts `latest`/`oldest`/`aToZ`/`zToA`, check via `==`, `onSelected` → `setPreference` write-then-invalidate) + `Stateless _SortedLeagueCard` (`DateFormat('MMM d, yyyy')`, `null` → "Last played: Never"); replaces former `_LeagueCard` (`ConsumerWidget` watching `leagueLastPlayedProvider`) and former two-control `PopupMenuButton<LeagueSortMode>` + `IconButton(swap_vert)` toggle
 - `lib/providers/users_provider.dart` — sorts via `compareNames` + `id` on every path (`build`/`addUser`/`deleteUser`/`updateUser`/`refresh`)
@@ -413,4 +445,8 @@ In both cases sorting is in-memory; repositories never sort. `sortedLeaguesProvi
 - `test/unit/providers/` - Unit tests for each provider (including `sorted_leagues` + `sort_preference`)
 - `test/integration/providers/invalidation_test.dart` - Cross-provider integration tests (`leagueLastPlayedProvider` invalidation: log/update/delete + incomplete-only null; also `sortedLeaguesProvider` bulk + `sort_preference` write-then-invalidate)
 - `test/integration/presentation/screens/home/home_screen_test.dart` — 9 HomeScreen widget tests (loading, error, empty/CTA, league list display via bulk `SortedLeague` `lastPlayed: null` → "Last played: Never", navigation, FAB, multi-league, pull-to-refresh without `RefreshIndicator`; uses `sortedLeaguesProvider` + `sortPreferenceProvider` bulk overrides — per-league `leagueLastPlayedProvider` / `simpleMatchRepositoryProvider` / `MockSimpleMatchRepository` deprecated bulk R5 group removed)
+- `docs/architecture/scoring-system-categories.md` - Category schema, adjacency list, migration, indexes
+- `lib/data/repositories/hive/hive_category_repository.dart`, `hive_ranking_policy_repository.dart`, `lib/data/services/hive/category_index_rebuilder.dart`
+- `lib/presentation/screens/league/select_scoring_system_screen.dart` — watches `categoriesProvider` + `rankingPolicyTypesForCategoryProvider(categoryId)`, invalid-category SnackBar + `kFallbackCategoryId` fallback
+- `lib/presentation/screens/league/select_category_screen.dart` — watches `categoriesRootsProvider`, maps `CategoryIcon` via `category_icon_mapper.dart`
 - `test/integration/presentation/screens/home/home_screen_sorting_test.dart` — 9 HomeScreen sorting integration tests (R1 default lastPlayed desc via bulk `groupBy` `O(M+L log L)`, R2 `PopupMenuButton<LeagueSortPreference>` 4 items `Latest`/`Oldest`/`A-Z`/`Z-A` checkmark via `==`, R3 preference switching via `setPreference` (`swap_vert` + `Sort`, `tooltip: 'Sort'`), R5 keepAlive — `sortedLeaguesProvider` not refetched without explicit invalidate (bulk path replaces deprecated per-league `leagueLastPlayedProvider` + `simpleMatchRepositoryProvider`), R7 error degraded + empty, alphabetical empty-first with null-last, AppBar single sort control, `Stateless _SortedLeagueCard` Never/date `DateFormat('MMM d, yyyy')` with `isComplete` filter)

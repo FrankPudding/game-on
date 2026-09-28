@@ -6,13 +6,13 @@ void main() {
   group('GoalDifferenceRankingPolicyHiveModel', () {
     test('fromDomain should map all fields', () {
       final policy = GoalDifferenceRankingPolicy(
-        id: 'rp1',
-        name: 'GD',
-        leagueId: 'l1',
-        pointsForWin: 3,
-        pointsForDraw: 1,
-        pointsForLoss: 0,
-      );
+          id: 'rp1',
+          name: 'GD',
+          leagueId: 'l1',
+          pointsForWin: 3,
+          pointsForDraw: 1,
+          pointsForLoss: 0,
+          categoryIds: const ['cat_custom_league_001']);
 
       final model = GoalDifferenceRankingPolicyHiveModel.fromDomain(policy);
 
@@ -29,6 +29,7 @@ void main() {
         id: 'rp1',
         name: 'GD',
         leagueId: 'l1',
+        categoryIds: const ['cat_custom_league_001'],
         pointsForWin: 3,
         pointsForDraw: 1,
         pointsForLoss: 0,
@@ -49,6 +50,7 @@ void main() {
         id: 'rp1',
         name: 'GD',
         leagueId: null,
+        categoryIds: const ['cat_custom_league_001'],
       );
 
       final policy = model.toDomain();

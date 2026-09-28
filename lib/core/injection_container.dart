@@ -1,31 +1,34 @@
 import 'package:get_it/get_it.dart';
 import 'package:hive_ce_flutter/hive_ce_flutter.dart';
+import 'package:synchronized/synchronized.dart';
+import '../hive_registrar.g.dart';
 import '../data/models/hive/user_hive_model.dart';
 import '../data/models/hive/league_hive_model.dart';
 import '../data/models/hive/league_player_hive_model.dart';
-import '../data/models/hive/ranking_policies/simple_ranking_policy_hive_model.dart';
-import '../data/models/hive/ranking_policies/goal_difference_ranking_policy_hive_model.dart';
-
 import '../data/models/hive/matches/simple_match_hive_model.dart';
-import '../data/models/hive/side_hive_model.dart';
 import '../data/models/hive/ranking_policy_hive_model.dart';
+import '../data/models/hive/category_hive_model.dart';
 import '../data/repositories/hive/hive_league_repository.dart';
 import '../data/repositories/hive/hive_league_player_repository.dart';
 import '../data/repositories/hive/matches/hive_simple_match_repository.dart';
 import '../data/repositories/hive/hive_user_repository.dart';
 import '../data/repositories/hive/hive_ranking_policy_repository.dart';
+import '../data/repositories/hive/hive_category_repository.dart';
 import '../domain/repositories/league_repository.dart';
 import '../domain/repositories/league_player_repository.dart';
 import '../domain/repositories/match/simple_match_repository.dart';
 import '../domain/repositories/user_repository.dart';
 import '../domain/repositories/ranking_policy_repository.dart';
+import '../domain/repositories/category_repository.dart';
 import '../application/services/create_league_service.dart';
 import '../application/services/delete_user_service.dart';
 import '../application/services/update_user_service.dart';
 import '../data/repositories/hive/hive_sort_preference_repository.dart';
 import '../domain/repositories/preferences/sort_preference_repository.dart';
 import '../data/services/hive/hive_database_migration_service.dart';
+import '../data/services/hive/category_index_rebuilder.dart';
 import 'config.dart';
+import 'constants/hive_box_names.dart';
 
 final sl = GetIt.instance;
 Future<void> initInjection(AppConfig config) async {
@@ -44,45 +47,66 @@ Future<void> initInjection(AppConfig config) async {
 }
 
 Future<void> _initHive() async {
-  // Register Adapters
-  if (!Hive.isAdapterRegistered(0)) {
-    Hive.registerAdapter(UserHiveModelAdapter());
-  }
-  if (!Hive.isAdapterRegistered(3)) {
-    Hive.registerAdapter(LeagueHiveModelAdapter());
-  }
-  if (!Hive.isAdapterRegistered(1)) {
-    Hive.registerAdapter(LeaguePlayerHiveModelAdapter());
-  }
-
-  if (!Hive.isAdapterRegistered(6)) {
-    Hive.registerAdapter(SimpleMatchHiveModelAdapter());
-  }
-  if (!Hive.isAdapterRegistered(8)) {
-    Hive.registerAdapter(SideHiveModelAdapter());
-  }
-  if (!Hive.isAdapterRegistered(9)) {
-    Hive.registerAdapter(SimpleRankingPolicyHiveModelAdapter());
-  }
-  if (!Hive.isAdapterRegistered(10)) {
-    Hive.registerAdapter(GoalDifferenceRankingPolicyHiveModelAdapter());
+  // Ordered init: Hive.initFlutter already called -> registerAdapters single source -> migrate -> openBox -> rebuild
+  // Single source via HiveRegistrar.registerAdapters() with idempotence wrapper (per typeId guards)
+  if (!Hive.isAdapterRegistered(0) ||
+      !Hive.isAdapterRegistered(1) ||
+      !Hive.isAdapterRegistered(3) ||
+      !Hive.isAdapterRegistered(6) ||
+      !Hive.isAdapterRegistered(8) ||
+      !Hive.isAdapterRegistered(9) ||
+      !Hive.isAdapterRegistered(10) ||
+      !Hive.isAdapterRegistered(11) ||
+      !Hive.isAdapterRegistered(12)) {
+    try {
+      Hive.registerAdapters();
+    } catch (e) {
+      // Idempotent wrapper: ignore already-registered race
+      if (!e.toString().contains('already')) rethrow;
+    }
   }
 
-  // Run Migrations
+  // Shared Lock singleton via GetIt
+  if (!sl.isRegistered<Lock>()) {
+    sl.registerSingleton<Lock>(Lock());
+  }
+  final sharedLock = sl<Lock>();
+
+  // Run Migrations target 2 before openBox
   final migrationService = HiveDatabaseMigrationService();
   await migrationService.migrate(sl<AppConfig>().hiveDbVersion);
 
-  // Open Boxes
-  final userBox = await Hive.openBox<UserHiveModel>('users');
-  final leagueBox = await Hive.openBox<LeagueHiveModel>('leagues');
+  // Open Boxes (ordered, reuse if already opened by migration)
+  Future<Box<T>> openOrGet<T>(String name) async {
+    if (Hive.isBoxOpen(name)) {
+      return Hive.box<T>(name);
+    }
+    return await Hive.openBox<T>(name);
+  }
+
+  final userBox = await openOrGet<UserHiveModel>(HiveBoxNames.users);
+  final leagueBox = await openOrGet<LeagueHiveModel>(HiveBoxNames.leagues);
   final leaguePlayerBox =
-      await Hive.openBox<LeaguePlayerHiveModel>('league_players');
+      await openOrGet<LeaguePlayerHiveModel>(HiveBoxNames.leaguePlayers);
   final leaguePlayerUniqueIndexBox =
-      await Hive.openBox<String>('league_players_unique_index');
+      await openOrGet<String>(HiveBoxNames.leaguePlayersUniqueIndex);
   final simpleMatchBox =
-      await Hive.openBox<SimpleMatchHiveModel>('simple_matches');
+      await openOrGet<SimpleMatchHiveModel>(HiveBoxNames.simpleMatches);
   final rankingPolicyBox =
-      await Hive.openBox<RankingPolicyHiveModel>('ranking_policies');
+      await openOrGet<RankingPolicyHiveModel>(HiveBoxNames.rankingPolicies);
+  final categoriesBox =
+      await openOrGet<CategoryHiveModel>(HiveBoxNames.categories);
+  final categorySlugIndexBox =
+      await openOrGet<String>(HiveBoxNames.categorySlugIndex);
+  final categoryParentIndexBox =
+      await openOrGet<String>(HiveBoxNames.categoryParentIndex);
+  final categoryPolicyIndexBox =
+      await openOrGet<String>(HiveBoxNames.categoryPolicyIndex);
+
+  // rebuildIfNeeded after openBox drift check
+  final rebuilder = CategoryIndexRebuilder();
+  await rebuilder.rebuildIfNeeded();
+
   final Box<String> appPreferencesBox;
   if (Hive.isBoxOpen(HiveSortPreferenceRepository.boxName)) {
     appPreferencesBox = Hive.box<String>(HiveSortPreferenceRepository.boxName);
@@ -120,9 +144,25 @@ Future<void> _initHive() async {
             ));
   }
 
+  if (!sl.isRegistered<CategoryRepository>()) {
+    sl.registerLazySingleton<CategoryRepository>(() => HiveCategoryRepository(
+          categoriesBox,
+          categorySlugIndexBox,
+          categoryParentIndexBox,
+          rankingPolicyBox,
+          sharedLock,
+          categoryPolicyIndexBox: categoryPolicyIndexBox,
+        ));
+  }
+
   if (!sl.isRegistered<RankingPolicyRepository>()) {
     sl.registerLazySingleton<RankingPolicyRepository>(
-        () => HiveRankingPolicyRepository(rankingPolicyBox));
+        () => HiveRankingPolicyRepository(
+              rankingPolicyBox,
+              categoryRepository: sl<CategoryRepository>(),
+              lock: sharedLock,
+              categoryPolicyIndexBox: categoryPolicyIndexBox,
+            ));
   }
 
   // 3. Register Services
@@ -131,6 +171,7 @@ Future<void> _initHive() async {
       () => CreateLeagueService(
         sl<LeagueRepository>(),
         sl<RankingPolicyRepository>(),
+        sl<CategoryRepository>(),
       ),
     );
   }
